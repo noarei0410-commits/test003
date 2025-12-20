@@ -71,6 +71,22 @@ function getLocalCoords(e) {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
+// 特定のカードがどのゾーンの上にいるか判定する関数
+function getZoneUnderCard(card) {
+    const zones = document.querySelectorAll('.zone');
+    const cr = card.getBoundingClientRect();
+    const cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+    
+    for (let z of zones) {
+        const zr = z.getBoundingClientRect();
+        if (cc.x >= zr.left && cc.x <= zr.right && 
+            cc.y >= zr.top && cc.y <= zr.bottom) {
+            return z.id; // ゾーンのHTML ID（back, center, collabなど）を返す
+        }
+    }
+    return null;
+}
+
 socket.on('deckCount', (counts) => {
     document.getElementById('mainCount').innerText = counts.main;
     document.getElementById('cheerCount').innerText = counts.cheer;
@@ -98,10 +114,23 @@ function restoreCard(id, info) {
 
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
+        // 【修正】裏返し禁止エリアのチェック
+        // 1. 手札枠にいる場合
+        if (el.parentElement === handDiv) return;
+
+        // 2. 特定のポジション（バック、センター、コラボ）にいる場合
+        const protectedZones = ['back', 'center', 'collab'];
+        const currentZoneId = getZoneUnderCard(el);
+        if (protectedZones.includes(currentZoneId)) {
+            console.log("このエリアではカードを裏返せません");
+            return;
+        }
+
         el.classList.toggle('face-up'); el.classList.toggle('face-down');
         socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
         e.stopPropagation();
     });
+
     el.addEventListener('mousedown', (e) => {
         isDragging = true; currentCard = el;
         const rect = el.getBoundingClientRect();
@@ -133,7 +162,14 @@ document.addEventListener('mouseup', (e) => {
         socket.emit('returnToHand', { id: currentCard.id });
     } else {
         snapToZone();
-        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, x: currentCard.style.left, y: currentCard.style.top, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':'holomen' });
+        socket.emit('moveCard', { 
+            id: currentCard.id, 
+            name: currentCard.innerText, 
+            x: currentCard.style.left, 
+            y: currentCard.style.top, 
+            zIndex: currentCard.style.zIndex, 
+            type: currentCard.classList.contains('type-ayle') ? 'ayle' : 'holomen' 
+        });
     }
     isDragging = false; currentCard = null;
 });
