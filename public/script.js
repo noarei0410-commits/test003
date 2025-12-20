@@ -6,85 +6,64 @@ const MASTER_CARDS = [
     { name: "ときのそら (Debut)", type: "holomen" },
     { name: "AZKi (Debut)", type: "holomen" },
     { name: "友人A", type: "holomen" },
-    { name: "春先のどか", type: "holomen" },
     { name: "赤エール", type: "ayle" },
-    { name: "青エール", type: "ayle" },
-    { name: "白エール", type: "ayle" }
+    { name: "青エール", type: "ayle" }
 ];
 
-// デッキ管理用
 let mainDeckList = [];
 let cheerDeckList = [];
-
 const modal = document.getElementById('setup-modal');
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 
-// --- デッキ構築UIロジック ---
-
+// --- デッキ構築UI ---
 function updateLibrary(filter = "") {
     const list = document.getElementById('libraryList');
     list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(filter)).forEach(card => {
         const div = document.createElement('div');
         div.className = "library-item";
-        div.innerHTML = `<span>${card.name} [${card.type==='ayle'?'エール':'メイン'}]</span>
-                         <button class="btn-add">追加</button>`;
-        div.querySelector('.btn-add').onclick = () => addToDeck(card);
+        div.innerHTML = `<span>${card.name}</span><button class="btn-add">追加</button>`;
+        div.querySelector('.btn-add').onclick = () => {
+            if(card.type === 'ayle') cheerDeckList.push({...card});
+            else mainDeckList.push({...card});
+            renderDecks();
+        };
         list.appendChild(div);
     });
-}
-
-function addToDeck(card) {
-    if (card.type === 'ayle') {
-        cheerDeckList.push({ ...card });
-    } else {
-        mainDeckList.push({ ...card });
-    }
-    renderDecks();
 }
 
 function renderDecks() {
     const mainSummary = document.getElementById('mainDeckSummary');
     const cheerSummary = document.getElementById('cheerDeckSummary');
-    
     mainSummary.innerHTML = "";
-    mainDeckList.forEach((card, i) => {
-        const div = document.createElement('div');
-        div.className = "deck-item";
-        div.innerHTML = `<span>${card.name}</span><button class="btn-remove">削</button>`;
-        div.querySelector('.btn-remove').onclick = () => { mainDeckList.splice(i, 1); renderDecks(); };
-        mainSummary.appendChild(div);
+    mainDeckList.forEach((c, i) => {
+        const d = document.createElement('div'); d.className = "deck-item";
+        d.innerHTML = `<span>${c.name}</span><button class="btn-remove">削</button>`;
+        d.querySelector('.btn-remove').onclick = () => { mainDeckList.splice(i, 1); renderDecks(); };
+        mainSummary.appendChild(d);
     });
-
     cheerSummary.innerHTML = "";
-    cheerDeckList.forEach((card, i) => {
-        const div = document.createElement('div');
-        div.className = "deck-item";
-        div.innerHTML = `<span>${card.name}</span><button class="btn-remove">削</button>`;
-        div.querySelector('.btn-remove').onclick = () => { cheerDeckList.splice(i, 1); renderDecks(); };
-        cheerSummary.appendChild(div);
+    cheerDeckList.forEach((c, i) => {
+        const d = document.createElement('div'); d.className = "deck-item";
+        d.innerHTML = `<span>${c.name}</span><button class="btn-remove">削</button>`;
+        d.querySelector('.btn-remove').onclick = () => { cheerDeckList.splice(i, 1); renderDecks(); };
+        cheerSummary.appendChild(d);
     });
-
     document.getElementById('mainBuildCount').innerText = mainDeckList.length;
     document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
-    
-    // 両方のデッキにカードがあれば開始可能
     document.getElementById('startGameBtn').disabled = (mainDeckList.length === 0 || cheerDeckList.length === 0);
 }
 
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
-
 document.getElementById('startGameBtn').onclick = () => {
     socket.emit('setMainDeck', mainDeckList.map(c => c.name));
     socket.emit('setCheerDeck', cheerDeckList.map(c => c.name));
     modal.style.display = "none";
 };
-
 updateLibrary();
 
-// --- ゲームプレイ同期ロジック ---
-
+// --- ゲームロジック ---
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 
 function getLocalCoords(e) {
@@ -147,20 +126,14 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', (e) => {
     if (!isDragging || !currentCard) return;
     const handRect = handDiv.getBoundingClientRect();
-    if (e.clientY > handRect.top) {
+    if (e.clientX > handRect.left && e.clientX < handRect.right && 
+        e.clientY > handRect.top && e.clientY < handRect.bottom) {
         currentCard.style.position = 'relative'; currentCard.style.left = ''; currentCard.style.top = '';
         handDiv.appendChild(currentCard);
         socket.emit('returnToHand', { id: currentCard.id });
     } else {
         snapToZone();
-        socket.emit('moveCard', { 
-            id: currentCard.id, 
-            name: currentCard.innerText, 
-            x: currentCard.style.left, 
-            y: currentCard.style.top, 
-            zIndex: currentCard.style.zIndex, 
-            type: currentCard.classList.contains('type-ayle') ? 'ayle' : 'holomen' 
-        });
+        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, x: currentCard.style.left, y: currentCard.style.top, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':'holomen' });
     }
     isDragging = false; currentCard = null;
 });
