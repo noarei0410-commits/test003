@@ -1,137 +1,102 @@
 body {
     margin: 0;
     overflow: hidden;
-    /* 背景色を指定の色に変更 */
     background-color: rgba(4, 23, 43, 1);
-    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-family: sans-serif;
     color: white;
 }
 
 #ui-layer {
     position: absolute;
-    top: 10px;
+    top: 5px;
     left: 10px;
     z-index: 10000;
     pointer-events: none;
-}
-/* ボタンの色も枠の色に合わせて調整 */
-#ui-layer button { 
-    pointer-events: auto; 
-    background: rgba(240, 255, 255, 1); 
-    border: none; 
-    padding: 8px 15px; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    color: rgba(4, 23, 43, 1); 
-    font-weight: bold; 
+    font-size: 0.8rem;
 }
 
-/* フィールド全体のレイアウト */
 #field {
     width: 100vw;
     height: 100vh;
-    display: grid;
-    grid-template-columns: 120px 1fr 120px;
-    grid-template-rows: 1fr;
-    gap: 30px;
-    padding: 40px;
-    box-sizing: border-box;
-}
-
-.column {
     display: flex;
-    flex-direction: column;
-    gap: 25px;
-    justify-content: flex-start;
+    flex-direction: column; /* 上下に分ける */
 }
-.center-column { justify-content: center; }
-.right-column { justify-content: space-between; }
 
-/* ゾーンのデザインを更新 */
+/* 各サイドの共通設定 */
+.side {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 100px 1fr 100px;
+    gap: 15px;
+    padding: 10px 40px;
+    box-sizing: border-box;
+    border: 1px solid rgba(240, 255, 255, 0.1);
+}
+
+.opponent-side { background-color: rgba(0, 0, 0, 0.2); }
+.player-side { background-color: rgba(255, 255, 255, 0.02); }
+
+.column { display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+.center-column { align-items: center; }
+
+/* ゾーンのデザイン */
 .zone {
-    /* 枠の色を指定の色に変更 */
-    border: 3px solid rgba(240, 255, 255, 1);
-    /* 光彩も枠の色に合わせる */
-    box-shadow: 0 0 15px rgba(240, 255, 255, 0.3), inset 0 0 10px rgba(240, 255, 255, 0.1);
-    border-radius: 10px;
+    border: 2px solid rgba(240, 255, 255, 1);
+    border-radius: 6px;
     background-color: rgba(255, 255, 255, 0.05);
-    width: 90px;
-    height: 130px;
+    width: 75px;
+    height: 105px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 11px;
+    font-size: 9px;
     text-align: center;
-    color: rgba(240, 255, 255, 0.8);
-    pointer-events: none;
+    color: rgba(240, 255, 255, 0.7);
     position: relative;
 }
 
-.vertical-zone { height: 300px; }
-.card-back-bg { background-color: rgba(255, 255, 255, 0.1); border-style: dashed; }
+.vertical-zone, .op-vertical { height: 220px; }
+.wide-zone { width: 400px; height: 120px; }
 
-/* ステージ周り */
-.stage-label { 
-    text-align: center; 
-    font-size: 1.2rem; 
-    margin-bottom: -10px; 
-    color: rgba(240, 255, 255, 1); 
-    text-shadow: 0 0 10px rgba(240, 255, 255, 0.5); 
+/* デッキエリアを裏向きカード風に */
+.deck-zone {
+    background: linear-gradient(45deg, #1a2a3a, #2c3e50);
+    cursor: pointer;
+    border-style: double;
 }
-.stage-row { display: flex; justify-content: center; gap: 40px; }
-.wide-zone {
-    width: 100%;
-    height: 200px;
-    align-items: flex-start;
-    padding-top: 10px;
-}
-
-/* ターン進行ガイド */
-.turn-guide {
-    position: absolute;
-    bottom: 10px;
-    left: 15px;
-    text-align: left;
-    font-size: 0.8rem;
-    color: rgba(240, 255, 255, 0.6);
-}
-.turn-guide p { margin: 0 0 5px 0; font-weight: bold; }
-.turn-guide ol { margin: 0; padding-left: 20px; }
+.deck-zone:hover { background: rgba(240, 255, 255, 0.2); }
 
 /* カードの見た目 */
 .card {
-    width: 70px;
-    height: 100px;
-    border: 1px solid #000;
-    border-radius: 6px;
+    width: 65px;
+    height: 90px;
+    border-radius: 5px;
     background-color: #fff;
     color: #000;
     font-weight: bold;
     cursor: grab;
-    position: relative;
+    position: absolute;
     z-index: 100;
-    display: flex; 
-    justify-content: center; 
-    align-items: center;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
 }
-/* 裏面は枠の色を使ったグラデーションに */
 .card.face-down { 
-    background: linear-gradient(45deg, rgba(4, 23, 43, 1), rgba(40, 60, 80, 1)); 
-    color: transparent; 
-    border: 2px solid rgba(240, 255, 255, 1); 
+    background: linear-gradient(45deg, rgba(4, 23, 43, 1), #16213e); 
+    border: 1px solid rgba(240, 255, 255, 1);
+    color: transparent;
 }
 
 #hand {
     position: absolute;
-    bottom: 10px;
+    bottom: 5px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 10px;
-    padding: 15px;
-    background: rgba(4, 23, 43, 0.8);
-    border-radius: 15px;
-    border: 2px solid rgba(240, 255, 255, 0.5);
+    gap: 8px;
+    padding: 10px;
+    background: rgba(4, 23, 43, 0.9);
+    border-radius: 10px;
+    border: 1px solid rgba(240, 255, 255, 0.3);
     z-index: 5000;
+    min-width: 100px;
 }
