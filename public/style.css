@@ -1,27 +1,68 @@
 /* public/style.css */
+body {
+    margin: 0;
+    overflow: hidden; /* 画面のスクロールを防ぐ */
+    background-color: #2c3e50;
+    font-family: sans-serif;
+    color: white;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 100; /* UIを一番手前に */
+    pointer-events: none; /* 下にあるカードを触れるようにする */
+}
+#ui-layer button { pointer-events: auto; }
+
+#field {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    background-color: #27ae60; /* テーブルクロスの緑 */
+}
+
+#hand {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    min-width: 200px;
+    min-height: 100px;
+}
+
 .card {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 60px;
-    height: 90px;
-    border: 2px solid #333; /* 枠線を太く */
+    width: 70px;
+    height: 100px;
+    border: 2px solid #333;
     border-radius: 8px;
-    margin: 5px;
     font-size: 20px;
     font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s; /* 色の変化を滑らかに */
+    cursor: grab;
+    user-select: none;
+    background-color: white;
+    color: black;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+    position: relative; /* 手札内では相対位置 */
 }
 
-/* 表面：背景白、文字は黒 */
-.card.face-up {
-    background-color: white !important;
-    color: black !important;
-}
-
-/* 裏面：背景赤、文字を隠す */
+/* 裏面の見た目 */
 .card.face-down {
-    background-color: #ff4444 !important; /* はっきりした赤 */
-    color: transparent !important;       /* 文字を透明にする */
+    background-color: #c0392b !important;
+    color: transparent !important;
+}
+
+/* ドラッグ中の見た目 */
+.card:active {
+    cursor: grabbing;
+    z-index: 1000;
 }
