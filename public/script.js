@@ -7,73 +7,84 @@ const deckCountSpan = document.getElementById('deckCount');
 
 let isDragging = false;
 let currentCard = null;
-let offset = { x: 0, y: 0 };
+// マウスとカードの左上角の距離を保持する変数
+let offsetX = 0;
+let offsetY = 0;
 
-// サーバーから初期化情報を受信
 socket.on('init', (data) => {
     document.getElementById('status').innerText = `ID: ${socket.id}`;
 });
 
-// 山札の枚数更新
 socket.on('deckCount', (count) => {
     deckCountSpan.innerText = count;
 });
 
-// カードを引くボタン
 drawBtn.addEventListener('click', () => {
     socket.emit('drawCard');
 });
 
-// サーバーからカード情報（新しいカード1枚）を受信
 socket.on('receiveCard', (cardData) => {
     createCardElement(cardData);
 });
 
-// カード要素を作成する共通関数
 function createCardElement(cardData) {
     const el = document.createElement('div');
     el.classList.add('card', 'face-up');
-    el.id = cardData.id; // サーバー側で生成した一意のID
+    el.id = cardData.id;
     el.innerText = cardData.number;
 
-    // クリックで裏返し
+    // ダブルクリックで裏返し
     el.addEventListener('dblclick', (e) => {
         el.classList.toggle('face-up');
         el.classList.toggle('face-down');
         e.stopPropagation();
     });
 
-    // ドラッグ開始
+    // マウスを押した瞬間の処理
     el.addEventListener('mousedown', (e) => {
         isDragging = true;
         currentCard = el;
+
+        // 現在のカードの表示位置を取得
+        const rect = el.getBoundingClientRect();
         
-        // カードをフィールド（最前面）へ移動
-        if (el.parentElement === handDiv) {
+        // 【重要】マウスがカードのどの位置（何ピクセル目）をクリックしたかを計算
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        // 手札からフィールドへ移動させる（親子関係の変更）
+        if (el.parentElement !== field) {
+            // 現在の見た目の位置を維持したまま移動
+            el.style.left = (e.clientX - offsetX) + 'px';
+            el.style.top = (e.clientY - offsetY) + 'px';
+            el.style.position = 'absolute';
             field.appendChild(el);
         }
-        
-        const rect = el.getBoundingClientRect();
-        offset.x = e.clientX - rect.left;
-        offset.y = e.clientY - rect.top;
-        
-        el.style.position = 'absolute';
-        updatePosition(e.clientX, e.clientY);
+
+        el.style.zIndex = 1000; // 掴んでいるカードを一番上に
     });
 
     handDiv.appendChild(el);
 }
 
-// マウス移動時
+// マウス移動中の処理
 document.addEventListener('mousemove', (e) => {
     if (!isDragging || !currentCard) return;
-    updatePosition(e.clientX, e.clientY);
+
+    // 【重要】マウスの位置からオフセットを引くことで、クリックした場所を固定する
+    const x = e.clientX - offsetX;
+    const y = e.clientY - offsetY;
+
+    currentCard.style.left = x + 'px';
+    currentCard.style.top = y + 'px';
 });
 
-// マウスを離した時
+// マウスを離した時の処理
 document.addEventListener('mouseup', () => {
     if (isDragging && currentCard) {
-        // サーバーに位置を報告（同期用）
+        currentCard.style.zIndex = ''; // 重なり順を戻す
+        
+        // サーバーに位置を同期
         socket.emit('moveCard', {
             id: currentCard.id,
             x: currentCard.style.left,
@@ -84,14 +95,7 @@ document.addEventListener('mouseup', () => {
     currentCard = null;
 });
 
-function updatePosition(mouseX, mouseY) {
-    const x = mouseX - offset.x;
-    const y = mouseY - offset.y;
-    currentCard.style.left = x + 'px';
-    currentCard.style.top = y + 'px';
-}
-
-// 他のプレイヤーがカードを動かした時
+// 他の人の動きを同期
 socket.on('cardMoved', (data) => {
     const card = document.getElementById(data.id);
     if (card) {
