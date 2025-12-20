@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid'); // npm install uuid が必要
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
         if (deck.length > 0) {
             const num = deck.pop();
             const cardData = {
-                id: uuidv4(), // カード1枚ごとに固有IDを振る
+                id: uuidv4(),
                 number: num
             };
             socket.emit('receiveCard', cardData);
@@ -34,11 +34,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 位置同期
     socket.on('moveCard', (data) => {
+        // 全員（自分以外）に座標と重なり順を送信
         socket.broadcast.emit('cardMoved', data);
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server: ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
