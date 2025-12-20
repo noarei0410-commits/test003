@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Integrated Hand</title>
+    <title>hOCG Simulator - Final Layout</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
 
     <div id="field-container">
         <div id="field">
-            <div class="column left-column">
+            <div class="column">
                 <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
                 <div class="zone" id="cheer-deck"><span>エール</span></div>
             </div>
@@ -29,19 +29,19 @@
                 <div class="stage-row bottom-row">
                     <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
-
-                <div id="hand-label">手札エリア</div>
-                <div id="hand"></div>
             </div>
 
-            <div class="column right-column">
+            <div class="column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
-                <div class="zone deck-zone" id="main-deck">
-                    <span>デッキ</span>
-                    <div class="deck-stack"></div> </div>
+                <div class="zone deck-zone" id="main-deck"><span>デッキ</span></div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
             </div>
         </div>
+    </div>
+
+    <div id="hand-container">
+        <div id="hand-label">手札</div>
+        <div id="hand"></div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
