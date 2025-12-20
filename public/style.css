@@ -1,3 +1,4 @@
+/* --- ベース設定 --- */
 body {
     margin: 0;
     overflow: hidden;
@@ -10,11 +11,23 @@ body {
     height: 100vh;
     color: white;
     padding-top: 2vh;
+
+    /* 【新規追加】ブラウザのテキスト選択を無効化 */
+    user-select: none;
+    -webkit-user-select: none; /* Safari用 */
+    -moz-user-select: none;    /* Firefox用 */
+    -ms-user-select: none;     /* IE/Edge用 */
+}
+
+/* 検索ボックスや入力エリアは選択・入力を許可する */
+input, textarea {
+    user-select: auto;
+    -webkit-user-select: auto;
 }
 
 #ui-layer { position: absolute; top: 10px; left: 20px; z-index: 10000; font-size: 12px; }
 
-/* モーダル */
+/* --- モーダル & デッキビルダー --- */
 #setup-modal {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(0, 0, 0, 0.95); z-index: 20000;
@@ -36,7 +49,7 @@ body {
 #searchInput { padding: 10px; background: #000; color: #fff; border: 1px solid rgba(240, 255, 255, 0.5); margin-bottom: 10px; }
 #startGameBtn { padding: 15px; background: rgba(240, 255, 255, 1); border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
 
-/* ステージ外枠（レスポンシブ） */
+/* ステージ外枠（レスポンシブ・配置固定） */
 #field-container {
     border: 5px double rgba(240, 255, 255, 1);
     padding: 1.5vh 1.5vw;
@@ -46,7 +59,7 @@ body {
     height: 65vh;
     max-width: 1200px;
     box-shadow: 0 0 20px rgba(240, 255, 255, 0.1);
-    margin-bottom: 110px; /* 手札用スペース */
+    margin-bottom: 110px; 
 }
 
 #field {
