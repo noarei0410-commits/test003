@@ -10,33 +10,43 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-let deck = [];
+let mainDeck = [];
+let cheerDeck = []; // エール専用デッキ
 let fieldState = {}; 
 
 io.on('connection', (socket) => {
     socket.emit('init', { id: socket.id, fieldState: fieldState });
-    io.emit('deckCount', deck.length);
+    io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
 
-    // デッキリストを設定してシャッフル
-    socket.on('setDeck', (list) => {
-        deck = list.map(name => ({
-            id: uuidv4(),
-            name: name.trim()
-        }));
-        // シャッフル
-        for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [deck[i], deck[j]] = [deck[j], deck[i]];
-        }
-        io.emit('deckCount', deck.length);
-        console.log("Deck initialized with " + deck.length + " cards.");
+    // メインデッキ設定
+    socket.on('setMainDeck', (list) => {
+        mainDeck = list.map(name => ({ id: uuidv4(), name: name.trim(), type: 'holomen' }));
+        shuffle(mainDeck);
+        io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
     });
 
-    socket.on('drawCard', () => {
-        if (deck.length > 0) {
-            const cardData = deck.pop();
+    // エールデッキ設定
+    socket.on('setCheerDeck', (list) => {
+        cheerDeck = list.map(name => ({ id: uuidv4(), name: name.trim(), type: 'ayle' }));
+        shuffle(cheerDeck);
+        io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
+    });
+
+    // メインデッキから引く
+    socket.on('drawMainCard', () => {
+        if (mainDeck.length > 0) {
+            const cardData = mainDeck.pop();
             socket.emit('receiveCard', cardData);
-            io.emit('deckCount', deck.length);
+            io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
+        }
+    });
+
+    // エールデッキから引く
+    socket.on('drawCheerCard', () => {
+        if (cheerDeck.length > 0) {
+            const cardData = cheerDeck.pop();
+            socket.emit('receiveCard', cardData);
+            io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
         }
     });
 
@@ -57,6 +67,13 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => { console.log('User disconnected'); });
 });
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server: ${PORT}`));
