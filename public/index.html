@@ -2,14 +2,14 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Frame & Snap</title>
+    <title>hOCG Simulator - Integrated Hand</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="ui-layer">
         <h1>hOCG Sim</h1>
         <div id="status">接続中...</div>
-        <span>山札: <span id="deckCount">50</span></span>
+        <span>山札残り: <span id="deckCount">50</span></span>
     </div>
 
     <div id="field-container">
@@ -29,17 +29,20 @@
                 <div class="stage-row bottom-row">
                     <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
+
+                <div id="hand-label">手札エリア</div>
+                <div id="hand"></div>
             </div>
 
             <div class="column right-column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
-                <div class="zone deck-zone" id="main-deck"><span>デッキ</span></div>
+                <div class="zone deck-zone" id="main-deck">
+                    <span>デッキ</span>
+                    <div class="deck-stack"></div> </div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
             </div>
         </div>
     </div>
-
-    <div id="hand"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
