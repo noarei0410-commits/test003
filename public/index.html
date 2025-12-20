@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Advanced Deck Config</title>
+    <title>hOCG Simulator - External Hand</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,25 +12,22 @@
         
         <div id="config-panel">
             <div class="panel-header">デッキ設定</div>
-            
             <div class="input-group">
-                <label>メインデッキ (50枚)</label>
+                <label>メインデッキ</label>
                 <textarea id="mainDeckInput" placeholder="カード名を改行区切りで入力"></textarea>
                 <div class="button-row">
                     <button id="sampleMainBtn" class="small-btn">サンプル読込</button>
                     <button id="setMainBtn" class="action-btn">セット</button>
                 </div>
             </div>
-
             <div class="input-group">
-                <label>エールデッキ (20枚)</label>
+                <label>エールデッキ</label>
                 <textarea id="cheerDeckInput" placeholder="カード名を改行区切りで入力"></textarea>
                 <div class="button-row">
                     <button id="sampleCheerBtn" class="small-btn">サンプル読込</button>
                     <button id="setCheerBtn" class="action-btn">セット</button>
                 </div>
             </div>
-            
             <div class="count-display">
                 Main: <span id="mainCount">0</span> / Cheer: <span id="cheerCount">0</span>
             </div>
@@ -43,6 +40,7 @@
                 <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
                 <div class="zone deck-zone" id="cheer-deck-zone"><span>エール<br>(引く)</span></div>
             </div>
+
             <div class="column center-column">
                 <div class="stage-label">ステージ</div>
                 <div class="stage-row top-row">
@@ -54,7 +52,8 @@
                     <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
             </div>
-            <div class="column right-column">
+
+            <div class="column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
                 <div class="zone deck-zone" id="main-deck-zone"><span>メイン<br>(引く)</span></div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
@@ -63,7 +62,7 @@
     </div>
 
     <div id="hand-container">
-        <div id="hand-label">手札</div>
+        <div id="hand-label">自分の手札</div>
         <div id="hand"></div>
     </div>
 
