@@ -1,20 +1,38 @@
 const socket = io();
 
-// マスターリスト定義
-const MASTER_CARDS = [
-    { name: "ときのそら (推し)", type: "holomen" },
-    { name: "ときのそら (Debut)", type: "holomen" },
-    { name: "AZKi (Debut)", type: "holomen" },
-    { name: "友人A", type: "holomen" },
-    { name: "赤エール", type: "ayle" },
-    { name: "青エール", type: "ayle" }
-];
+// 外部ファイルから読み込まれるマスターリスト
+let MASTER_CARDS = [];
 
 let mainDeckList = [];
 let cheerDeckList = [];
 const modal = document.getElementById('setup-modal');
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
+
+// --- データの読み込み ---
+async function loadCardData() {
+    try {
+        const [holomenRes, ayleRes] = await Promise.all([
+            fetch('/data/holomen.json'),
+            fetch('/data/ayle.json')
+        ]);
+        
+        const holomenData = await holomenRes.json();
+        const ayleData = await ayleRes.json();
+        
+        // 2つのリストを結合してマスターリストを作成
+        MASTER_CARDS = [...holomenData, ...ayleData];
+        
+        // データ読み込み完了後にUIを更新
+        updateLibrary();
+        console.log("Card data loaded successfully.");
+    } catch (error) {
+        console.error("Failed to load card data:", error);
+    }
+}
+
+// 起動時にデータを読み込む
+loadCardData();
 
 // --- デッキ構築UI ---
 function updateLibrary(filter = "") {
@@ -61,7 +79,6 @@ document.getElementById('startGameBtn').onclick = () => {
     socket.emit('setCheerDeck', cheerDeckList.map(c => c.name));
     modal.style.display = "none";
 };
-updateLibrary();
 
 // --- ゲームロジック ---
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
@@ -71,7 +88,6 @@ function getLocalCoords(e) {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
-// 特定のカードがどのゾーンの上にいるか判定する関数
 function getZoneUnderCard(card) {
     const zones = document.querySelectorAll('.zone');
     const cr = card.getBoundingClientRect();
@@ -79,9 +95,8 @@ function getZoneUnderCard(card) {
     
     for (let z of zones) {
         const zr = z.getBoundingClientRect();
-        if (cc.x >= zr.left && cc.x <= zr.right && 
-            cc.y >= zr.top && cc.y <= zr.bottom) {
-            return z.id; // ゾーンのHTML ID（back, center, collabなど）を返す
+        if (cc.x >= zr.left && cc.x <= zr.right && cc.y >= zr.top && cc.y <= zr.bottom) {
+            return z.id;
         }
     }
     return null;
@@ -114,17 +129,10 @@ function restoreCard(id, info) {
 
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
-        // 【修正】裏返し禁止エリアのチェック
-        // 1. 手札枠にいる場合
         if (el.parentElement === handDiv) return;
-
-        // 2. 特定のポジション（バック、センター、コラボ）にいる場合
         const protectedZones = ['back', 'center', 'collab'];
         const currentZoneId = getZoneUnderCard(el);
-        if (protectedZones.includes(currentZoneId)) {
-            console.log("このエリアではカードを裏返せません");
-            return;
-        }
+        if (protectedZones.includes(currentZoneId)) return;
 
         el.classList.toggle('face-up'); el.classList.toggle('face-down');
         socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
@@ -162,14 +170,7 @@ document.addEventListener('mouseup', (e) => {
         socket.emit('returnToHand', { id: currentCard.id });
     } else {
         snapToZone();
-        socket.emit('moveCard', { 
-            id: currentCard.id, 
-            name: currentCard.innerText, 
-            x: currentCard.style.left, 
-            y: currentCard.style.top, 
-            zIndex: currentCard.style.zIndex, 
-            type: currentCard.classList.contains('type-ayle') ? 'ayle' : 'holomen' 
-        });
+        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, x: currentCard.style.left, y: currentCard.style.top, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':'holomen' });
     }
     isDragging = false; currentCard = null;
 });
