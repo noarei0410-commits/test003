@@ -3,18 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Card Game Simulator</title>
+    <title>hOCG Simulator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="ui-layer">
-        <h1>Card Game Sim</h1>
-        <div id="status">サーバーに接続中...</div>
+        <h1>hOCG Sim</h1>
+        <div id="status">接続中...</div>
         <button id="drawBtn">カードを引く</button>
-        <span>山札残り: <span id="deckCount">52</span> 枚</span>
+        <span>山札: <span id="deckCount">50</span></span>
     </div>
 
-    <div id="field"></div>
+    <div id="field">
+        <div class="side opponent-side"></div>
+
+        <div class="side player-side">
+            <div class="zone-column">
+                <div class="zone" id="archive-zone"><span>アーカイブ</span></div>
+                <div class="zone" id="cheer-deck"><span>エールデッキ</span></div>
+            </div>
+
+            <div class="main-stage">
+                <div class="zone" id="collab-zone"><span>コラボ</span></div>
+                <div class="center-row">
+                    <div class="zone" id="oshi-zone"><span>推しホロライブ</span></div>
+                    <div class="zone" id="center-zone"><span>センター</span></div>
+                </div>
+                <div class="backstage-row">
+                    <div class="zone"><span>バックステージ</span></div>
+                    <div class="zone"><span>バックステージ</span></div>
+                    <div class="zone"><span>バックステージ</span></div>
+                </div>
+            </div>
+
+            <div class="zone-column">
+                <div class="zone" id="main-deck"><span>メインデッキ</span></div>
+                <div class="zone" id="life-zone"><span>ライフ</span></div>
+            </div>
+        </div>
+    </div>
 
     <div id="hand"></div>
 
