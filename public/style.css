@@ -24,141 +24,113 @@ input { user-select: auto; -webkit-user-select: auto; }
     background: rgba(0, 0, 0, 0.95); z-index: 20000;
     display: flex; justify-content: center; align-items: center;
 }
+
 .modal-content {
     background: rgba(4, 23, 43, 1); border: 3px solid rgba(240, 255, 255, 1);
     border-radius: 20px; padding: 15px; width: 90vw; height: 90vh;
     display: flex; flex-direction: column;
+    overflow: hidden; /* モーダル自体がはみ出さないように固定 */
 }
-.builder-layout { display: flex; flex: 1; gap: 12px; overflow: hidden; }
 
-.card-library { flex: 1; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; }
-.deck-lists-container { flex: 1.3; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-.deck-section { flex: 1; background: rgba(255, 255, 255, 0.05); padding: 8px; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
-.scroll-list { flex: 1; overflow-y: auto; margin-top: 5px; }
-
-/* --- ボタンの色分け設定 --- */
-
-/* 共通ボタンベース */
-button { 
-    cursor: pointer; 
-    border: none; 
-    font-weight: bold; 
-    border-radius: 4px; 
-    transition: all 0.2s ease;
+.builder-layout { 
+    display: flex; 
+    flex: 1; 
+    gap: 12px; 
+    overflow: hidden; /* 内部のスクロールを有効にするために必須 */
 }
+
+/* 左側：カードライブラリ（スクロール対応） */
+.card-library { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    background: rgba(255, 255, 255, 0.05); 
+    padding: 10px; 
+    border-radius: 10px; 
+    overflow: hidden; /* 子要素のスクロールを制御 */
+}
+
+#libraryList { 
+    flex: 1; 
+    overflow-y: auto; /* ここでスクロールを発生させる */
+    padding-right: 5px;
+}
+
+/* 右側：構築中デッキ（スクロール対応） */
+.deck-lists-container { 
+    flex: 1.3; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    overflow: hidden; 
+}
+
+.deck-section { 
+    flex: 1; 
+    background: rgba(255, 255, 255, 0.05); 
+    padding: 8px; 
+    border-radius: 10px; 
+    overflow: hidden; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.scroll-list { 
+    flex: 1; 
+    overflow-y: auto; 
+    margin-top: 5px; 
+}
+
+/* --- ボタンの色とデザイン --- */
+button { cursor: pointer; border: none; font-weight: bold; border-radius: 4px; transition: all 0.2s ease; }
 button:active { transform: scale(0.95); }
 button:disabled { background: #444 !important; color: #888 !important; cursor: not-allowed; opacity: 0.5; }
 
-/* 1. ライブラリの「追加」ボタン：Azure/シアン系 */
-.btn-add { 
-    background: #00d2ff; 
-    color: #04172b; 
-    padding: 6px 12px; 
-    font-size: 12px;
-}
-.btn-add:hover { background: #b0fbff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.6); }
+.btn-add { background: #00d2ff; color: #04172b; padding: 8px 12px; font-size: 12px; }
+.btn-plus { background: #00d2ff; color: #04172b; width: 32px; height: 32px; font-size: 20px; }
+.btn-minus { background: #ff5e5e; color: white; width: 32px; height: 32px; font-size: 20px; }
+.btn-remove { background: #ff5e5e; color: white; padding: 4px 10px; font-size: 11px; }
 
-/* 2. デッキリストの「+」ボタン：鮮やかなブルー */
-.btn-plus { 
-    background: #00d2ff; 
-    color: #04172b; 
-    width: 32px; 
-    height: 32px; 
-    font-size: 20px; 
-}
-.btn-plus:hover { background: #b0fbff; }
-
-/* 3. デッキリストの「-」ボタン：ソフトなレッド */
-.btn-minus { 
-    background: #ff5e5e; 
-    color: white; 
-    width: 32px; 
-    height: 32px; 
-    font-size: 20px; 
-}
-.btn-minus:hover { background: #ff9b9b; }
-
-/* 4. メインデッキの「削」・推しの「外す」ボタン */
-.btn-remove { 
-    background: #ff5e5e; 
-    color: white; 
-    padding: 4px 10px; 
-    font-size: 11px;
-}
-.btn-remove:hover { background: #ff9b9b; }
-
-/* 5. ゲーム開始ボタン：テーマカラー(Azure) */
-#startGameBtn { 
-    padding: 15px; 
-    background: rgba(240, 255, 255, 1); 
-    color: #04172b; 
-    font-size: 16px; 
-    letter-spacing: 2px;
-    border-radius: 10px;
-    margin-top: 5px;
-}
-#startGameBtn:hover:not(:disabled) { background: #fff; box-shadow: 0 0 15px rgba(240, 255, 255, 0.5); }
+#startGameBtn { padding: 15px; background: rgba(240, 255, 255, 1); color: #04172b; font-size: 16px; border-radius: 10px; margin-top: 5px; }
 
 /* --- リストアイテム装飾 --- */
 .library-item, .deck-item { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 8px; 
-    background: rgba(255,255,255,0.03); 
-    margin-bottom: 4px; 
-    border-radius: 6px; 
-    font-size: 12px; 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 10px; background: rgba(255,255,255,0.03); 
+    margin-bottom: 6px; border-radius: 6px; font-size: 12px; 
     border: 1px solid rgba(240, 255, 255, 0.1);
 }
 
 .deck-item-controls { display: flex; align-items: center; gap: 12px; }
-.count-number { font-size: 16px; min-width: 24px; text-align: center; color: #00d2ff; text-shadow: 0 0 5px rgba(0, 210, 255, 0.3); }
+.count-number { font-size: 16px; min-width: 24px; text-align: center; color: #00d2ff; }
 
 #searchInput { 
-    padding: 12px; 
-    background: #000; 
-    color: #fff; 
+    padding: 12px; background: #000; color: #fff; 
     border: 1px solid rgba(240, 255, 255, 0.5); 
-    margin-bottom: 10px; 
-    border-radius: 6px;
+    margin-bottom: 10px; border-radius: 6px; 
+    flex-shrink: 0; /* 検索ボックスが潰れないように固定 */
 }
 
-/* --- フィールド --- */
+/* --- フィールドと手札（前回の配置を維持） --- */
 #field-container {
-    border: 5px double rgba(240, 255, 255, 1);
-    padding: 1.5vh 1.5vw;
-    border-radius: 20px;
-    width: 92vw;
-    height: 60vh;
-    box-shadow: 0 0 20px rgba(240, 255, 255, 0.1);
-    margin-bottom: 110px;
+    border: 5px double rgba(240, 255, 255, 1); padding: 1.5vh 1.5vw;
+    border-radius: 20px; background-color: rgba(255, 255, 255, 0.02);
+    width: 92vw; height: 60vh; max-width: 1200px;
+    box-shadow: 0 0 20px rgba(240, 255, 255, 0.1); margin-bottom: 110px;
 }
 #field { display: grid; grid-template-columns: 15% 1fr 15%; gap: 1.5vw; height: 100%; position: relative; }
 .column { display: flex; flex-direction: column; gap: 1.5vh; justify-content: center; }
 .center-column { align-items: center; justify-content: space-between; }
-
 .zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255, 255, 255, 0.03); border-radius: 8px; width: 8vw; height: 11vh; min-width: 55px; min-height: 80px; max-width: 100px; max-height: 140px; display: flex; justify-content: center; align-items: center; font-size: 9px; text-align: center; }
 .vertical-zone { height: 25vh; max-height: 250px; }
 .wide-zone { width: 50vw; height: 14vh; max-width: 600px; }
 .deck-zone { cursor: pointer; border: 2px solid rgba(240, 255, 255, 1); background: linear-gradient(135deg, #16213e, #04172b); }
-
-/* --- 手札 --- */
 #hand-container { position: fixed; bottom: 10px; width: 95vw; z-index: 5000; }
 #hand { height: 100px; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 12px; display: flex; gap: 5px; padding: 5px; background: rgba(4, 23, 43, 0.9); justify-content: center; overflow-x: auto; }
-
-/* --- カード --- */
-.card {
-    width: 60px; height: 85px; background: #fff; color: #000;
-    font-size: 9px; display: flex; align-items: center; justify-content: center;
-    text-align: center; border-radius: 5px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5);
-    position: relative; flex-shrink: 0; z-index: 1000;
-    touch-action: none;
-}
+.card { width: 60px; height: 85px; background: #fff; color: #000; font-size: 9px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; }
 #field .card { position: absolute; }
 .type-ayle { border: 3px solid #ff00ff !important; }
 .type-holomen { border: 3px solid #00d2ff !important; }
 .face-down { background: #16213e !important; color: transparent !important; border: 2px solid rgba(240, 255, 255, 1) !important; }
-
 .stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; font-size: 0.9rem; letter-spacing: 3px; }
 .stage-row { display: flex; gap: 2vw; }
