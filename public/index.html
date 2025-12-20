@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Responsive Layout</title>
+    <title>hOCG Simulator - Split Deck Builder</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,9 +14,16 @@
                     <input type="text" id="searchInput" placeholder="カード名で検索...">
                     <div id="libraryList"></div>
                 </div>
-                <div class="current-deck">
-                    <h3>構築中のデッキ (<span id="totalCount">0</span>/50)</h3>
-                    <div id="deckSummary"></div>
+                
+                <div class="deck-lists-container">
+                    <div class="deck-section">
+                        <h3>メインデッキ (<span id="mainBuildCount">0</span>/50)</h3>
+                        <div id="mainDeckSummary" class="scroll-list"></div>
+                    </div>
+                    <div class="deck-section">
+                        <h3>エールデッキ (<span id="cheerBuildCount">0</span>/20)</h3>
+                        <div id="cheerDeckSummary" class="scroll-list"></div>
+                    </div>
                     <button id="startGameBtn" disabled>ゲーム開始</button>
                 </div>
             </div>
