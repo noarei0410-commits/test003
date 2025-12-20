@@ -1,140 +1,52 @@
 body {
     margin: 0;
     overflow: hidden;
-    /* 背景色を保持 */
     background-color: rgba(4, 23, 43, 1);
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    color: white;
-}
-
-#ui-layer {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 10000;
-    pointer-events: none;
-}
-#ui-layer button { 
-    pointer-events: auto; 
-    /* ボタンの色も枠色に合わせる */
-    background: rgba(240, 255, 255, 1); 
-    border: none; 
-    padding: 8px 15px; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    color: rgba(4, 23, 43, 1); 
-    font-weight: bold; 
-}
-
-/* フィールド全体のレイアウト（3カラム） */
-#field {
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    /* 左:120px, 中央:可変, 右:120px */
-    grid-template-columns: 120px 1fr 120px;
-    grid-template-rows: 1fr;
-    gap: 30px;
-    padding: 40px;
-    box-sizing: border-box;
-}
-
-/* カラムの共通設定 */
-.column {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    justify-content: flex-start;
-}
-/* 中央と右カラムの位置調整 */
-.center-column { justify-content: center; }
-.right-column { justify-content: space-between; }
-
-/* ゾーンのデザイン（色を保持） */
-.zone {
-    /* 枠の色を保持 */
-    border: 3px solid rgba(240, 255, 255, 1);
-    /* 光彩も保持 */
-    box-shadow: 0 0 15px rgba(240, 255, 255, 0.3), inset 0 0 10px rgba(240, 255, 255, 0.1);
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.05);
-    width: 90px;
-    height: 130px;
+    font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 11px;
-    text-align: center;
-    color: rgba(240, 255, 255, 0.8);
-    pointer-events: none;
-    position: relative;
-}
-.zone span { pointer-events: none; }
-
-/* 個別のゾーン設定 */
-.vertical-zone { height: 300px; } /* ライフ用 */
-.card-back-bg { background-color: rgba(255, 255, 255, 0.1); border-style: dashed; } /* デッキ用 */
-
-/* ステージ周り */
-.stage-label { 
-    text-align: center; 
-    font-size: 1.2rem; 
-    margin-bottom: -10px; 
-    color: rgba(240, 255, 255, 1); 
-    text-shadow: 0 0 10px rgba(240, 255, 255, 0.5); 
-}
-.stage-row { display: flex; justify-content: center; gap: 40px; }
-.wide-zone {
-    width: 100%;
-    height: 200px;
-    align-items: flex-start;
-    padding-top: 10px;
+    height: 100vh;
 }
 
-/* ターン進行ガイド */
-.turn-guide {
-    position: absolute;
-    bottom: 10px;
-    left: 15px;
-    text-align: left;
-    font-size: 0.8rem;
-    color: rgba(240, 255, 255, 0.6);
-}
-.turn-guide p { margin: 0 0 5px 0; font-weight: bold; }
-.turn-guide ol { margin: 0; padding-left: 20px; }
-
-/* カードの見た目 */
-.card {
-    width: 70px;
-    height: 100px;
-    border: 1px solid #000;
-    border-radius: 6px;
-    background-color: #fff;
-    color: #000;
-    font-weight: bold;
-    cursor: grab;
-    position: relative;
-    z-index: 100;
-    display: flex; justify-content: center; align-items: center;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
-}
-/* 裏面デザイン（色を保持） */
-.card.face-down { 
-    background: linear-gradient(45deg, rgba(4, 23, 43, 1), rgba(40, 60, 80, 1)); 
-    color: transparent; 
-    border: 2px solid rgba(240, 255, 255, 1); 
+/* フィールドを囲う太い外枠 */
+#field-container {
+    border: 5px double rgba(240, 255, 255, 1);
+    padding: 10px;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.02);
+    box-shadow: 0 0 30px rgba(240, 255, 255, 0.2);
 }
 
-#hand {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
-    padding: 15px;
-    background: rgba(4, 23, 43, 0.8);
-    border-radius: 15px;
+#field {
+    display: grid;
+    grid-template-columns: 120px 600px 120px; /* ステージ幅を固定して安定化 */
+    gap: 20px;
+    padding: 20px;
+}
+
+.zone {
     border: 2px solid rgba(240, 255, 255, 0.5);
-    z-index: 5000;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    width: 85px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+    color: rgba(240, 255, 255, 0.8);
 }
+
+/* スナップ対象としての視認性を上げる */
+.zone.highlight {
+    border-color: rgba(240, 255, 255, 1);
+    background-color: rgba(240, 255, 255, 0.1);
+}
+
+/* 以下、前回のスタイルを継承 */
+.column { display: flex; flex-direction: column; gap: 20px; }
+.center-column { align-items: center; }
+.stage-row { display: flex; gap: 30px; }
+.wide-zone { width: 500px; height: 150px; }
+.vertical-zone { height: 260px; }
