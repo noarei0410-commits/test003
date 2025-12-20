@@ -5,52 +5,86 @@ const MASTER_CARDS = [
     { name: "ときのそら (推し)", type: "holomen" },
     { name: "ときのそら (Debut)", type: "holomen" },
     { name: "AZKi (Debut)", type: "holomen" },
+    { name: "友人A", type: "holomen" },
+    { name: "春先のどか", type: "holomen" },
     { name: "赤エール", type: "ayle" },
     { name: "青エール", type: "ayle" },
-    { name: "友人A", type: "holomen" }
+    { name: "白エール", type: "ayle" }
 ];
 
-let constructedDeck = [];
+// デッキ管理用
+let mainDeckList = [];
+let cheerDeckList = [];
+
 const modal = document.getElementById('setup-modal');
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 
-// --- デッキ構築UI ---
+// --- デッキ構築UIロジック ---
+
 function updateLibrary(filter = "") {
     const list = document.getElementById('libraryList');
     list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(filter)).forEach(card => {
         const div = document.createElement('div');
         div.className = "library-item";
-        div.innerHTML = `<span>${card.name}</span><button class="btn-add">追加</button>`;
-        div.querySelector('.btn-add').onclick = () => { constructedDeck.push({...card}); renderDeck(); };
+        div.innerHTML = `<span>${card.name} [${card.type==='ayle'?'エール':'メイン'}]</span>
+                         <button class="btn-add">追加</button>`;
+        div.querySelector('.btn-add').onclick = () => addToDeck(card);
         list.appendChild(div);
     });
 }
 
-function renderDeck() {
-    const summary = document.getElementById('deckSummary');
-    summary.innerHTML = "";
-    constructedDeck.forEach((card, i) => {
+function addToDeck(card) {
+    if (card.type === 'ayle') {
+        cheerDeckList.push({ ...card });
+    } else {
+        mainDeckList.push({ ...card });
+    }
+    renderDecks();
+}
+
+function renderDecks() {
+    const mainSummary = document.getElementById('mainDeckSummary');
+    const cheerSummary = document.getElementById('cheerDeckSummary');
+    
+    mainSummary.innerHTML = "";
+    mainDeckList.forEach((card, i) => {
         const div = document.createElement('div');
         div.className = "deck-item";
-        div.innerHTML = `<span>${card.name}</span><button class="btn-remove">削除</button>`;
-        div.querySelector('.btn-remove').onclick = () => { constructedDeck.splice(i, 1); renderDeck(); };
-        summary.appendChild(div);
+        div.innerHTML = `<span>${card.name}</span><button class="btn-remove">削</button>`;
+        div.querySelector('.btn-remove').onclick = () => { mainDeckList.splice(i, 1); renderDecks(); };
+        mainSummary.appendChild(div);
     });
-    document.getElementById('totalCount').innerText = constructedDeck.length;
-    document.getElementById('startGameBtn').disabled = constructedDeck.length === 0;
+
+    cheerSummary.innerHTML = "";
+    cheerDeckList.forEach((card, i) => {
+        const div = document.createElement('div');
+        div.className = "deck-item";
+        div.innerHTML = `<span>${card.name}</span><button class="btn-remove">削</button>`;
+        div.querySelector('.btn-remove').onclick = () => { cheerDeckList.splice(i, 1); renderDecks(); };
+        cheerSummary.appendChild(div);
+    });
+
+    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
+    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
+    
+    // 両方のデッキにカードがあれば開始可能
+    document.getElementById('startGameBtn').disabled = (mainDeckList.length === 0 || cheerDeckList.length === 0);
 }
 
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
+
 document.getElementById('startGameBtn').onclick = () => {
-    socket.emit('setMainDeck', constructedDeck.filter(c => c.type==='holomen').map(c => c.name));
-    socket.emit('setCheerDeck', constructedDeck.filter(c => c.type==='ayle').map(c => c.name));
+    socket.emit('setMainDeck', mainDeckList.map(c => c.name));
+    socket.emit('setCheerDeck', cheerDeckList.map(c => c.name));
     modal.style.display = "none";
 };
+
 updateLibrary();
 
-// --- ゲームロジック ---
+// --- ゲームプレイ同期ロジック ---
+
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 
 function getLocalCoords(e) {
@@ -119,7 +153,14 @@ document.addEventListener('mouseup', (e) => {
         socket.emit('returnToHand', { id: currentCard.id });
     } else {
         snapToZone();
-        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, x: currentCard.style.left, y: currentCard.style.top, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':'holomen' });
+        socket.emit('moveCard', { 
+            id: currentCard.id, 
+            name: currentCard.innerText, 
+            x: currentCard.style.left, 
+            y: currentCard.style.top, 
+            zIndex: currentCard.style.zIndex, 
+            type: currentCard.classList.contains('type-ayle') ? 'ayle' : 'holomen' 
+        });
     }
     isDragging = false; currentCard = null;
 });
