@@ -7,26 +7,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Card Game Sim</h1>
-    
-    <div id="status">サーバーに接続中...</div>
-    
-    <hr>
-
-    <div style="margin: 20px 0;">
-        <button id="drawBtn" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-            カードを引く
-        </button>
-        <span style="margin-left: 15px;">
-            山札残り: <span id="deckCount">52</span> 枚
-        </span>
+    <div id="ui-layer">
+        <h1>Card Game Sim</h1>
+        <div id="status">サーバーに接続中...</div>
+        <button id="drawBtn">カードを引く</button>
+        <span>山札残り: <span id="deckCount">52</span> 枚</span>
     </div>
 
-    <div id="hand">
-        </div>
+    <div id="field"></div>
+
+    <div id="hand"></div>
 
     <script src="/socket.io/socket.io.js"></script>
-    
     <script src="script.js"></script>
 </body>
 </html>
