@@ -5,7 +5,6 @@ const handDiv = document.getElementById('hand');
 const mainCountSpan = document.getElementById('mainCount');
 const cheerCountSpan = document.getElementById('cheerCount');
 
-// UI要素
 const mainDeckBtn = document.getElementById('main-deck-zone');
 const cheerDeckBtn = document.getElementById('cheer-deck-zone');
 const setMainBtn = document.getElementById('setMainBtn');
@@ -18,9 +17,9 @@ const cheerInput = document.getElementById('cheerDeckInput');
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 const SNAP_THRESHOLD = 50;
 
-// サンプルデータ読込
-sampleMainBtn.addEventListener('click', () => mainInput.value = "ときのそら (Debut)\nときのそら (Bloom)\nAZKi (Debut)\n友人A");
-sampleCheerBtn.addEventListener('click', () => cheerInput.value = "赤エール\n赤エール\n青エール");
+// サンプルデータ設定
+sampleMainBtn.addEventListener('click', () => mainInput.value = "ときのそら (Debut)\nAZKi (Debut)\n友人A");
+sampleCheerBtn.addEventListener('click', () => cheerInput.value = "赤エール\n青エール");
 
 // デッキ送信・ドロー
 setMainBtn.addEventListener('click', () => socket.emit('setMainDeck', mainInput.value.split('\n').filter(l => l.trim())));
@@ -28,7 +27,6 @@ setCheerBtn.addEventListener('click', () => socket.emit('setCheerDeck', cheerInp
 mainDeckBtn.addEventListener('click', () => socket.emit('drawMainCard'));
 cheerDeckBtn.addEventListener('click', () => socket.emit('drawCheerCard'));
 
-// 座標ズレ修正用（フィールド左上を基準に変換）
 function getLocalCoords(e) {
     const fRect = field.getBoundingClientRect();
     return { x: e.clientX - fRect.left, y: e.clientY - fRect.top };
@@ -95,6 +93,7 @@ function setupCardEvents(el) {
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
         
+        // フィールドに移動させる際に absolute に切り替える
         if (el.parentElement !== field) {
             const coords = getLocalCoords(e);
             el.style.position = 'absolute';
@@ -116,7 +115,7 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', (e) => {
     if (isDragging && currentCard) {
         const handRect = handDiv.getBoundingClientRect();
-        // マウスが画面下部の手札エリアに入っているか判定
+        // 判定：マウスが手札エリアに入ったら回収
         if (e.clientX > handRect.left && e.clientX < handRect.right && 
             e.clientY > handRect.top && e.clientY < handRect.bottom) {
             returnToHand();
@@ -149,7 +148,10 @@ function snapToZone() {
 }
 
 function returnToHand() {
-    currentCard.style.position = ''; currentCard.style.left = ''; currentCard.style.top = '';
+    // 手札に戻す際は絶対配置を解除する
+    currentCard.style.position = 'relative';
+    currentCard.style.left = '';
+    currentCard.style.top = '';
     handDiv.appendChild(currentCard);
     socket.emit('returnToHand', { id: currentCard.id });
 }
