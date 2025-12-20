@@ -4,6 +4,8 @@ const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 const deckCountSpan = document.getElementById('deckCount');
 const mainDeck = document.getElementById('main-deck');
+const deckInput = document.getElementById('deckInput');
+const setDeckBtn = document.getElementById('setDeckBtn');
 
 let isDragging = false;
 let currentCard = null;
@@ -13,28 +15,26 @@ let maxZIndex = 100;
 
 const SNAP_THRESHOLD = 50;
 
-// -------------------------------------------------------
-// 1. 座標計算の修正
-// -------------------------------------------------------
+// 1. デッキ設定
+setDeckBtn.addEventListener('click', () => {
+    const list = deckInput.value.split('\n').filter(line => line.trim() !== "");
+    if (list.length === 0) return alert("デッキリストを入力してください");
+    socket.emit('setDeck', list);
+});
 
+// 2. 座標計算
 function getLocalCoords(e) {
     const fRect = field.getBoundingClientRect();
-    return {
-        x: e.clientX - fRect.left,
-        y: e.clientY - fRect.top
-    };
+    return { x: e.clientX - fRect.left, y: e.clientY - fRect.top };
 }
 
-// -------------------------------------------------------
-// 2. イベント処理
-// -------------------------------------------------------
-
+// 3. 受信イベント
 socket.on('init', (data) => {
-    document.getElementById('status').innerText = `Player: ${socket.id}`;
+    document.getElementById('status').innerText = `ID: ${socket.id}`;
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
 });
 
-socket.on('deckCount', (count) => { if (deckCountSpan) deckCountSpan.innerText = count; });
+socket.on('deckCount', (count) => { deckCountSpan.innerText = count; });
 
 socket.on('receiveCard', (cardData) => {
     const el = createCardElement(cardData);
@@ -55,21 +55,30 @@ socket.on('cardMoved', (data) => {
     if (card.parentElement !== field) field.appendChild(card);
 });
 
+socket.on('cardFlipped', (data) => {
+    const card = document.getElementById(data.id);
+    if (card) {
+        if (data.isFaceUp) { card.classList.add('face-up'); card.classList.remove('face-down'); }
+        else { card.classList.add('face-down'); card.classList.remove('face-up'); }
+    }
+});
+
 if (mainDeck) {
     mainDeck.addEventListener('click', () => socket.emit('drawCard'));
 }
 
+// 4. カード作成
 function createCardElement(cardData) {
     const el = document.createElement('div');
     el.className = 'card face-up';
     el.id = cardData.id;
-    el.innerText = cardData.number;
+    el.innerText = cardData.name || cardData.number; // 名前を表示
     setupCardEvents(el);
     return el;
 }
 
 function restoreCard(id, info) {
-    const el = createCardElement({ id: id, number: info.number });
+    const el = createCardElement({ id: id, name: info.name, number: info.number });
     el.style.position = 'absolute';
     el.style.left = info.x;
     el.style.top = info.y;
@@ -79,17 +88,21 @@ function restoreCard(id, info) {
 }
 
 function setupCardEvents(el) {
+    el.addEventListener('dblclick', (e) => {
+        el.classList.toggle('face-up');
+        el.classList.toggle('face-down');
+        socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
+        e.stopPropagation();
+    });
+
     el.addEventListener('mousedown', (e) => {
         isDragging = true;
         currentCard = el;
-
         const rect = el.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
-
         maxZIndex++;
         el.style.zIndex = maxZIndex;
-
         if (el.parentElement !== field) {
             const coords = getLocalCoords(e);
             el.style.position = 'absolute';
@@ -110,8 +123,6 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', (e) => {
     if (isDragging && currentCard) {
         const handRect = handDiv.getBoundingClientRect();
-        
-        // 判定：マウスが手札エリア（画面下部）にあれば回収
         if (e.clientY > handRect.top - 20) {
             returnToHand();
         } else {
@@ -127,36 +138,21 @@ function snapToZone() {
     const zones = document.querySelectorAll('.zone');
     let closestZone = null;
     let minDistance = SNAP_THRESHOLD;
-
     const cardRect = currentCard.getBoundingClientRect();
-    const cardCenter = {
-        x: cardRect.left + cardRect.width / 2,
-        y: cardRect.top + cardRect.height / 2
-    };
+    const cardCenter = { x: cardRect.left + cardRect.width / 2, y: cardRect.top + cardRect.height / 2 };
 
     zones.forEach(zone => {
         const zoneRect = zone.getBoundingClientRect();
-        const zoneCenter = {
-            x: zoneRect.left + zoneRect.width / 2,
-            y: zoneRect.top + zoneRect.height / 2
-        };
-
+        const zoneCenter = { x: zoneRect.left + zoneRect.width / 2, y: zoneRect.top + zoneRect.height / 2 };
         const dist = Math.hypot(cardCenter.x - zoneCenter.x, cardCenter.y - zoneCenter.y);
-        if (dist < minDistance) {
-            minDistance = dist;
-            closestZone = zone;
-        }
+        if (dist < minDistance) { minDistance = dist; closestZone = zone; }
     });
 
     if (closestZone) {
         const zRect = closestZone.getBoundingClientRect();
         const fRect = field.getBoundingClientRect();
-        
-        const targetX = (zRect.left - fRect.left) + (zRect.width - cardRect.width) / 2;
-        const targetY = (zRect.top - fRect.top) + (zRect.height - cardRect.height) / 2;
-
-        currentCard.style.left = targetX + 'px';
-        currentCard.style.top = targetY + 'px';
+        currentCard.style.left = (zRect.left - fRect.left) + (zRect.width - cardRect.width) / 2 + 'px';
+        currentCard.style.top = (zRect.top - fRect.top) + (zRect.height - cardRect.height) / 2 + 'px';
     }
 }
 
@@ -172,7 +168,7 @@ function syncMove() {
     if (!currentCard) return;
     socket.emit('moveCard', {
         id: currentCard.id,
-        number: currentCard.innerText,
+        name: currentCard.innerText,
         x: currentCard.style.left,
         y: currentCard.style.top,
         zIndex: currentCard.style.zIndex
