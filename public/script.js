@@ -1,5 +1,6 @@
 const socket = io();
 
+// マスターリスト定義
 let MASTER_CARDS = [];
 let OSHI_LIST = [];
 
@@ -40,7 +41,6 @@ function updateLibrary(filter = "") {
     MASTER_CARDS.filter(c => c.name.includes(filter)).forEach(card => {
         const div = document.createElement('div');
         div.className = "library-item";
-        // JSON内のデータから推しリストに含まれるか判定
         const isOshiCard = OSHI_LIST.some(o => o.name === card.name);
         
         div.innerHTML = `<span>${card.name}</span><button class="btn-add">${isOshiCard ? '推しに設定' : '追加'}</button>`;
@@ -95,6 +95,7 @@ document.getElementById('startGameBtn').onclick = () => {
     const zr = oshiZone.getBoundingClientRect();
     const fr = field.getBoundingClientRect();
     
+    // カードサイズ(65x92)に合わせて中央寄せ
     const oshiPos = {
         x: (zr.left - fr.left) + (zr.width - 65) / 2 + 'px',
         y: (zr.top - fr.top) + (zr.height - 92) / 2 + 'px'
@@ -112,13 +113,24 @@ document.getElementById('startGameBtn').onclick = () => {
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 
 socket.on('gameStarted', (data) => {
-    field.innerHTML = ""; // 既存カードをクリア
+    // 【修正】field.innerHTML = ""; を使わず、既存の「カード」だけを削除する
+    const existingCards = field.querySelectorAll('.card');
+    existingCards.forEach(card => card.remove());
+
+    // 手札もクリア
+    handDiv.innerHTML = "";
+
+    // サーバーから送られてきた初期状態（推しホロメン含む）を復元
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
+    
     document.getElementById('mainCount').innerText = data.deckCount.main;
     document.getElementById('cheerCount').innerText = data.deckCount.cheer;
 });
 
 socket.on('init', (data) => {
+    // 初期接続時も既存カードのみクリアして再描画
+    const existingCards = field.querySelectorAll('.card');
+    existingCards.forEach(card => card.remove());
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
 });
 
