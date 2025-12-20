@@ -1,36 +1,40 @@
 const socket = io();
 
-// DOM要素の取得
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 const deckCountSpan = document.getElementById('deckCount');
 const mainDeck = document.getElementById('main-deck');
 
-// ドラッグ状態管理
 let isDragging = false;
 let currentCard = null;
 let offsetX = 0;
 let offsetY = 0;
 let maxZIndex = 100;
 
-// スナップ（吸着）の感度設定 (px)
 const SNAP_THRESHOLD = 50;
 
 // -------------------------------------------------------
-// 1. サーバー受信イベント
+// 1. 座標計算の修正
+// -------------------------------------------------------
+
+function getLocalCoords(e) {
+    const fRect = field.getBoundingClientRect();
+    return {
+        x: e.clientX - fRect.left,
+        y: e.clientY - fRect.top
+    };
+}
+
+// -------------------------------------------------------
+// 2. イベント処理
 // -------------------------------------------------------
 
 socket.on('init', (data) => {
     document.getElementById('status').innerText = `Player: ${socket.id}`;
-    // 既存のフィールド状態を復元
-    for (const id in data.fieldState) {
-        restoreCard(id, data.fieldState[id]);
-    }
+    for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
 });
 
-socket.on('deckCount', (count) => {
-    if (deckCountSpan) deckCountSpan.innerText = count;
-});
+socket.on('deckCount', (count) => { if (deckCountSpan) deckCountSpan.innerText = count; });
 
 socket.on('receiveCard', (cardData) => {
     const el = createCardElement(cardData);
@@ -44,40 +48,15 @@ socket.on('cardRemoved', (data) => {
 
 socket.on('cardMoved', (data) => {
     let card = document.getElementById(data.id);
-    if (!card) {
-        restoreCard(data.id, data);
-        return;
-    }
+    if (!card) { restoreCard(data.id, data); return; }
     card.style.left = data.x;
     card.style.top = data.y;
     card.style.zIndex = data.zIndex;
-    const remoteZ = parseInt(data.zIndex);
-    if (remoteZ > maxZIndex) maxZIndex = remoteZ;
     if (card.parentElement !== field) field.appendChild(card);
 });
 
-socket.on('cardFlipped', (data) => {
-    const card = document.getElementById(data.id);
-    if (card) {
-        if (data.isFaceUp) {
-            card.classList.add('face-up');
-            card.classList.remove('face-down');
-        } else {
-            card.classList.add('face-down');
-            card.classList.remove('face-up');
-        }
-    }
-});
-
-// -------------------------------------------------------
-// 2. カード操作ロジック
-// -------------------------------------------------------
-
-// デッキをクリックしてドロー
 if (mainDeck) {
-    mainDeck.addEventListener('click', () => {
-        socket.emit('drawCard');
-    });
+    mainDeck.addEventListener('click', () => socket.emit('drawCard'));
 }
 
 function createCardElement(cardData) {
@@ -95,30 +74,15 @@ function restoreCard(id, info) {
     el.style.left = info.x;
     el.style.top = info.y;
     el.style.zIndex = info.zIndex;
-    if (info.isFaceUp === false) {
-        el.classList.add('face-down');
-        el.classList.remove('face-up');
-    }
-    if (parseInt(info.zIndex) > maxZIndex) maxZIndex = parseInt(info.zIndex);
+    if (info.isFaceUp === false) el.classList.add('face-down');
     field.appendChild(el);
 }
 
 function setupCardEvents(el) {
-    // ダブルクリックで裏返し
-    el.addEventListener('dblclick', (e) => {
-        el.classList.toggle('face-up');
-        el.classList.toggle('face-down');
-        socket.emit('flipCard', {
-            id: el.id,
-            isFaceUp: el.classList.contains('face-up')
-        });
-        e.stopPropagation();
-    });
-
-    // ドラッグ開始
     el.addEventListener('mousedown', (e) => {
         isDragging = true;
         currentCard = el;
+
         const rect = el.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
@@ -127,31 +91,30 @@ function setupCardEvents(el) {
         el.style.zIndex = maxZIndex;
 
         if (el.parentElement !== field) {
-            el.style.left = (e.clientX - offsetX) + 'px';
-            el.style.top = (e.clientY - offsetY) + 'px';
+            const coords = getLocalCoords(e);
             el.style.position = 'absolute';
+            el.style.left = (coords.x - offsetX) + 'px';
+            el.style.top = (coords.y - offsetY) + 'px';
             field.appendChild(el);
         }
-        syncMove();
     });
 }
 
 document.addEventListener('mousemove', (e) => {
     if (!isDragging || !currentCard) return;
-    currentCard.style.left = (e.clientX - offsetX) + 'px';
-    currentCard.style.top = (e.clientY - offsetY) + 'px';
+    const coords = getLocalCoords(e);
+    currentCard.style.left = (coords.x - offsetX) + 'px';
+    currentCard.style.top = (coords.y - offsetY) + 'px';
 });
 
-// ドラッグ終了（スナップと手札回収の判定）
 document.addEventListener('mouseup', (e) => {
     if (isDragging && currentCard) {
         const handRect = handDiv.getBoundingClientRect();
         
-        // 判定1: マウスが手札エリア（画面下部）にあれば回収
+        // 判定：マウスが手札エリア（画面下部）にあれば回収
         if (e.clientY > handRect.top - 20) {
             returnToHand();
         } else {
-            // 判定2: フィールド上のゾーンにスナップ
             snapToZone();
             syncMove();
         }
@@ -160,7 +123,6 @@ document.addEventListener('mouseup', (e) => {
     currentCard = null;
 });
 
-// 最も近いゾーンを探して中央に吸着させる
 function snapToZone() {
     const zones = document.querySelectorAll('.zone');
     let closestZone = null;
@@ -179,9 +141,7 @@ function snapToZone() {
             y: zoneRect.top + zoneRect.height / 2
         };
 
-        // 距離の計算
         const dist = Math.hypot(cardCenter.x - zoneCenter.x, cardCenter.y - zoneCenter.y);
-
         if (dist < minDistance) {
             minDistance = dist;
             closestZone = zone;
@@ -192,7 +152,6 @@ function snapToZone() {
         const zRect = closestZone.getBoundingClientRect();
         const fRect = field.getBoundingClientRect();
         
-        // ゾーンの中央座標を計算（フィールド内相対座標）
         const targetX = (zRect.left - fRect.left) + (zRect.width - cardRect.width) / 2;
         const targetY = (zRect.top - fRect.top) + (zRect.height - cardRect.height) / 2;
 
@@ -201,14 +160,11 @@ function snapToZone() {
     }
 }
 
-// 手札に戻す処理
 function returnToHand() {
     currentCard.style.position = '';
     currentCard.style.left = '';
     currentCard.style.top = '';
-    currentCard.style.zIndex = '';
     handDiv.appendChild(currentCard);
-    
     socket.emit('returnToHand', { id: currentCard.id });
 }
 
