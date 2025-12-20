@@ -1,103 +1,61 @@
 const socket = io();
 
-// --- 1. マスターカードリスト（全データ） ---
+// マスターリスト定義
 const MASTER_CARDS = [
     { name: "ときのそら (推し)", type: "holomen" },
     { name: "ときのそら (Debut)", type: "holomen" },
-    { name: "ときのそら (Bloom)", type: "holomen" },
     { name: "AZKi (Debut)", type: "holomen" },
-    { name: "AZKi (Bloom)", type: "holomen" },
     { name: "赤エール", type: "ayle" },
     { name: "青エール", type: "ayle" },
-    { name: "白エール", type: "ayle" },
-    { name: "マイク", type: "holomen" }, // サポートも一旦holomenタイプで代用
     { name: "友人A", type: "holomen" }
 ];
 
-let constructedDeck = []; // 現在選んでいるカードのリスト
-
-// DOM要素
+let constructedDeck = [];
 const modal = document.getElementById('setup-modal');
-const libraryList = document.getElementById('libraryList');
-const deckSummary = document.getElementById('deckSummary');
-const searchInput = document.getElementById('searchInput');
-const startGameBtn = document.getElementById('startGameBtn');
-const totalCountSpan = document.getElementById('totalCount');
-
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 
-// --- 2. デッキ構築UIの制御 ---
-
-// カードリストの表示
+// --- デッキ構築UI ---
 function updateLibrary(filter = "") {
-    libraryList.innerHTML = "";
-    const filtered = MASTER_CARDS.filter(c => c.name.includes(filter));
-    filtered.forEach(card => {
+    const list = document.getElementById('libraryList');
+    list.innerHTML = "";
+    MASTER_CARDS.filter(c => c.name.includes(filter)).forEach(card => {
         const div = document.createElement('div');
         div.className = "library-item";
-        div.innerHTML = `<span>${card.name} (${card.type === 'ayle' ? 'エール' : 'ホロメン'})</span>
-                         <button class="btn-add">追加</button>`;
-        div.querySelector('.btn-add').onclick = () => addToDeck(card);
-        libraryList.appendChild(div);
+        div.innerHTML = `<span>${card.name}</span><button class="btn-add">追加</button>`;
+        div.querySelector('.btn-add').onclick = () => { constructedDeck.push({...card}); renderDeck(); };
+        list.appendChild(div);
     });
 }
 
-// デッキへの追加
-function addToDeck(card) {
-    constructedDeck.push({ ...card });
-    renderDeck();
-}
-
-// デッキからの削除
-function removeFromDeck(index) {
-    constructedDeck.splice(index, 1);
-    renderDeck();
-}
-
-// 構築中リストの描画
 function renderDeck() {
-    deckSummary.innerHTML = "";
-    constructedDeck.forEach((card, index) => {
+    const summary = document.getElementById('deckSummary');
+    summary.innerHTML = "";
+    constructedDeck.forEach((card, i) => {
         const div = document.createElement('div');
         div.className = "deck-item";
-        div.innerHTML = `<span>${card.name}</span>
-                         <button class="btn-remove">削除</button>`;
-        div.querySelector('.btn-remove').onclick = () => removeFromDeck(index);
-        deckSummary.appendChild(div);
+        div.innerHTML = `<span>${card.name}</span><button class="btn-remove">削除</button>`;
+        div.querySelector('.btn-remove').onclick = () => { constructedDeck.splice(i, 1); renderDeck(); };
+        summary.appendChild(div);
     });
-    
-    totalCountSpan.innerText = constructedDeck.length;
-    // メイン50枚 + 推し1枚などのルールがあるが、今回は簡易的に1枚以上で開始可能に
-    startGameBtn.disabled = constructedDeck.length === 0;
+    document.getElementById('totalCount').innerText = constructedDeck.length;
+    document.getElementById('startGameBtn').disabled = constructedDeck.length === 0;
 }
 
-// 検索入力
-searchInput.oninput = (e) => updateLibrary(e.target.value);
-
-// ゲーム開始ボタン
-startGameBtn.onclick = () => {
-    // 種類ごとに分けてサーバーへ送信
-    const mainList = constructedDeck.filter(c => c.type === 'holomen').map(c => c.name);
-    const cheerList = constructedDeck.filter(c => c.type === 'ayle').map(c => c.name);
-    
-    socket.emit('setMainDeck', mainList);
-    socket.emit('setCheerDeck', cheerList);
-    
-    modal.style.display = "none"; // ウィンドウを消す
+document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
+document.getElementById('startGameBtn').onclick = () => {
+    socket.emit('setMainDeck', constructedDeck.filter(c => c.type==='holomen').map(c => c.name));
+    socket.emit('setCheerDeck', constructedDeck.filter(c => c.type==='ayle').map(c => c.name));
+    modal.style.display = "none";
 };
-
-// 初期表示
 updateLibrary();
 
-// --- 3. ゲーム同期・ドラッグロジック (維持) ---
-
+// --- ゲームロジック ---
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
-const SNAP_THRESHOLD = 50;
 
 function getLocalCoords(e) {
-    const fRect = field.getBoundingClientRect();
-    return { x: e.clientX - fRect.left, y: e.clientY - fRect.top };
+    const rect = field.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
 socket.on('deckCount', (counts) => {
@@ -105,23 +63,21 @@ socket.on('deckCount', (counts) => {
     document.getElementById('cheerCount').innerText = counts.cheer;
 });
 
-socket.on('receiveCard', (cardData) => {
-    handDiv.appendChild(createCardElement(cardData));
-});
+socket.on('receiveCard', (data) => handDiv.appendChild(createCardElement(data)));
 
 document.getElementById('main-deck-zone').onclick = () => socket.emit('drawMainCard');
 document.getElementById('cheer-deck-zone').onclick = () => socket.emit('drawCheerCard');
 
-function createCardElement(cardData) {
+function createCardElement(data) {
     const el = document.createElement('div');
-    el.className = `card face-up type-${cardData.type}`;
-    el.id = cardData.id; el.innerText = cardData.name;
+    el.className = `card face-up type-${data.type}`;
+    el.id = data.id; el.innerText = data.name;
     setupCardEvents(el);
     return el;
 }
 
 function restoreCard(id, info) {
-    const el = createCardElement({ id: id, name: info.name, type: info.type });
+    const el = createCardElement({ id, name: info.name, type: info.type });
     el.style.position = 'absolute'; el.style.left = info.x; el.style.top = info.y; el.style.zIndex = info.zIndex;
     if (info.isFaceUp === false) el.classList.add('face-down');
     field.appendChild(el);
@@ -141,8 +97,7 @@ function setupCardEvents(el) {
         if (el.parentElement !== field) {
             const coords = getLocalCoords(e);
             el.style.position = 'absolute';
-            el.style.left = (coords.x - offsetX) + 'px';
-            el.style.top = (coords.y - offsetY) + 'px';
+            el.style.left = (coords.x - offsetX) + 'px'; el.style.top = (coords.y - offsetY) + 'px';
             field.appendChild(el);
         }
     });
@@ -156,48 +111,33 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener('mouseup', (e) => {
-    if (isDragging && currentCard) {
-        const handRect = handDiv.getBoundingClientRect();
-        if (e.clientX > handRect.left && e.clientX < handRect.right && 
-            e.clientY > handRect.top && e.clientY < handRect.bottom) {
-            returnToHand();
-        } else {
-            snapToZone();
-            syncMove();
-        }
+    if (!isDragging || !currentCard) return;
+    const handRect = handDiv.getBoundingClientRect();
+    if (e.clientY > handRect.top) {
+        currentCard.style.position = 'relative'; currentCard.style.left = ''; currentCard.style.top = '';
+        handDiv.appendChild(currentCard);
+        socket.emit('returnToHand', { id: currentCard.id });
+    } else {
+        snapToZone();
+        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, x: currentCard.style.left, y: currentCard.style.top, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':'holomen' });
     }
     isDragging = false; currentCard = null;
 });
 
 function snapToZone() {
     const zones = document.querySelectorAll('.zone');
-    let closest = null, minDist = SNAP_THRESHOLD;
-    const cardRect = currentCard.getBoundingClientRect();
-    const cardCenter = { x: cardRect.left + cardRect.width/2, y: cardRect.top + cardRect.height/2 };
-    zones.forEach(zone => {
-        const zr = zone.getBoundingClientRect();
+    let closest = null, minDist = 50;
+    const cr = currentCard.getBoundingClientRect();
+    const cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+    zones.forEach(z => {
+        const zr = z.getBoundingClientRect();
         const zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
-        const dist = Math.hypot(cardCenter.x - zc.x, cardCenter.y - zc.y);
-        if (dist < minDist) { minDist = dist; closest = zone; }
+        const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
+        if (d < minDist) { minDist = d; closest = z; }
     });
     if (closest) {
         const zr = closest.getBoundingClientRect(), fr = field.getBoundingClientRect();
-        currentCard.style.left = (zr.left - fr.left) + (zr.width - cardRect.width)/2 + 'px';
-        currentCard.style.top = (zr.top - fr.top) + (zr.height - cardRect.height)/2 + 'px';
+        currentCard.style.left = (zr.left - fr.left) + (zr.width - cr.width)/2 + 'px';
+        currentCard.style.top = (zr.top - fr.top) + (zr.height - cr.height)/2 + 'px';
     }
-}
-
-function returnToHand() {
-    currentCard.style.position = 'relative'; currentCard.style.left = ''; currentCard.style.top = '';
-    handDiv.appendChild(currentCard);
-    socket.emit('returnToHand', { id: currentCard.id });
-}
-
-function syncMove() {
-    if (!currentCard) return;
-    socket.emit('moveCard', {
-        id: currentCard.id, name: currentCard.innerText,
-        type: currentCard.classList.contains('type-ayle') ? 'ayle' : 'holomen',
-        x: currentCard.style.left, y: currentCard.style.top, zIndex: currentCard.style.zIndex
-    });
 }
