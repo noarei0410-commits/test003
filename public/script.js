@@ -15,40 +15,26 @@ const sampleCheerBtn = document.getElementById('sampleCheerBtn');
 const mainInput = document.getElementById('mainDeckInput');
 const cheerInput = document.getElementById('cheerDeckInput');
 
-let isDragging = false;
-let currentCard = null;
-let offsetX = 0, offsetY = 0, maxZIndex = 100;
+let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 const SNAP_THRESHOLD = 50;
 
-// サンプルデータ読み込み機能
-sampleMainBtn.addEventListener('click', () => {
-    mainInput.value = "ときのそら (Debut)\nときのそら (Bloom)\nAZKi (Debut)\n友人A\n春先のどか\nマイク";
-});
-sampleCheerBtn.addEventListener('click', () => {
-    cheerInput.value = "赤エール\n赤エール\n青エール\n青エール\n無色エール";
-});
+// サンプルデータ読込
+sampleMainBtn.addEventListener('click', () => mainInput.value = "ときのそら (Debut)\nときのそら (Bloom)\nAZKi (Debut)\n友人A");
+sampleCheerBtn.addEventListener('click', () => cheerInput.value = "赤エール\n赤エール\n青エール");
 
-// デッキ送信
-setMainBtn.addEventListener('click', () => {
-    const list = mainInput.value.split('\n').filter(l => l.trim() !== "");
-    socket.emit('setMainDeck', list);
-});
-setCheerBtn.addEventListener('click', () => {
-    const list = cheerInput.value.split('\n').filter(l => l.trim() !== "");
-    socket.emit('setCheerDeck', list);
-});
-
-// ドロー
+// デッキ送信・ドロー
+setMainBtn.addEventListener('click', () => socket.emit('setMainDeck', mainInput.value.split('\n').filter(l => l.trim())));
+setCheerBtn.addEventListener('click', () => socket.emit('setCheerDeck', cheerInput.value.split('\n').filter(l => l.trim())));
 mainDeckBtn.addEventListener('click', () => socket.emit('drawMainCard'));
 cheerDeckBtn.addEventListener('click', () => socket.emit('drawCheerCard'));
 
+// 座標ズレ修正用（フィールド左上を基準に変換）
 function getLocalCoords(e) {
     const fRect = field.getBoundingClientRect();
     return { x: e.clientX - fRect.left, y: e.clientY - fRect.top };
 }
 
 socket.on('init', (data) => {
-    document.getElementById('status').innerText = `ID: ${socket.id}`;
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
 });
 
@@ -63,22 +49,29 @@ socket.on('receiveCard', (cardData) => {
 });
 
 socket.on('cardRemoved', (data) => {
-    const card = document.getElementById(data.id);
-    if (card) card.remove();
+    const el = document.getElementById(data.id);
+    if (el) el.remove();
 });
 
 socket.on('cardMoved', (data) => {
-    let card = document.getElementById(data.id);
-    if (!card) { restoreCard(data.id, data); return; }
-    card.style.left = data.x; card.style.top = data.y; card.style.zIndex = data.zIndex;
-    if (card.parentElement !== field) field.appendChild(card);
+    let el = document.getElementById(data.id);
+    if (!el) { restoreCard(data.id, data); return; }
+    el.style.left = data.x; el.style.top = data.y; el.style.zIndex = data.zIndex;
+    if (el.parentElement !== field) field.appendChild(el);
+});
+
+socket.on('cardFlipped', (data) => {
+    const el = document.getElementById(data.id);
+    if (el) {
+        if (data.isFaceUp) { el.classList.add('face-up'); el.classList.remove('face-down'); }
+        else { el.classList.add('face-down'); el.classList.remove('face-up'); }
+    }
 });
 
 function createCardElement(cardData) {
     const el = document.createElement('div');
     el.className = `card face-up type-${cardData.type}`;
-    el.id = cardData.id;
-    el.innerText = cardData.name;
+    el.id = cardData.id; el.innerText = cardData.name;
     setupCardEvents(el);
     return el;
 }
@@ -101,6 +94,7 @@ function setupCardEvents(el) {
         const rect = el.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
+        
         if (el.parentElement !== field) {
             const coords = getLocalCoords(e);
             el.style.position = 'absolute';
@@ -108,6 +102,7 @@ function setupCardEvents(el) {
             el.style.top = (coords.y - offsetY) + 'px';
             field.appendChild(el);
         }
+        syncMove();
     });
 }
 
@@ -121,27 +116,35 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', (e) => {
     if (isDragging && currentCard) {
         const handRect = handDiv.getBoundingClientRect();
-        if (e.clientY > handRect.top - 20) returnToHand();
-        else { snapToZone(); syncMove(); }
+        // マウスが画面下部の手札エリアに入っているか判定
+        if (e.clientX > handRect.left && e.clientX < handRect.right && 
+            e.clientY > handRect.top && e.clientY < handRect.bottom) {
+            returnToHand();
+        } else {
+            snapToZone();
+            syncMove();
+        }
     }
     isDragging = false; currentCard = null;
 });
 
 function snapToZone() {
     const zones = document.querySelectorAll('.zone');
-    let closestZone = null, minDistance = SNAP_THRESHOLD;
+    let closest = null, minDist = SNAP_THRESHOLD;
     const cardRect = currentCard.getBoundingClientRect();
     const cardCenter = { x: cardRect.left + cardRect.width/2, y: cardRect.top + cardRect.height/2 };
+    
     zones.forEach(zone => {
-        const zoneRect = zone.getBoundingClientRect();
-        const zoneCenter = { x: zoneRect.left + zoneRect.width/2, y: zoneRect.top + zoneRect.height/2 };
-        const dist = Math.hypot(cardCenter.x - zoneCenter.x, cardCenter.y - zoneCenter.y);
-        if (dist < minDistance) { minDistance = dist; closestZone = zone; }
+        const zr = zone.getBoundingClientRect();
+        const zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+        const dist = Math.hypot(cardCenter.x - zc.x, cardCenter.y - zc.y);
+        if (dist < minDist) { minDist = dist; closest = zone; }
     });
-    if (closestZone) {
-        const zRect = closestZone.getBoundingClientRect(), fRect = field.getBoundingClientRect();
-        currentCard.style.left = (zRect.left - fRect.left) + (zRect.width - cardRect.width)/2 + 'px';
-        currentCard.style.top = (zRect.top - fRect.top) + (zRect.height - cardRect.height)/2 + 'px';
+
+    if (closest) {
+        const zr = closest.getBoundingClientRect(), fr = field.getBoundingClientRect();
+        currentCard.style.left = (zr.left - fr.left) + (zr.width - cardRect.width)/2 + 'px';
+        currentCard.style.top = (zr.top - fr.top) + (zr.height - cardRect.height)/2 + 'px';
     }
 }
 
