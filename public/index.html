@@ -2,14 +2,20 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Final Layout</title>
+    <title>hOCG Simulator - Deck Config</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="ui-layer">
         <h1>hOCG Sim</h1>
         <div id="status">接続中...</div>
-        <span>山札残り: <span id="deckCount">50</span></span>
+        
+        <div id="deck-config">
+            <textarea id="deckInput" placeholder="カード名を改行区切りで入力"></textarea>
+            <button id="setDeckBtn">デッキをセット</button>
+        </div>
+        
+        <div style="margin-top:10px;">山札残り: <span id="deckCount">0</span></div>
     </div>
 
     <div id="field-container">
@@ -18,7 +24,6 @@
                 <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
                 <div class="zone" id="cheer-deck"><span>エール</span></div>
             </div>
-
             <div class="column center-column">
                 <div class="stage-label">ステージ</div>
                 <div class="stage-row top-row">
@@ -30,10 +35,9 @@
                     <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
             </div>
-
             <div class="column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
-                <div class="zone deck-zone" id="main-deck"><span>デッキ</span></div>
+                <div class="zone deck-zone" id="main-deck"><span>デッキ (引く)</span></div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
             </div>
         </div>
