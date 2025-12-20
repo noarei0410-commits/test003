@@ -2,39 +2,53 @@ const socket = io();
 
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
-const deckCountSpan = document.getElementById('deckCount');
-const mainDeck = document.getElementById('main-deck');
-const deckInput = document.getElementById('deckInput');
-const setDeckBtn = document.getElementById('setDeckBtn');
+const mainCountSpan = document.getElementById('mainCount');
+const cheerCountSpan = document.getElementById('cheerCount');
+
+// 各種ボタンと入力
+const mainDeckBtn = document.getElementById('main-deck-zone');
+const cheerDeckBtn = document.getElementById('cheer-deck-zone');
+const setMainBtn = document.getElementById('setMainBtn');
+const setCheerBtn = document.getElementById('setCheerBtn');
+const mainInput = document.getElementById('mainDeckInput');
+const cheerInput = document.getElementById('cheerDeckInput');
 
 let isDragging = false;
 let currentCard = null;
 let offsetX = 0;
 let offsetY = 0;
 let maxZIndex = 100;
-
 const SNAP_THRESHOLD = 50;
 
-// 1. デッキ設定
-setDeckBtn.addEventListener('click', () => {
-    const list = deckInput.value.split('\n').filter(line => line.trim() !== "");
-    if (list.length === 0) return alert("デッキリストを入力してください");
-    socket.emit('setDeck', list);
+// デッキセットアップ
+setMainBtn.addEventListener('click', () => {
+    const list = mainInput.value.split('\n').filter(l => l.trim() !== "");
+    socket.emit('setMainDeck', list);
+});
+setCheerBtn.addEventListener('click', () => {
+    const list = cheerInput.value.split('\n').filter(l => l.trim() !== "");
+    socket.emit('setCheerDeck', list);
 });
 
-// 2. 座標計算
+// デッキから引く
+mainDeckBtn.addEventListener('click', () => socket.emit('drawMainCard'));
+cheerDeckBtn.addEventListener('click', () => socket.emit('drawCheerCard'));
+
+// 座標計算
 function getLocalCoords(e) {
     const fRect = field.getBoundingClientRect();
     return { x: e.clientX - fRect.left, y: e.clientY - fRect.top };
 }
 
-// 3. 受信イベント
 socket.on('init', (data) => {
     document.getElementById('status').innerText = `ID: ${socket.id}`;
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
 });
 
-socket.on('deckCount', (count) => { deckCountSpan.innerText = count; });
+socket.on('deckCount', (counts) => {
+    mainCountSpan.innerText = counts.main;
+    cheerCountSpan.innerText = counts.cheer;
+});
 
 socket.on('receiveCard', (cardData) => {
     const el = createCardElement(cardData);
@@ -63,22 +77,18 @@ socket.on('cardFlipped', (data) => {
     }
 });
 
-if (mainDeck) {
-    mainDeck.addEventListener('click', () => socket.emit('drawCard'));
-}
-
-// 4. カード作成
+// カード作成（タイプによってクラスを付与）
 function createCardElement(cardData) {
     const el = document.createElement('div');
-    el.className = 'card face-up';
+    el.className = `card face-up type-${cardData.type}`; // type-ayle か type-holomen が付く
     el.id = cardData.id;
-    el.innerText = cardData.name || cardData.number; // 名前を表示
+    el.innerText = cardData.name;
     setupCardEvents(el);
     return el;
 }
 
 function restoreCard(id, info) {
-    const el = createCardElement({ id: id, name: info.name, number: info.number });
+    const el = createCardElement({ id: id, name: info.name, type: info.type });
     el.style.position = 'absolute';
     el.style.left = info.x;
     el.style.top = info.y;
@@ -169,6 +179,7 @@ function syncMove() {
     socket.emit('moveCard', {
         id: currentCard.id,
         name: currentCard.innerText,
+        type: currentCard.classList.contains('type-ayle') ? 'ayle' : 'holomen',
         x: currentCard.style.left,
         y: currentCard.style.top,
         zIndex: currentCard.style.zIndex
