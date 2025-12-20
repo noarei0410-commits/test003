@@ -11,41 +11,49 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 
 let mainDeck = [];
-let cheerDeck = []; // エール専用デッキ
+let cheerDeck = [];
 let fieldState = {}; 
 
 io.on('connection', (socket) => {
     socket.emit('init', { id: socket.id, fieldState: fieldState });
     io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
 
-    // メインデッキ設定
-    socket.on('setMainDeck', (list) => {
-        mainDeck = list.map(name => ({ id: uuidv4(), name: name.trim(), type: 'holomen' }));
+    socket.on('setGame', (data) => {
+        // デッキの初期化
+        mainDeck = data.main.map(name => ({ id: uuidv4(), name: name, type: 'holomen' }));
+        cheerDeck = data.cheer.map(name => ({ id: uuidv4(), name: name, type: 'ayle' }));
         shuffle(mainDeck);
-        io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
-    });
-
-    // エールデッキ設定
-    socket.on('setCheerDeck', (list) => {
-        cheerDeck = list.map(name => ({ id: uuidv4(), name: name.trim(), type: 'ayle' }));
         shuffle(cheerDeck);
-        io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
+
+        // 推しホロメンをフィールドの初期位置に登録
+        const oshiId = uuidv4();
+        fieldState = {}; // ゲーム開始時にフィールドをリセット
+        fieldState[oshiId] = {
+            id: oshiId,
+            name: data.oshi.name,
+            type: 'holomen',
+            x: data.oshi.pos.x,
+            y: data.oshi.pos.y,
+            zIndex: 100,
+            isFaceUp: true
+        };
+
+        io.emit('gameStarted', { 
+            fieldState: fieldState, 
+            deckCount: { main: mainDeck.length, cheer: cheerDeck.length } 
+        });
     });
 
-    // メインデッキから引く
     socket.on('drawMainCard', () => {
         if (mainDeck.length > 0) {
-            const cardData = mainDeck.pop();
-            socket.emit('receiveCard', cardData);
+            socket.emit('receiveCard', mainDeck.pop());
             io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
         }
     });
 
-    // エールデッキから引く
     socket.on('drawCheerCard', () => {
         if (cheerDeck.length > 0) {
-            const cardData = cheerDeck.pop();
-            socket.emit('receiveCard', cardData);
+            socket.emit('receiveCard', cheerDeck.pop());
             io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
         }
     });
