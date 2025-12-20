@@ -4,8 +4,9 @@ body {
     background-color: rgba(4, 23, 43, 1);
     font-family: sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
 }
 
@@ -17,26 +18,26 @@ body {
     color: rgba(240, 255, 255, 0.8);
 }
 
+/* ステージの枠 */
 #field-container {
     border: 5px double rgba(240, 255, 255, 1);
     padding: 15px;
     border-radius: 20px;
     background-color: rgba(255, 255, 255, 0.02);
     box-shadow: 0 0 30px rgba(240, 255, 255, 0.2);
+    margin-bottom: 20px;
 }
 
 #field {
     display: grid;
     grid-template-columns: 120px 600px 120px;
     gap: 20px;
-    padding: 10px;
+    position: relative; /* カードの絶対配置の基準 */
 }
 
-.column { display: flex; flex-direction: column; gap: 20px; }
-.center-column { align-items: center; justify-content: space-between; }
-.right-column { justify-content: space-between; }
+.column { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
+.center-column { align-items: center; }
 
-/* ゾーンの基本 */
 .zone {
     border: 2px solid rgba(240, 255, 255, 0.5);
     background-color: rgba(255, 255, 255, 0.05);
@@ -47,53 +48,44 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 10px;
-    color: rgba(240, 255, 255, 0.8);
-    position: relative;
+    color: rgba(240, 255, 255, 0.7);
+    pointer-events: none;
 }
 
-/* デッキのデザイン（裏向きカードが置かれているような表示） */
+/* デッキの見た目 */
 .deck-zone {
     cursor: pointer;
+    pointer-events: auto;
     background: linear-gradient(135deg, #16213e 0%, rgba(4, 23, 43, 1) 100%);
     border: 2px solid rgba(240, 255, 255, 1);
-    /* カードの厚みを表現する影 */
-    box-shadow: 
-        2px 2px 0px rgba(240, 255, 255, 0.3),
-        4px 4px 0px rgba(4, 23, 43, 1),
-        5px 5px 0px rgba(240, 255, 255, 0.2);
-}
-.deck-zone span {
-    z-index: 2;
-    text-shadow: 1px 1px 2px #000;
+    box-shadow: 3px 3px 0 rgba(240, 255, 255, 0.3);
 }
 
-/* 手札エリアの調整 */
-#hand-label {
-    font-size: 12px;
-    color: rgba(240, 255, 255, 0.6);
-    margin-top: 10px;
+/* 手札コンテナ（枠の外） */
+#hand-container {
+    position: fixed;
+    bottom: 10px;
+    width: 800px;
+    text-align: center;
+    z-index: 5000;
 }
+
+#hand-label { font-size: 12px; color: rgba(240, 255, 255, 0.6); margin-bottom: 5px; }
 
 #hand {
-    width: 95%;
     height: 110px;
+    background: rgba(255, 255, 255, 0.05);
     border: 2px dashed rgba(240, 255, 255, 0.3);
-    border-radius: 10px;
+    border-radius: 15px;
     display: flex;
     gap: 10px;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.03);
+    justify-content: center;
     overflow-x: auto;
-    /* 絶対配置を解除してフローに乗せる */
-    position: relative;
-    bottom: auto;
-    left: auto;
-    transform: none;
 }
 
 /* カードのデザイン */
 .card {
-    min-width: 65px;
     width: 65px;
     height: 90px;
     border-radius: 5px;
@@ -105,6 +97,7 @@ body {
     justify-content: center;
     align-items: center;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    z-index: 1000;
 }
 
 .card.face-down { 
@@ -113,8 +106,6 @@ body {
     color: transparent;
 }
 
-/* 共通レイアウト用 */
-.stage-row { display: flex; gap: 30px; }
+.stage-row { display: flex; gap: 30px; margin-bottom: 20px; }
 .wide-zone { width: 500px; height: 130px; }
 .vertical-zone { height: 260px; }
-.stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; }
