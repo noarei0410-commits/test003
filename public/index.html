@@ -2,64 +2,39 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>hOCG Simulator</title>
+    <title>hOCG Simulator - Frame & Snap</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="ui-layer">
         <h1>hOCG Sim</h1>
         <div id="status">接続中...</div>
-        <button id="drawBtn">カードを引く</button>
-        <span style="margin-left:10px;">山札: <span id="deckCount">50</span></span>
+        <span>山札: <span id="deckCount">50</span></span>
     </div>
 
-    <div id="field">
-        <div class="column left-column">
-            <div class="zone vertical-zone" id="life-zone">
-                <span>9. ライフ</span>
+    <div id="field-container">
+        <div id="field">
+            <div class="column left-column">
+                <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
+                <div class="zone" id="cheer-deck"><span>エール</span></div>
             </div>
-            <div class="zone" id="cheer-deck">
-                <span>8. エールデッキ</span>
-            </div>
-        </div>
 
-        <div class="column center-column">
-            <div class="stage-label">ステージ</div>
-            <div class="stage-row top-row">
-                <div class="zone" id="collab-position">
-                    <span>3. コラボポジション</span>
+            <div class="column center-column">
+                <div class="stage-label">ステージ</div>
+                <div class="stage-row top-row">
+                    <div class="zone" id="collab"><span>コラボ</span></div>
+                    <div class="zone" id="center"><span>センター</span></div>
+                    <div class="zone" id="oshi"><span>推し</span></div>
                 </div>
-                <div class="zone" id="center-position">
-                    <span>2. センターポジション</span>
-                </div>
-                <div class="zone" id="oshi-position">
-                    <span>1. 推しポジション</span>
+                <div class="stage-row bottom-row">
+                    <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
             </div>
-            <div class="stage-row bottom-row">
-                <div class="zone wide-zone" id="back-position">
-                    <span>4. バックポジション</span>
-                    <div class="turn-guide">
-                        <p>ターン進行</p>
-                        <ol>
-                            <li>リセット</li><li>ドロー</li><li>エール</li>
-                            <li>メイン</li><li>パフォーマンス</li><li>エンド</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="column right-column">
-            <div class="zone" id="holopower-zone">
-                <span>7. ホロパワー</span>
-            </div>
-            <div class="zone card-back-bg" id="deck-zone">
-                <span>5. デッキ</span>
-            </div>
-            <div class="zone" id="archive-zone">
-                <span>6. アーカイブ</span>
+            <div class="column right-column">
+                <div class="zone" id="holopower"><span>ホロパワー</span></div>
+                <div class="zone deck-zone" id="main-deck"><span>デッキ</span></div>
+                <div class="zone" id="archive"><span>アーカイブ</span></div>
             </div>
         </div>
     </div>
