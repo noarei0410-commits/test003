@@ -1,9 +1,8 @@
-/* --- ベース設定 --- */
 body {
     margin: 0;
     overflow: hidden;
     background-color: rgba(4, 23, 43, 1);
-    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-family: sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -11,278 +10,65 @@ body {
     height: 100vh;
     color: white;
     padding-top: 2vh;
-
-    /* ブラウザのテキスト選択を無効化 */
+    /* テキスト選択無効 */
     user-select: none;
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
+    /* スマホ特有のタップハイライトを消す */
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* 入力要素は操作を許可 */
-input, textarea {
-    user-select: auto;
-    -webkit-user-select: auto;
-}
+input { user-select: auto; -webkit-user-select: auto; }
 
-#ui-layer { 
-    position: absolute; 
-    top: 10px; 
-    left: 20px; 
-    z-index: 10000; 
-    font-size: 12px; 
-    color: rgba(240, 255, 255, 0.7); 
-}
+/* --- モーダル（スマホではリストを少し小さく） --- */
+#setup-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 20000; display: flex; justify-content: center; align-items: center; }
+.modal-content { background: rgba(4, 23, 43, 1); border: 3px solid rgba(240, 255, 255, 1); border-radius: 20px; padding: 15px; width: 90vw; height: 90vh; display: flex; flex-direction: column; }
+.builder-layout { display: flex; flex: 1; gap: 10px; overflow: hidden; }
+.card-library { flex: 1; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; }
+.deck-lists-container { flex: 1.2; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.deck-section { flex: 1; background: rgba(255, 255, 255, 0.05); padding: 8px; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+.scroll-list { flex: 1; overflow-y: auto; }
+.deck-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; background: rgba(255,255,255,0.03); margin-bottom: 2px; border-radius: 4px; font-size: 11px; }
 
-/* --- デッキ構築モーダル --- */
-#setup-modal {
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100vw; 
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.95); 
-    z-index: 20000;
-    display: flex; 
-    justify-content: center; 
-    align-items: center;
-}
+/* スマホ用ボタンサイズ調整 */
+.btn-plus, .btn-minus { width: 30px; height: 30px; font-size: 18px; }
+#startGameBtn { padding: 12px; background: rgba(240, 255, 255, 1); border: none; font-weight: bold; border-radius: 8px; }
 
-.modal-content {
-    background: rgba(4, 23, 43, 1); 
-    border: 3px solid rgba(240, 255, 255, 1);
-    border-radius: 20px; 
-    padding: 20px; 
-    width: 85vw; 
-    height: 85vh;
-    display: flex; 
-    flex-direction: column;
-}
-
-.builder-layout { 
-    display: flex; 
-    flex: 1; 
-    gap: 20px; 
-    overflow: hidden; 
-}
-
-/* カードライブラリ（左側） */
-.card-library { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    background: rgba(255, 255, 255, 0.05); 
-    padding: 15px; 
-    border-radius: 10px; 
-}
-
-#searchInput { 
-    padding: 10px; 
-    background: #000; 
-    color: #fff; 
-    border: 1px solid rgba(240, 255, 255, 0.5); 
-    margin-bottom: 10px; 
-    border-radius: 4px;
-}
-
-#libraryList { 
-    flex: 1; 
-    overflow-y: auto; 
-}
-
-.library-item { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-    padding: 8px; 
-    border-bottom: 1px solid rgba(255,255,255,0.1); 
-    font-size: 13px; 
-}
-
-/* 構築中デッキ（右側） */
-.deck-lists-container { 
-    flex: 1.2; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 15px; 
-    overflow: hidden;
-}
-
-.deck-section { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    background: rgba(255, 255, 255, 0.05); 
-    padding: 10px; 
-    border-radius: 10px; 
-    overflow: hidden; 
-}
-
-.scroll-list { 
-    flex: 1; 
-    overflow-y: auto; 
-    margin-top: 5px; 
-}
-
-/* デッキ内アイテムと枚数操作 */
-.deck-item { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 6px 10px; 
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255,255,255,0.05); 
-    font-size: 12px; 
-    margin-bottom: 2px;
-    border-radius: 4px;
-}
-
-.deck-item-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.count-number {
-    min-width: 20px;
-    text-align: center;
-    font-weight: bold;
-    color: rgba(240, 255, 255, 1);
-}
-
-/* ボタン類 */
-button { cursor: pointer; border: none; font-weight: bold; transition: opacity 0.2s; }
-button:hover { opacity: 0.8; }
-button:disabled { background: #444 !important; color: #888 !important; cursor: not-allowed; }
-
-.btn-add { background: #00d2ff; color: #000; border-radius: 4px; padding: 4px 12px; }
-.btn-remove { background: #ff4d4d; color: white; border-radius: 4px; padding: 2px 8px; }
-.btn-plus { background: #00d2ff; color: #000; width: 24px; height: 24px; border-radius: 4px; }
-.btn-minus { background: #ff4d4d; color: #fff; width: 24px; height: 24px; border-radius: 4px; }
-
-#startGameBtn { 
-    padding: 15px; 
-    background: rgba(240, 255, 255, 1); 
-    color: #04172b; 
-    font-size: 16px;
-    border-radius: 8px; 
-}
-
-/* --- ステージ外枠（レスポンシブ） --- */
+/* --- フィールド --- */
 #field-container {
     border: 5px double rgba(240, 255, 255, 1);
     padding: 1.5vh 1.5vw;
     border-radius: 20px;
-    background-color: rgba(255, 255, 255, 0.02);
-    width: 90vw;
-    height: 65vh;
-    max-width: 1200px;
-    box-shadow: 0 0 25px rgba(240, 255, 255, 0.15);
-    margin-bottom: 120px; /* 手札エリアとのスペース */
+    width: 92vw;
+    height: 60vh;
+    box-shadow: 0 0 20px rgba(240, 255, 255, 0.1);
+    margin-bottom: 110px;
 }
-
-#field {
-    display: grid;
-    grid-template-columns: 15% 1fr 15%; /* 左・中・右の3カラム */
-    gap: 1.5vw;
-    height: 100%;
-    position: relative;
-}
-
-.column { display: flex; flex-direction: column; gap: 2vh; justify-content: center; }
+#field { display: grid; grid-template-columns: 15% 1fr 15%; gap: 1.5vw; height: 100%; position: relative; }
+.column { display: flex; flex-direction: column; gap: 1.5vh; justify-content: center; }
 .center-column { align-items: center; justify-content: space-between; }
 
-/* ゾーン設定 */
-.zone {
-    border: 2px solid rgba(240, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 10px;
-    width: 7.5vw;
-    height: 11vh;
-    min-width: 65px; min-height: 90px;
-    max-width: 100px; max-height: 140px;
-    display: flex; justify-content: center; align-items: center;
-    font-size: 10px; text-align: center; color: rgba(240, 255, 255, 0.6);
-}
+.zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255, 255, 255, 0.03); border-radius: 8px; width: 8vw; height: 11vh; min-width: 55px; min-height: 80px; max-width: 100px; max-height: 140px; display: flex; justify-content: center; align-items: center; font-size: 9px; text-align: center; }
+.vertical-zone { height: 25vh; max-height: 250px; }
+.wide-zone { width: 50vw; height: 14vh; max-width: 600px; }
+.deck-zone { cursor: pointer; border: 2px solid rgba(240, 255, 255, 1); background: linear-gradient(135deg, #16213e, #04172b); }
 
-.vertical-zone { height: 25vh; max-height: 280px; }
-.wide-zone { width: 45vw; height: 15vh; max-width: 650px; }
-.deck-zone { 
-    cursor: pointer; 
-    border: 2px solid rgba(240, 255, 255, 1); 
-    background: linear-gradient(135deg, #16213e, #04172b); 
-    box-shadow: 3px 3px 0 rgba(240, 255, 255, 0.3);
-}
+/* --- 手札 --- */
+#hand-container { position: fixed; bottom: 10px; width: 95vw; z-index: 5000; }
+#hand { height: 100px; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 12px; display: flex; gap: 5px; padding: 5px; background: rgba(4, 23, 43, 0.9); justify-content: center; overflow-x: auto; }
 
-/* --- 手札エリア（外側・最下部） --- */
-#hand-container {
-    position: fixed;
-    bottom: 10px;
-    width: 90vw;
-    max-width: 1000px;
-    z-index: 5000;
-}
-
-#hand-label { 
-    font-size: 10px; color: rgba(240, 255, 255, 0.5); 
-    text-align: center; margin-bottom: 5px; letter-spacing: 3px;
-}
-
-#hand {
-    height: 110px; 
-    border: 2px dashed rgba(240, 255, 255, 0.2);
-    border-radius: 15px; 
-    display: flex; 
-    gap: 10px; 
-    padding: 10px;
-    background: rgba(4, 23, 43, 0.9); 
-    backdrop-filter: blur(10px);
-    justify-content: center;
-    overflow-x: auto;
-}
-
-/* --- カードオブジェクト --- */
+/* --- カード（スマホ対応） --- */
 .card {
-    width: 65px; 
-    height: 92px; 
-    background: #fff; 
-    color: #000;
-    font-size: 10px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    text-align: center; 
-    border-radius: 6px; 
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
-    position: relative; /* 手札では並ぶ */
-    flex-shrink: 0; 
-    z-index: 1000;
-    padding: 5px;
-    box-sizing: border-box;
-    word-break: break-all;
+    width: 60px; height: 85px; background: #fff; color: #000;
+    font-size: 9px; display: flex; align-items: center; justify-content: center;
+    text-align: center; border-radius: 5px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5);
+    position: relative; flex-shrink: 0; z-index: 1000;
+    /* ブラウザのジェスチャーを無効化してドラッグを優先 */
+    touch-action: none;
 }
-
-/* フィールド配置時は絶対座標 */
 #field .card { position: absolute; }
+.type-ayle { border: 3px solid #ff00ff !important; }
+.type-holomen { border: 3px solid #00d2ff !important; }
+.face-down { background: #16213e !important; color: transparent !important; border: 2px solid rgba(240, 255, 255, 1) !important; }
 
-/* カードタイプ別の枠色 */
-.type-ayle { border: 3px solid #ff00ff !important; } /* エール：マゼンタ */
-.type-holomen { border: 3px solid #00d2ff !important; } /* ホロメン：シアン */
-
-/* 裏面状態 */
-.card.face-down { 
-    background: linear-gradient(45deg, rgba(4, 23, 43, 1), #16213e) !important; 
-    color: transparent !important; 
-    border: 2px solid rgba(240, 255, 255, 1) !important; 
-}
-
-/* 装飾テキスト */
-.stage-label { 
-    color: rgba(240, 255, 255, 1); 
-    font-weight: bold; 
-    font-size: 1.1rem; 
-    letter-spacing: 8px; 
-    text-shadow: 0 0 10px rgba(240, 255, 255, 0.4);
-}
-
-.stage-row { display: flex; gap: 3vw; }
+.stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; font-size: 0.9rem; letter-spacing: 3px; }
+.stage-row { display: flex; gap: 2vw; }
