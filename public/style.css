@@ -11,100 +11,70 @@ body {
     color: white;
 }
 
-#ui-layer { position: absolute; top: 10px; left: 20px; z-index: 10000; pointer-events: none; }
-#config-panel { width: 220px; background: rgba(4, 23, 43, 0.9); border: 2px solid rgba(240, 255, 255, 0.5); border-radius: 12px; padding: 12px; pointer-events: auto; }
-textarea { width: 100%; height: 50px; background: #000; color: #fff; border: 1px solid rgba(240, 255, 255, 0.3); font-size: 10px; padding: 4px; box-sizing: border-box; }
-.button-row { display: flex; gap: 4px; margin-top: 4px; }
-.action-btn { flex: 1; background: rgba(240, 255, 255, 1); color: #04172b; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; }
-.small-btn { background: #333; color: #ccc; border: none; cursor: pointer; font-size: 10px; border-radius: 4px; }
-
-/* ステージ外枠 */
-#field-container {
-    border: 5px double rgba(240, 255, 255, 1);
-    padding: 25px;
-    border-radius: 20px;
-    background-color: rgba(255, 255, 255, 0.01);
-    box-shadow: 0 0 30px rgba(240, 255, 255, 0.15);
-    margin-bottom: 120px;
-}
-
-#field {
-    display: grid;
-    grid-template-columns: 120px 620px 120px;
-    gap: 20px;
-    position: relative;
-}
-
-.column { display: flex; flex-direction: column; gap: 20px; justify-content: center; }
-.center-column { align-items: center; }
-
-.zone {
-    border: 2px solid rgba(240, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 10px; width: 90px; height: 130px;
-    display: flex; justify-content: center; align-items: center;
-    font-size: 10px; text-align: center; color: rgba(240, 255, 255, 0.6);
-}
-
-.deck-zone { 
-    cursor: pointer; background: linear-gradient(135deg, #16213e, #04172b); 
-    border: 2px solid rgba(240, 255, 255, 1); 
-    box-shadow: 3px 3px 0 rgba(240, 255, 255, 0.3);
-}
-
-/* 手札エリアの設定 */
-#hand-container {
+/* --- デッキ構築モーダル --- */
+#setup-modal {
     position: fixed;
-    bottom: 10px;
-    width: 850px;
-    z-index: 5000;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 20000;
+    display: flex; justify-content: center; align-items: center;
 }
 
-#hand-label { font-size: 11px; color: rgba(240, 255, 255, 0.5); margin-bottom: 5px; text-align: center; }
-
-#hand {
-    height: 115px; 
-    border: 2px dashed rgba(240, 255, 255, 0.2);
-    border-radius: 15px; 
-    display: flex; 
-    gap: 10px; 
-    padding: 10px;
-    background: rgba(4, 23, 43, 0.9); 
-    justify-content: center;
-    overflow-x: auto;
-    overflow-y: hidden;
+.modal-content {
+    background: rgba(4, 23, 43, 1);
+    border: 3px solid rgba(240, 255, 255, 1);
+    border-radius: 20px;
+    padding: 30px;
+    width: 80%; height: 80%;
+    display: flex; flex-direction: column;
 }
 
-/* カードの基本設定（手札では重ならない） */
-.card { 
-    min-width: 70px; 
-    width: 70px; 
-    height: 100px; 
-    background: #fff; 
-    color: #000; 
-    font-size: 10px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    text-align: center; 
-    border-radius: 6px; 
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.6); 
-    position: relative; /* 手札では相対配置 */
-    flex-shrink: 0;
-    user-select: none;
-    z-index: 1000;
+.builder-layout { display: flex; flex: 1; gap: 20px; overflow: hidden; }
+
+.card-library, .current-deck {
+    flex: 1; display: flex; flex-direction: column;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px; border-radius: 10px;
 }
 
-/* フィールドに出たカードだけ絶対配置にする */
-#field .card {
-    position: absolute;
+#searchInput {
+    padding: 10px; margin-bottom: 10px;
+    background: #000; color: #fff; border: 1px solid rgba(240, 255, 255, 0.5);
 }
 
+#libraryList, #deckSummary { flex: 1; overflow-y: auto; padding-right: 10px; }
+
+/* リストアイテム */
+.library-item, .deck-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.btn-add, .btn-remove {
+    padding: 5px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
+}
+.btn-add { background: rgba(240, 255, 255, 1); color: #04172b; }
+.btn-remove { background: #ff4d4d; color: white; margin-left: 5px; }
+
+#startGameBtn {
+    margin-top: 15px; padding: 15px; background: #00d2ff; color: #000;
+    border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+}
+#startGameBtn:disabled { background: #555; cursor: not-allowed; }
+
+/* --- フィールドと手札（前回の色を保持） --- */
+#ui-layer { position: absolute; top: 10px; left: 20px; z-index: 10000; }
+#field-container {
+    border: 5px double rgba(240, 255, 255, 1); padding: 25px; border-radius: 20px;
+    box-shadow: 0 0 30px rgba(240, 255, 255, 0.15); margin-bottom: 120px;
+}
+#field { display: grid; grid-template-columns: 120px 620px 120px; gap: 20px; position: relative; }
+.zone { border: 2px solid rgba(240, 255, 255, 0.3); border-radius: 10px; width: 90px; height: 130px; display: flex; justify-content: center; align-items: center; font-size: 10px; text-align: center; }
+.deck-zone { cursor: pointer; background: linear-gradient(135deg, #16213e, #04172b); border: 2px solid rgba(240, 255, 255, 1); }
+#hand-container { position: fixed; bottom: 10px; width: 850px; z-index: 5000; }
+#hand { height: 115px; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 15px; display: flex; gap: 10px; padding: 10px; background: rgba(4, 23, 43, 0.95); justify-content: center; }
+.card { min-width: 70px; width: 70px; height: 100px; background: #fff; color: #000; font-size: 10px; border-radius: 6px; position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; text-align: center; }
+#field .card { position: absolute; }
 .type-ayle { border: 3px solid #ff00ff !important; }
 .type-holomen { border: 3px solid #00d2ff !important; }
-.face-down { background: #16213e !important; color: transparent !important; border: 2px solid rgba(240, 255, 255, 1) !important; }
-
-.stage-row { display: flex; gap: 40px; margin-bottom: 15px; }
-.wide-zone { width: 550px; height: 150px; }
-.vertical-zone { height: 280px; }
-.stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; margin-bottom: 10px; }
+.face-down { background: #16213e !important; color: transparent !important; }
