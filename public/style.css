@@ -221,3 +221,32 @@ body {
     border-color: rgba(240, 255, 255, 1);
     background-color: rgba(240, 255, 255, 0.1);
 }
+
+
+/* --- 前回のスタイルを継承しつつ追加 --- */
+
+/* エールカードの枠色（ピンク・パープル系） */
+.card.type-ayle {
+    border: 3px solid #ff00ff !important;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+}
+
+/* 通常ホロメンカードの枠色（Azure/ブルー系） */
+.card.type-holomen {
+    border: 3px solid rgba(240, 255, 255, 1) !important;
+}
+
+/* エールデッキ枠を特別色に */
+#cheer-deck-zone {
+    background: linear-gradient(135deg, #4b0082 0%, #000 100%);
+    border-color: #ff00ff;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* メインデッキ設定ボタンとの差別化 */
+#setCheerBtn {
+    background: #ff00ff;
+    color: white;
+    margin-top: 2px;
+}
