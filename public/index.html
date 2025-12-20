@@ -2,36 +2,30 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Organised Hand</title>
+    <title>hOCG Simulator - Deck Builder</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="ui-layer">
-        <h1>hOCG Sim</h1>
-        <div id="status">接続中...</div>
-        
-        <div id="config-panel">
-            <div class="panel-header">デッキ設定</div>
-            <div class="input-group">
-                <label>メインデッキ</label>
-                <textarea id="mainDeckInput" placeholder="カード名を改行区切りで入力"></textarea>
-                <div class="button-row">
-                    <button id="sampleMainBtn" class="small-btn">サンプル読込</button>
-                    <button id="setMainBtn" class="action-btn">セット</button>
+    <div id="setup-modal">
+        <div class="modal-content">
+            <h2>デッキ構築</h2>
+            <div class="builder-layout">
+                <div class="card-library">
+                    <input type="text" id="searchInput" placeholder="カード名で検索...">
+                    <div id="libraryList"></div>
                 </div>
-            </div>
-            <div class="input-group">
-                <label>エールデッキ</label>
-                <textarea id="cheerDeckInput" placeholder="カード名を改行区切りで入力"></textarea>
-                <div class="button-row">
-                    <button id="sampleCheerBtn" class="small-btn">サンプル読込</button>
-                    <button id="setCheerBtn" class="action-btn">セット</button>
+                <div class="current-deck">
+                    <h3>構築中のデッキ (<span id="totalCount">0</span>/50)</h3>
+                    <div id="deckSummary"></div>
+                    <button id="startGameBtn" disabled>ゲーム開始</button>
                 </div>
-            </div>
-            <div class="count-display">
-                Main: <span id="mainCount">0</span> / Cheer: <span id="cheerCount">0</span>
             </div>
         </div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="status">接続中...</div>
+        <div>メイン: <span id="mainCount">0</span> / エール: <span id="cheerCount">0</span></div>
     </div>
 
     <div id="field-container">
@@ -40,7 +34,6 @@
                 <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
                 <div class="zone deck-zone" id="cheer-deck-zone"><span>エール<br>(引く)</span></div>
             </div>
-
             <div class="column center-column">
                 <div class="stage-label">ステージ</div>
                 <div class="stage-row top-row">
@@ -52,7 +45,6 @@
                     <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
             </div>
-
             <div class="column right-column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
                 <div class="zone deck-zone" id="main-deck-zone"><span>メイン<br>(引く)</span></div>
