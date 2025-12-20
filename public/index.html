@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Deck Builder</title>
+    <title>hOCG Simulator - Responsive Layout</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,17 +25,18 @@
 
     <div id="ui-layer">
         <div id="status">接続中...</div>
-        <div>メイン: <span id="mainCount">0</span> / エール: <span id="cheerCount">0</span></div>
+        <div>Main: <span id="mainCount">0</span> / Cheer: <span id="cheerCount">0</span></div>
     </div>
 
     <div id="field-container">
         <div id="field">
-            <div class="column">
+            <div class="column side-column">
                 <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
                 <div class="zone deck-zone" id="cheer-deck-zone"><span>エール<br>(引く)</span></div>
             </div>
+
             <div class="column center-column">
-                <div class="stage-label">ステージ</div>
+                <div class="stage-label">STAGE</div>
                 <div class="stage-row top-row">
                     <div class="zone" id="collab"><span>コラボ</span></div>
                     <div class="zone" id="center"><span>センター</span></div>
@@ -45,7 +46,8 @@
                     <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
             </div>
-            <div class="column right-column">
+
+            <div class="column side-column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
                 <div class="zone deck-zone" id="main-deck-zone"><span>メイン<br>(引く)</span></div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
@@ -54,7 +56,7 @@
     </div>
 
     <div id="hand-container">
-        <div id="hand-label">自分の手札</div>
+        <div id="hand-label">YOUR HAND</div>
         <div id="hand"></div>
     </div>
 
