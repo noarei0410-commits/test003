@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Card Game Simulator</title>
+    <style>
+        .card { display: inline-block; border: 1px solid black; padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Card Game Sim</h1>
+    <div id="status">接続中...</div>
+    <button id="drawBtn">カードを引く</button>
+    <p>山札残り: <span id="deckCount">52</span></p>
+    <div id="hand"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
