@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>hOCG Simulator - Deck Config</title>
+    <title>hOCG Simulator - Dual Deck Mode</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,19 +11,24 @@
         <div id="status">接続中...</div>
         
         <div id="deck-config">
-            <textarea id="deckInput" placeholder="カード名を改行区切りで入力"></textarea>
-            <button id="setDeckBtn">デッキをセット</button>
+            <textarea id="mainDeckInput" placeholder="メイン用（改行区切り）"></textarea>
+            <button id="setMainBtn">メインデッキをセット</button>
+            <textarea id="cheerDeckInput" placeholder="エール用（改行区切り）" style="margin-top:5px; height:50px;"></textarea>
+            <button id="setCheerBtn">エールデッキをセット</button>
         </div>
         
-        <div style="margin-top:10px;">山札残り: <span id="deckCount">0</span></div>
+        <div style="margin-top:10px; font-size:12px;">
+            メイン: <span id="mainCount">0</span> / エール: <span id="cheerCount">0</span>
+        </div>
     </div>
 
     <div id="field-container">
         <div id="field">
             <div class="column">
                 <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
-                <div class="zone" id="cheer-deck"><span>エール</span></div>
+                <div class="zone deck-zone" id="cheer-deck-zone"><span>エールデッキ<br>(引く)</span></div>
             </div>
+
             <div class="column center-column">
                 <div class="stage-label">ステージ</div>
                 <div class="stage-row top-row">
@@ -35,9 +40,10 @@
                     <div class="zone wide-zone" id="back"><span>バックポジション</span></div>
                 </div>
             </div>
-            <div class="column">
+
+            <div class="column right-column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
-                <div class="zone deck-zone" id="main-deck"><span>デッキ (引く)</span></div>
+                <div class="zone deck-zone" id="main-deck-zone"><span>メインデッキ<br>(引く)</span></div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
             </div>
         </div>
