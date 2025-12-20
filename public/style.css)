@@ -1,0 +1,43 @@
+/* public/style.css */
+
+/* カード全体の共通設定 */
+.card {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;  /* カードの幅 */
+    height: 90px; /* カードの高さ */
+    border: 1px solid #ccc;
+    border-radius: 8px; /* 角丸 */
+    margin: 5px;
+    background-color: white;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2); /* 影 */
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer; /* マウスを乗せると指カーソルに */
+    user-select: none; /* テキスト選択を防ぐ */
+    transition: transform 0.3s; /* 裏返すときのアニメーション用 */
+}
+
+/* カードの表面（数字が見える状態） */
+.card.face-up {
+    color: #333;
+    background-color: white;
+}
+
+/* カードの裏面（模様の状態） */
+/* 今回はCSSで簡単なチェック柄を作ってみます */
+.card.face-down {
+    color: transparent; /* 文字を見えなくする */
+    background-color: #a00; /* 赤色ベース */
+    background-image: 
+        linear-gradient(45deg, #800 25%, transparent 25%, transparent 75%, #800 75%, #800),
+        linear-gradient(45deg, #800 25%, transparent 25%, transparent 75%, #800 75%, #800);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+}
+
+/* クリックしたときに少し凹む演出 */
+.card:active {
+    transform: scale(0.95);
+}
