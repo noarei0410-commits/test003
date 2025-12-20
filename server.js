@@ -7,60 +7,52 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// 1. 静的ファイルの設定（CSSやJSファイルを読み込むために必要）
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ゲームの状態管理（簡易版）
+// 2. 【重要：裏技】ルートパスへのアクセスで index.html を強制的に返す
+// express.static が効かない環境でも、これで確実に表示させます
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ゲームの状態管理
 let gameState = {
     deck: [],
-    hands: {} // プレイヤーごとの手札
+    hands: {}
 };
 
-// 山札の初期化（例：52枚のカード）
+// 山札の初期化
 function initDeck() {
     const cards = [];
     for (let i = 1; i <= 52; i++) cards.push(i);
     return cards.sort(() => Math.random() - 0.5);
 }
-
 gameState.deck = initDeck();
 
 io.on('connection', (socket) => {
-    console.log('ユーザーが接続しました:', socket.id);
+    console.log('User connected:', socket.id);
     
-    // プレイヤーの手札を初期化
     gameState.hands[socket.id] = [];
-
-    // 現在の状態を送信
     socket.emit('init', { id: socket.id, hand: gameState.hands[socket.id] });
 
-    // カードを引く処理
     socket.on('drawCard', () => {
         if (gameState.deck.length > 0) {
             const card = gameState.deck.pop();
             gameState.hands[socket.id].push(card);
-            
-            // 本人にのみ手札を更新
             socket.emit('updateHand', gameState.hands[socket.id]);
-            // 全員に山札の残数を通知
             io.emit('deckCount', gameState.deck.length);
         }
     });
 
     socket.on('disconnect', () => {
         delete gameState.hands[socket.id];
-        console.log('ユーザーが切断しました');
+        console.log('User disconnected');
     });
 });
 
+// Render.com 用のポート設定
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-
 });
-
-
-// server.js に追加
-app.get('/', (req, res) => {
-  res.send('Server is working!');
-});
-
