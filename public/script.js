@@ -5,6 +5,7 @@ let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator', currentCard = null, isDragging = false;
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let originalNextSibling = null, potentialZoomTarget = null;
+let currentFilter = 'all';
 
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
@@ -19,65 +20,70 @@ function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
     if (target) target.style.display = 'flex';
-    if (pageId === 'card-list-page') renderGlobalCardList();
+    if (pageId === 'card-list-page') filterLibrary('all'); // デフォルトは「すべて」
 }
 window.onload = loadCardData;
 
-// --- アーカイブ閲覧 & 復帰機能 ---
+// --- フィルター機能 (カードリスト用) ---
+function filterLibrary(type) {
+    currentFilter = type;
+    
+    // ボタンの見た目を更新
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === getTypeName(type));
+    });
+    
+    renderGlobalCardList(type);
+}
+
+// 内部名と表示名の変換
+function getTypeName(type) {
+    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+    return map[type];
+}
+
+// --- アーカイブ閲覧 & 復帰 ---
 function openArchive() {
     archiveGrid.innerHTML = "";
-    // 現在アーカイブ枠に置かれている「実体カード」を取得
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    
     if (archiveCards.length === 0) {
         archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>アーカイブは空です</p>";
     } else {
         archiveCards.forEach(card => {
             const container = document.createElement('div');
             container.className = "archive-item";
-
             const el = document.createElement('div');
             el.className = card.className;
-            el.classList.remove('face-down');
-            el.classList.add('face-up');
+            el.classList.remove('face-down'); el.classList.add('face-up');
             el.innerText = card.innerText;
             el.onclick = () => openZoom(card.innerText, card.className);
-            
-            // 復帰ボタン (観戦者は非表示)
             if (myRole === 'player') {
                 const recoverBtn = document.createElement('button');
-                recoverBtn.className = "btn-recover";
-                recoverBtn.innerText = "手札へ";
-                recoverBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    returnArchiveToHand(card);
-                };
-                container.appendChild(el);
-                container.appendChild(recoverBtn);
-            } else {
-                container.appendChild(el);
-            }
-            
+                recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
+                recoverBtn.onclick = (e) => { e.stopPropagation(); returnArchiveToHand(card); };
+                container.appendChild(el); container.appendChild(recoverBtn);
+            } else { container.appendChild(el); }
             archiveGrid.appendChild(container);
         });
     }
     archiveModal.style.display = 'flex';
 }
-
-function returnArchiveToHand(card) {
-    // script内の手札戻し関数を呼び出し
-    originalNextSibling = null; // アーカイブからの場合は末尾へ
-    returnToHand(card);
-    closeArchive();
-}
-
+function returnArchiveToHand(card) { originalNextSibling = null; returnToHand(card); closeArchive(); }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- カードリスト描画 ---
-function renderGlobalCardList() {
+// --- カードリスト描画 (折り返し & 種類別) ---
+function renderGlobalCardList(type = 'all') {
     const grid = document.getElementById('global-card-grid');
     grid.innerHTML = "";
-    MASTER_CARDS.forEach(card => {
+    
+    let filtered = MASTER_CARDS;
+    if (type === 'oshi') {
+        filtered = OSHI_LIST;
+    } else if (type !== 'all') {
+        filtered = MASTER_CARDS.filter(c => c.type === type);
+    }
+
+    filtered.forEach(card => {
         const el = createCardElement(card, false);
         el.onclick = () => openZoom(card.name, el.className);
         grid.appendChild(el);
@@ -123,7 +129,7 @@ async function loadCardData() {
         ]);
         const hD = await h.json(), sD = await s.json();
         AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
-        MASTER_CARDS = [...hD, ...sD, ...AYLE_MASTER, ...OSHI_LIST];
+        MASTER_CARDS = [...hD, ...sD, ...AYLE_MASTER]; // 推し以外をMASTERに入れる
         updateLibrary(); renderDecks();
     } catch (e) { console.error(e); }
 }
@@ -144,7 +150,8 @@ document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator'
 // --- デッキ構築 ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); list.innerHTML = "";
-    MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').forEach(card => {
+    // 構築時はエールと推し以外を表示
+    MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').concat(OSHI_LIST.filter(c => c.name.includes(f))).forEach(card => {
         const div = document.createElement('div'); div.className = "library-item";
         const isOshi = OSHI_LIST.some(o => o.name === card.name);
         div.innerHTML = `<span>${card.name}</span><button class="btn-add">${isOshi?'設定':'追加'}</button>`;
@@ -196,7 +203,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期/操作 ---
+// --- 同期 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
