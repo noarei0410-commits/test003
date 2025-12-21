@@ -195,12 +195,15 @@ function restoreCard(id, info) {
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let startX = 0, startY = 0; 
 let potentialZoomTarget = null; 
-let originalNextSibling = null; // 並び順保存用
+let originalNextSibling = null;
 
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
-        if (el.dataset.zoneId && ['back', 'center', 'collab'].includes(el.dataset.zoneId)) return;
+        // 修正：バックポジション1-5も裏返し禁止リストに追加
+        const noFlipZones = ['back1', 'back2', 'back3', 'back4', 'back5', 'center', 'collab'];
+        if (el.dataset.zoneId && noFlipZones.includes(el.dataset.zoneId)) return;
+        
         el.classList.toggle('face-up'); el.classList.toggle('face-down');
         socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
     });
@@ -208,13 +211,8 @@ function setupCardEvents(el) {
     el.addEventListener('pointerdown', (e) => {
         startX = e.clientX; startY = e.clientY;
         potentialZoomTarget = el;
-
-        // 手札にある場合、元の位置（次の兄弟要素）を記憶しておく
-        if (el.parentElement === handDiv) {
-            originalNextSibling = el.nextElementSibling;
-        } else {
-            originalNextSibling = null;
-        }
+        if (el.parentElement === handDiv) originalNextSibling = el.nextElementSibling;
+        else originalNextSibling = null;
 
         if (myRole === 'spectator') return; 
         
@@ -244,8 +242,6 @@ document.addEventListener('pointermove', (e) => {
 
 document.addEventListener('pointerup', (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    
-    // ズーム判定
     if (potentialZoomTarget && dist < 15) { 
         if (!potentialZoomTarget.classList.contains('face-down')) {
             openZoom(potentialZoomTarget.innerText, potentialZoomTarget.className);
@@ -253,7 +249,6 @@ document.addEventListener('pointerup', (e) => {
     }
 
     if (myRole === 'spectator' || !isDragging || !currentCard) {
-        // 観戦者や単なるクリックの場合、もし手札から一時的に抜けていたら元に戻す
         if (!isDragging && potentialZoomTarget && potentialZoomTarget.parentElement === field && !potentialZoomTarget.dataset.zoneId && !potentialZoomTarget.dataset.percentX) {
              returnToHand(potentialZoomTarget);
         }
@@ -291,22 +286,10 @@ document.addEventListener('pointerup', (e) => {
     isDragging = false; currentCard = null; potentialZoomTarget = null;
 });
 
-// 手札に戻す共通処理（並び順を維持）
 function returnToHand(card) {
-    card.style.position = 'relative'; 
-    card.style.left = ''; 
-    card.style.top = ''; 
-    card.style.zIndex = '';
-    delete card.dataset.zoneId; 
-    delete card.dataset.percentX; 
-    delete card.dataset.percentY;
-    
-    // 記憶していた「次の要素」の前に挿入することで元の位置を復元
-    if (originalNextSibling && originalNextSibling.parentElement === handDiv) {
-        handDiv.insertBefore(card, originalNextSibling);
-    } else {
-        handDiv.appendChild(card);
-    }
-    
+    card.style.position = 'relative'; card.style.left = ''; card.style.top = ''; card.style.zIndex = '';
+    delete card.dataset.zoneId; delete card.dataset.percentX; delete card.dataset.percentY;
+    if (originalNextSibling && originalNextSibling.parentElement === handDiv) handDiv.insertBefore(card, originalNextSibling);
+    else handDiv.appendChild(card);
     socket.emit('returnToHand', { id: card.id });
 }
