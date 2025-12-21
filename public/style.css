@@ -85,7 +85,6 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
 .center-column { align-items: center; justify-content: space-between; }
 .zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; width: 8vw; height: 10vh; min-width: 55px; min-height: 80px; display: flex; justify-content: center; align-items: center; font-size: 9px; text-align: center; color: rgba(240,255,255,0.5); position: relative; }
 .vertical-zone { height: 24vh; }
-.wide-zone { width: 50vw; height: 12vh; }
 .deck-zone { cursor: pointer; border: 2px solid rgba(240, 255, 255, 1); background: linear-gradient(135deg, #16213e, #04172b); }
 
 /* 手札 */
@@ -140,6 +139,5 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
 .stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; font-size: 1rem; letter-spacing: 5px; }
 .stage-row { display: flex; gap: 2vw; }
 
-/* 【修正】観戦者モードでも見た目を統一するため透過を排除 */
-body.spectator-mode .deck-zone { pointer-events: none; }
+body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.7; }
 body.spectator-mode .card { cursor: pointer; }
