@@ -174,3 +174,8 @@ button:disabled { background: #444 !important; color: #888 !important; cursor: n
 .card.type-support {
     border: 3px solid #2ecc71 !important; /* サポートは緑枠 */
 }
+
+/* 山札のテキストがクリックを邪魔しないように設定 */
+.deck-zone span {
+    pointer-events: none;
+}
