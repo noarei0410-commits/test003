@@ -156,3 +156,21 @@ button:disabled { background: #444 !important; color: #888 !important; cursor: n
     border: 2px solid rgba(240, 255, 255, 1) !important;
     color: transparent !important;
 }
+
+/* ライブラリ内のタグ表示 */
+.type-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-weight: bold;
+}
+.tag-holomen { background: #00d2ff; color: #000; }
+.tag-support { background: #2ecc71; color: #fff; }
+
+.item-info { display: flex; align-items: center; }
+
+/* サポートカード自体のスタイル（フィールド上） */
+.card.type-support {
+    border: 3px solid #2ecc71 !important; /* サポートは緑枠 */
+}
