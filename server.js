@@ -49,7 +49,6 @@ io.on('connection', (socket) => {
         rooms[roomId].mainDeck = data.main.map(card => ({ id: uuidv4(), name: card.name, type: card.type }));
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ id: uuidv4(), name: card.name, type: 'ayle' }));
         
-        // シャッフル
         const shuffle = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -121,4 +120,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
