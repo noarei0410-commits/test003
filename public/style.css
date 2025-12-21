@@ -1,143 +1,91 @@
-/* --- ベース設定 --- */
+* { box-sizing: border-box; }
+
 body {
-    margin: 0;
-    overflow: hidden;
-    background-color: rgba(4, 23, 43, 1);
-    font-family: sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center; 
-    height: 100vh;
-    color: white;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
+    margin: 0; overflow: hidden; background-color: #04172b;
+    font-family: sans-serif; display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start; height: 100vh; color: white;
+    user-select: none; -webkit-user-select: none; touch-action: none;
 }
 
-input { user-select: auto; -webkit-user-select: auto; }
+/* モーダル */
+#room-modal, #setup-modal, #zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10000; }
+#room-modal { background: #04172b; z-index: 30000; }
+#setup-modal { background: rgba(0,0,0,0.9); z-index: 20000; }
+#zoom-modal { background: rgba(0,0,0,0.8); z-index: 40000; cursor: pointer; }
 
-/* モーダル共通 */
-#room-modal, #setup-modal {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    display: flex; justify-content: center; align-items: center;
-}
-#room-modal { background: rgba(4, 23, 43, 1); z-index: 30000; }
-#setup-modal { background: rgba(0, 0, 0, 0.95); z-index: 20000; }
+.modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 15px; padding: 15px; width: 95vw; height: 90vh; display: flex; flex-direction: column; }
+.room-content { width: 300px !important; height: auto !important; text-align: center; }
 
-.modal-content {
-    background: rgba(4, 23, 43, 1); border: 3px solid rgba(240, 255, 255, 1);
-    border-radius: 20px; padding: 20px; width: 92vw; height: 88vh;
-    display: flex; flex-direction: column; overflow: hidden;
-}
-.room-content { width: 320px !important; height: auto !important; text-align: center; }
+/* 構築UI */
+.builder-layout { display: flex; flex: 1; gap: 8px; overflow: hidden; }
+.card-library, .deck-lists-container { flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 8px; overflow: hidden; }
+#libraryList, .scroll-list { flex: 1; overflow-y: auto; }
+.section-header { cursor: pointer; background: rgba(255,255,255,0.1); padding: 5px; font-size: 12px; display: flex; justify-content: space-between; }
+.collapsed .scroll-list { display: none; }
 
-/* --- 拡大表示（ズーム）モーダル --- */
-#zoom-modal {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.85); z-index: 40000;
-    display: flex; justify-content: center; align-items: center;
-    cursor: pointer;
-}
-.zoom-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-#zoom-card-display {
-    width: 250px !important; height: 350px !important;
-    font-size: 24px !important; border-radius: 15px !important;
-    position: relative !important; left: 0 !important; top: 0 !important;
-    box-shadow: 0 0 30px rgba(240, 255, 255, 0.4);
-    cursor: default;
-}
-.zoom-hint { color: rgba(255, 255, 255, 0.6); font-size: 14px; }
-
-.builder-layout { display: flex; flex: 1; gap: 12px; overflow: hidden; }
-.card-library { flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; overflow: hidden; }
-.deck-lists-container { flex: 1.2; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-
-.deck-section { background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; transition: flex 0.3s ease; }
-.section-header { margin: 0; padding: 10px; background: rgba(255,255,255,0.1); font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-.scroll-list { flex: 1; overflow-y: auto; padding: 10px; }
-.deck-section.collapsed { flex: 0 0 auto; }
-.deck-section.collapsed .scroll-list { display: none; }
-
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; transition: 0.2s; }
-.btn-add, .btn-plus { background: #00d2ff; color: #04172b; padding: 8px; }
-.btn-minus, .btn-remove { background: #ff5e5e; color: white; padding: 8px; }
-.btn-spectator { background: #9b59b6; color: white; padding: 12px; margin-top: 10px; }
-#startGameBtn { padding: 15px; background: #f0ffff; color: #04172b; width: 100%; font-size: 16px; margin-bottom: 10px; border: 2px solid #00d2ff; }
+button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; }
+.btn-add, .btn-plus { background: #00d2ff; color: #04172b; }
+.btn-minus, .btn-remove { background: #ff5e5e; color: white; }
+#startGameBtn { padding: 10px; background: #00d2ff; margin-bottom: 10px; width: 100%; }
 
 /* UIレイヤー */
-#ui-layer { position: absolute; top: 10px; left: 10px; z-index: 1000; font-size: 12px; color: rgba(240, 255, 255, 0.8); }
+#ui-layer { width: 100%; padding: 5px 10px; display: flex; justify-content: space-between; font-size: 11px; height: 25px; }
 
-/* ステージ */
-#field-container { 
-    border: 5px double rgba(240, 255, 255, 1); 
-    padding: 1.5vh 1.5vw; 
-    border-radius: 20px; 
-    width: 94vw; 
-    height: 55vh; 
-    max-width: 1200px; 
-    background: rgba(255,255,255,0.02); 
-    box-sizing: border-box; 
-    margin-bottom: 10px; 
+/* フィールド（最重要：1画面に収める） */
+#field-container {
+    width: 98vw; height: 60vh; max-height: 500px;
+    border: 2px solid #f0ffff; border-radius: 10px;
+    background: rgba(255,255,255,0.02);
+    padding: 5px; margin-bottom: 5px;
 }
-#field { display: grid; grid-template-columns: 15% 1fr 15%; gap: 1.5vw; height: 100%; position: relative; }
-.column { display: flex; flex-direction: column; gap: 1.5vh; justify-content: center; }
-.center-column { align-items: center; justify-content: space-between; }
-.zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; width: 8vw; height: 10vh; min-width: 55px; min-height: 80px; display: flex; justify-content: center; align-items: center; font-size: 9px; text-align: center; color: rgba(240,255,255,0.5); position: relative; }
-.vertical-zone { height: 24vh; }
-.deck-zone { cursor: pointer; border: 2px solid rgba(240, 255, 255, 1); background: linear-gradient(135deg, #16213e, #04172b); }
+#field { display: grid; grid-template-columns: 18% 1fr 18%; gap: 5px; height: 100%; position: relative; }
+.column { display: flex; flex-direction: column; gap: 5px; height: 100%; }
+.center-column { justify-content: space-between; }
+
+.zone {
+    border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03);
+    border-radius: 6px; display: flex; justify-content: center; align-items: center;
+    font-size: 8px; text-align: center; color: rgba(255,255,255,0.4);
+    width: 100%; height: 100%; position: relative;
+}
+
+.stage-row { display: flex; gap: 5px; width: 100%; height: 48%; }
+.back-slot { flex: 1; min-width: 0; } /* 5枚並んでもはみ出さないように */
+
+.life-zone { height: 60%; }
+.deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); cursor: pointer; }
 
 /* 手札 */
-#hand-container { 
-    position: relative;
-    width: 95vw; 
-    max-width: 1000px;
-    z-index: 5000;
-}
-#hand-label { font-size: 10px; color: rgba(240, 255, 255, 0.4); text-align: center; margin-bottom: 5px; }
-#hand { 
-    height: 115px;
-    border: 2px dashed rgba(240, 255, 255, 0.2); 
-    border-radius: 15px; 
-    display: flex; 
-    flex-wrap: nowrap; 
-    gap: 15px; 
-    padding: 10px 20px; 
-    background: rgba(4, 23, 43, 0.9); 
-    justify-content: flex-start; 
-    overflow-x: auto; 
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+#hand-container { width: 98vw; height: 120px; z-index: 5000; }
+#hand {
+    height: 100%; border: 2px dashed rgba(255,255,255,0.1); border-radius: 10px;
+    display: flex; gap: 10px; padding: 10px; background: rgba(4,23,43,0.8);
+    overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
 }
 
-/* カード共通 */
-.card { 
-    width: 60px; height: 85px; background: #fff; color: #000; 
-    font-size: 9px; display: flex; align-items: center; justify-content: center; 
-    text-align: center; border-radius: 6px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5); 
-    position: relative; flex-shrink: 0; z-index: 1000; 
-    touch-action: none; 
-    padding: 4px; box-sizing: border-box; 
+/* カード */
+.card {
+    width: 55px; height: 77px; background: #fff; color: #000;
+    font-size: 8px; display: flex; align-items: center; justify-content: center;
+    text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    position: relative; flex-shrink: 0; z-index: 1000; padding: 3px;
     scroll-snap-align: center;
 }
 #field .card { position: absolute; }
 
-/* カードタイプ別枠色 */
-.type-holomen { border: 3px solid #00d2ff; }
-.type-support { border: 3px solid #2ecc71; }
-.face-down { background: #16213e !important; color: transparent !important; border: 2px solid white !important; }
+/* ズーム表示用 */
+#zoom-card-display { width: 220px !important; height: 308px !important; font-size: 20px !important; }
 
-/* エール属性別枠色 */
-.ayle-white { background: #f8f9fa; color: #333; border: 4px solid #ffffff !important; }
-.ayle-green { background: #2ecc71; color: #fff; border: 4px solid #00ff7f !important; }
-.ayle-red   { background: #e74c3c; color: #fff; border: 4px solid #ff4500 !important; }
-.ayle-blue  { background: #3498db; color: #fff; border: 4px solid #1e90ff !important; }
-.ayle-yellow { background: #f1c40f; color: #333; border: 4px solid #ffff00 !important; }
-.ayle-purple { background: #9b59b6; color: #fff; border: 4px solid #da70d6 !important; }
+/* 属性別枠色 */
+.type-holomen { border: 2px solid #00d2ff; }
+.type-support { border: 2px solid #2ecc71; }
+.face-down { background: #16213e !important; color: transparent !important; border: 1.5px solid white !important; }
+.ayle-white { border: 3px solid #ffffff !important; }
+.ayle-green { border: 3px solid #00ff7f !important; }
+.ayle-red   { border: 3px solid #ff4500 !important; }
+.ayle-blue  { border: 3px solid #1e90ff !important; }
+.ayle-yellow { border: 3px solid #ffff00 !important; }
+.ayle-purple { border: 3px solid #da70d6 !important; }
 
-.stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; font-size: 1rem; letter-spacing: 5px; }
-.stage-row { display: flex; gap: 2vw; }
-
-body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.7; }
-body.spectator-mode .card { cursor: pointer; }
+body.spectator-mode .deck-zone { pointer-events: none; }
