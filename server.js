@@ -10,16 +10,14 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ルームごとの状態を保持するオブジェクト
 let rooms = {};
 
 io.on('connection', (socket) => {
     socket.on('joinRoom', ({ roomId, role }) => {
         socket.join(roomId);
         socket.roomId = roomId;
-        socket.role = role; // 'player' or 'spectator'
+        socket.role = role;
 
-        // ルームの初期化（存在しない場合）
         if (!rooms[roomId]) {
             rooms[roomId] = {
                 fieldState: {},
@@ -31,20 +29,16 @@ io.on('connection', (socket) => {
 
         if (role === 'player') rooms[roomId].players.push(socket.id);
 
-        // 入室したクライアントに現在の状態を送信
         socket.emit('init', { 
             id: socket.id, 
             role: role,
             fieldState: rooms[roomId].fieldState 
         });
 
-        // 山札の枚数を同期
         io.to(roomId).emit('deckCount', { 
             main: rooms[roomId].mainDeck.length, 
             cheer: rooms[roomId].cheerDeck.length 
         });
-
-        console.log(`User ${socket.id} joined room ${roomId} as ${role}`);
     });
 
     socket.on('setGame', (data) => {
@@ -56,10 +50,14 @@ io.on('connection', (socket) => {
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ id: uuidv4(), name: card.name, type: 'ayle' }));
         
         // シャッフル
-        for (let i = rooms[roomId].mainDeck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [rooms[roomId].mainDeck[i], rooms[roomId].mainDeck[j]] = [rooms[roomId].mainDeck[j], rooms[roomId].mainDeck[i]];
-        }
+        const shuffle = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        };
+        shuffle(rooms[roomId].mainDeck);
+        shuffle(rooms[roomId].cheerDeck);
 
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = {
@@ -111,6 +109,13 @@ io.on('connection', (socket) => {
         if (rooms[roomId] && rooms[roomId].fieldState[data.id]) {
             rooms[roomId].fieldState[data.id].isFaceUp = data.isFaceUp;
             socket.to(roomId).emit('cardFlipped', data);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        const roomId = socket.roomId;
+        if (rooms[roomId]) {
+            rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
         }
     });
 });
