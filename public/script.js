@@ -5,8 +5,7 @@ let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator';
 let currentCard = null, isDragging = false;
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
-let originalNextSibling = null;
-let potentialZoomTarget = null;
+let originalNextSibling = null, potentialZoomTarget = null;
 
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
@@ -14,7 +13,7 @@ const setupModal = document.getElementById('setup-modal');
 const zoomModal = document.getElementById('zoom-modal');
 const zoomDisplay = document.getElementById('zoom-card-display');
 
-// --- 画面遷移管理 ---
+// --- 画面遷移 ---
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
@@ -44,7 +43,7 @@ function openZoom(name, classList) {
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
 
-// --- 再配置ロジック (UI維持の核) ---
+// --- 再配置ロジック ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 55, cardH = 77;
@@ -65,16 +64,16 @@ function repositionCards() {
 }
 window.addEventListener('resize', repositionCards);
 
-// --- データ読込・ルーム入室 ---
+// --- データ読込・入室 ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
             fetch('/data/holomen.json'), fetch('/data/support.json'),
             fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
-        const hData = await h.json(), sData = await s.json();
+        const hD = await h.json(), sD = await s.json();
         AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
-        MASTER_CARDS = [...hData, ...sData, ...AYLE_MASTER, ...OSHI_LIST];
+        MASTER_CARDS = [...hD, ...sD, ...AYLE_MASTER, ...OSHI_LIST];
         updateLibrary(); renderDecks();
     } catch (e) { console.error(e); }
 }
@@ -95,7 +94,7 @@ async function joinRoom(role) {
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- デッキ構築ロジック (エール復元) ---
+// --- デッキ構築ロジック ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').forEach(card => {
@@ -150,7 +149,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期・操作ロジック ---
+// --- 同期・操作 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -183,7 +182,6 @@ function createCardElement(data, withEvents = true) {
     } else el.classList.add(`type-${data.type}`);
     if (withEvents) setupCardEvents(el); return el;
 }
-
 function restoreCard(id, info) {
     const el = createCardElement({ id, name: info.name, type: info.type });
     el.dataset.zoneId = info.zoneId || ""; el.dataset.percentX = info.percentX || ""; el.dataset.percentY = info.percentY || "";
@@ -245,8 +243,7 @@ document.onpointerup = (e) => {
             if (d < minDist) { minDist = d; closest = z; }
         });
         const fRect = field.getBoundingClientRect();
-        let type = currentCard.classList.contains('type-holomen')?'holomen':'support';
-        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: type };
+        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-holomen')?'holomen':'support' };
         if (closest) {
             currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX;
             moveData.zoneId = closest.id;
