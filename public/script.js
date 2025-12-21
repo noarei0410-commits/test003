@@ -24,7 +24,7 @@ function showPage(pageId) {
 
 window.onload = loadCardData;
 
-// --- カードリスト描画 (ライブラリ用) ---
+// --- カードリスト描画 ---
 function renderGlobalCardList() {
     const grid = document.getElementById('global-card-grid');
     grid.innerHTML = "";
@@ -44,7 +44,7 @@ function openZoom(name, classList) {
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
 
-// --- 再配置ロジック ---
+// --- 再配置ロジック (UI維持の核) ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 55, cardH = 77;
@@ -72,15 +72,11 @@ async function loadCardData() {
             fetch('/data/holomen.json'), fetch('/data/support.json'),
             fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
-        const hData = await h.json();
-        const sData = await s.json();
-        AYLE_MASTER = await a.json();
-        OSHI_LIST = await o.json();
-        
+        const hData = await h.json(), sData = await s.json();
+        AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
         MASTER_CARDS = [...hData, ...sData, ...AYLE_MASTER, ...OSHI_LIST];
-        updateLibrary(); 
-        renderDecks();
-    } catch (e) { console.error("Data Load Error:", e); }
+        updateLibrary(); renderDecks();
+    } catch (e) { console.error(e); }
 }
 
 async function joinRoom(role) {
@@ -99,11 +95,9 @@ async function joinRoom(role) {
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- デッキ構築ロジック ---
+// --- デッキ構築ロジック (エール復元) ---
 function updateLibrary(f = "") {
-    const list = document.getElementById('libraryList'); 
-    list.innerHTML = "";
-    // エールカード以外を検索リストに表示
+    const list = document.getElementById('libraryList'); list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').forEach(card => {
         const div = document.createElement('div'); div.className = "library-item";
         const isOshi = OSHI_LIST.some(o => o.name === card.name);
@@ -112,68 +106,51 @@ function updateLibrary(f = "") {
         list.appendChild(div);
     });
 }
-
 function addToDeck(card) {
-    if (OSHI_LIST.some(o => o.name === card.name)) {
-        selectedOshi = { ...card };
-    } else if (card.type === 'ayle') {
-        if (cheerDeckList.length < 20) cheerDeckList.push({ ...card });
-    } else {
-        mainDeckList.push({ ...card });
-    }
+    if (OSHI_LIST.some(o => o.name === card.name)) selectedOshi = { ...card };
+    else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card }); }
+    else mainDeckList.push({ ...card });
     renderDecks();
 }
-
 function removeFromDeck(name, type) {
     const list = (type === 'ayle') ? cheerDeckList : mainDeckList;
     const idx = list.findIndex(c => c.name === name);
     if (idx !== -1) list.splice(idx, 1);
     renderDecks();
 }
-
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
-
-    // 推し
     oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">X</button></div>` : "";
     if (selectedOshi) oSum.querySelector('button').onclick = () => { selectedOshi = null; renderDecks(); };
-
-    // メイン
     mSum.innerHTML = "";
     const gMain = mainDeckList.reduce((acc, c) => { acc[c.name] = (acc[c.name] || { d: c, n: 0 }); acc[c.name].n++; return acc; }, {});
     Object.keys(gMain).forEach(n => {
         const item = gMain[n], div = document.createElement('div');
-        div.className = "deck-item";
-        div.innerHTML = `<span>${n} x${item.n}</span><button class="btn-minus">-</button>`;
+        div.className = "deck-item"; div.innerHTML = `<span>${n} x${item.n}</span><button class="btn-minus">-</button>`;
         div.querySelector('button').onclick = () => removeFromDeck(n, 'main');
         mSum.appendChild(div);
     });
-
-    // エール (復元ポイント)
     cSum.innerHTML = "";
     AYLE_MASTER.forEach(card => {
         const count = cheerDeckList.filter(c => c.name === card.name).length;
-        const div = document.createElement('div');
-        div.className = "deck-item";
+        const div = document.createElement('div'); div.className = "deck-item";
         div.innerHTML = `<span>${card.name}: ${count}</span><div class="deck-item-controls"><button class="btn-plus">+</button><button class="btn-minus">-</button></div>`;
         div.querySelector('.btn-plus').onclick = () => addToDeck(card);
         div.querySelector('.btn-minus').onclick = () => removeFromDeck(card.name, 'ayle');
         cSum.appendChild(div);
     });
-
     document.getElementById('mainBuildCount').innerText = mainDeckList.length;
     document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
-
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
 document.getElementById('startGameBtn').onclick = () => {
     socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: { name: selectedOshi.name } });
     setupModal.style.display = "none";
 };
 
-// --- 同期・ドラッグ&ドロップ ---
+// --- 同期・操作ロジック ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -184,10 +161,7 @@ socket.on('init', (d) => {
     for (const id in d.fieldState) restoreCard(id, d.fieldState[id]);
     repositionCards();
 });
-socket.on('deckCount', (c) => { 
-    document.getElementById('mainCount').innerText = c.main; 
-    document.getElementById('cheerCount').innerText = c.cheer; 
-});
+socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
 socket.on('receiveCard', (d) => handDiv.appendChild(createCardElement(d)));
 socket.on('cardMoved', (d) => {
     let el = document.getElementById(d.id); if (!el) return restoreCard(d.id, d);
@@ -271,7 +245,8 @@ document.onpointerup = (e) => {
             if (d < minDist) { minDist = d; closest = z; }
         });
         const fRect = field.getBoundingClientRect();
-        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-holomen')?'holomen':'support' };
+        let type = currentCard.classList.contains('type-holomen')?'holomen':'support';
+        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: type };
         if (closest) {
             currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX;
             moveData.zoneId = closest.id;
