@@ -14,8 +14,8 @@ const handDiv = document.getElementById('hand');
 // --- ズーム機能 ---
 function openZoom(name, classList) {
     zoomDisplay.innerText = name;
-    zoomDisplay.className = classList; // 枠色や背景色を引き継ぐ
-    zoomDisplay.classList.remove('face-down'); // 必ず表側で表示
+    zoomDisplay.className = classList; 
+    zoomDisplay.classList.remove('face-down'); // 拡大時は常に表
     zoomModal.style.display = 'flex';
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
@@ -190,8 +190,8 @@ function restoreCard(id, info) {
 
 // --- ドラッグ&ズームロジック ---
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 1000;
-let startX = 0, startY = 0; // クリック判定用
-let potentialZoomTarget = null; // 観戦者用のクリック判定ターゲット
+let startX = 0, startY = 0; 
+let potentialZoomTarget = null; 
 
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
@@ -202,11 +202,11 @@ function setupCardEvents(el) {
     });
 
     el.addEventListener('pointerdown', (e) => {
-        // クリック開始位置を全員記録
+        // 全員共通：クリック座標とターゲットを記録
         startX = e.clientX; startY = e.clientY;
         potentialZoomTarget = el;
 
-        if (myRole === 'spectator') return; // 観戦者はドラッグ開始処理をスキップ
+        if (myRole === 'spectator') return; // 観戦者はここで終了（ドラッグはさせない）
         
         isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
         
@@ -235,16 +235,22 @@ document.addEventListener('pointermove', (e) => {
 });
 
 document.addEventListener('pointerup', (e) => {
-    // クリック判定（移動距離がわずかならズーム表示）
-    // 観戦者でもプレイヤーでも動作するようにする
+    // 【最優先】クリック判定（移動距離が10px未満なら拡大表示を実行）
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (dist < 5 && potentialZoomTarget && !potentialZoomTarget.classList.contains('face-down')) {
-        openZoom(potentialZoomTarget.innerText, potentialZoomTarget.className);
+    if (potentialZoomTarget && dist < 10) {
+        if (!potentialZoomTarget.classList.contains('face-down')) {
+            openZoom(potentialZoomTarget.innerText, potentialZoomTarget.className);
+        }
     }
-    potentialZoomTarget = null;
 
-    if (myRole === 'spectator' || !isDragging || !currentCard) {
-        isDragging = false; currentCard = null;
+    // 観戦者なら後続の移動ロジックは無視
+    if (myRole === 'spectator') {
+        isDragging = false; currentCard = null; potentialZoomTarget = null;
+        return;
+    }
+
+    if (!isDragging || !currentCard) {
+        potentialZoomTarget = null;
         return;
     }
 
@@ -278,5 +284,5 @@ document.addEventListener('pointerup', (e) => {
         }
         socket.emit('moveCard', moveData); repositionCards();
     }
-    isDragging = false; currentCard = null;
+    isDragging = false; currentCard = null; potentialZoomTarget = null;
 });
