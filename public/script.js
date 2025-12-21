@@ -2,8 +2,7 @@ const socket = io();
 
 let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
 let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
-let myRole = 'spectator';
-let currentCard = null, isDragging = false;
+let myRole = 'spectator', currentCard = null, isDragging = false;
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let originalNextSibling = null, potentialZoomTarget = null;
 
@@ -20,7 +19,6 @@ function showPage(pageId) {
     if (target) target.style.display = 'flex';
     if (pageId === 'card-list-page') renderGlobalCardList();
 }
-
 window.onload = loadCardData;
 
 // --- カードリスト描画 ---
@@ -34,7 +32,7 @@ function renderGlobalCardList() {
     });
 }
 
-// --- ズーム機能 ---
+// --- ズーム ---
 function openZoom(name, classList) {
     zoomDisplay.innerText = name;
     zoomDisplay.className = classList; 
@@ -43,10 +41,10 @@ function openZoom(name, classList) {
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
 
-// --- 再配置ロジック ---
+// --- 再配置ロジック (重要) ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
-    const cardW = 55, cardH = 77;
+    const cardW = 52, cardH = 74;
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== field || card === currentCard) return; 
         if (card.dataset.zoneId) {
@@ -64,7 +62,7 @@ function repositionCards() {
 }
 window.addEventListener('resize', repositionCards);
 
-// --- データ読込・入室 ---
+// --- データ/入室 ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
@@ -80,21 +78,18 @@ async function loadCardData() {
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
-    if (!rid) return alert("ルームIDを入力してください");
+    if (!rid) return alert("Room ID required");
     myRole = role;
     socket.emit('joinRoom', { roomId: rid, role });
     showPage(''); 
     document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
-    if (role === 'player') {
-        setupModal.style.display = 'flex';
-    } else {
-        document.body.classList.add('spectator-mode');
-    }
+    if (role === 'player') setupModal.style.display = 'flex';
+    else document.body.classList.add('spectator-mode');
 }
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- デッキ構築ロジック ---
+// --- デッキ構築 ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').forEach(card => {
@@ -134,7 +129,7 @@ function renderDecks() {
     AYLE_MASTER.forEach(card => {
         const count = cheerDeckList.filter(c => c.name === card.name).length;
         const div = document.createElement('div'); div.className = "deck-item";
-        div.innerHTML = `<span>${card.name}: ${count}</span><div class="deck-item-controls"><button class="btn-plus">+</button><button class="btn-minus">-</button></div>`;
+        div.innerHTML = `<span>${card.name.charAt(0)}:${count}</span><div class="deck-item-controls"><button class="btn-plus">+</button><button class="btn-minus">-</button></div>`;
         div.querySelector('.btn-plus').onclick = () => addToDeck(card);
         div.querySelector('.btn-minus').onclick = () => removeFromDeck(card.name, 'ayle');
         cSum.appendChild(div);
@@ -149,7 +144,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期・操作 ---
+// --- 同期/操作 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -222,7 +217,7 @@ document.onpointermove = (e) => {
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (potentialZoomTarget && dist < 15 && !potentialZoomTarget.classList.contains('face-down')) {
+    if (potentialZoomTarget && dist < 12 && !potentialZoomTarget.classList.contains('face-down')) {
         openZoom(potentialZoomTarget.innerText, potentialZoomTarget.className);
     }
     if (myRole === 'spectator' || !isDragging || !currentCard) {
@@ -235,7 +230,7 @@ document.onpointerup = (e) => {
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
         returnToHand(currentCard);
     } else {
-        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
+        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 38;
         const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
         zones.forEach(z => {
             const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
