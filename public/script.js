@@ -3,6 +3,7 @@ const socket = io();
 // マスターリスト定義
 let MASTER_CARDS = [];
 let OSHI_LIST = [];
+let AYLE_MASTER = []; // エールカードのマスターリストを個別に保持
 
 let mainDeckList = [];
 let cheerDeckList = [];
@@ -22,11 +23,14 @@ async function loadCardData() {
         ]);
         
         const holomenData = await holomenRes.json();
-        const ayleData = await ayleRes.json();
+        AYLE_MASTER = await ayleRes.json();
         OSHI_LIST = await oshiRes.json();
         
-        MASTER_CARDS = [...holomenData, ...ayleData, ...OSHI_LIST];
+        // 全カードリスト（検索用）
+        MASTER_CARDS = [...holomenData, ...AYLE_MASTER, ...OSHI_LIST];
+        
         updateLibrary();
+        renderDecks(); // 初期描画
     } catch (error) {
         console.error("Failed to load card data:", error);
     }
@@ -39,7 +43,9 @@ loadCardData();
 function updateLibrary(filter = "") {
     const list = document.getElementById('libraryList');
     list.innerHTML = "";
-    MASTER_CARDS.filter(c => c.name.includes(filter)).forEach(card => {
+    
+    // 【変更】エールカード(type === 'ayle')を除外して表示
+    MASTER_CARDS.filter(c => c.name.includes(filter) && c.type !== 'ayle').forEach(card => {
         const div = document.createElement('div');
         div.className = "library-item";
         const isOshiCard = OSHI_LIST.some(o => o.name === card.name);
@@ -57,13 +63,9 @@ function addToDeck(card) {
     if (isOshiCard) {
         selectedOshi = { ...card };
     } else if (card.type === 'ayle') {
-        if (cheerDeckList.length >= 20) {
-            alert("エールデッキは最大20枚までです。");
-            return;
-        }
+        if (cheerDeckList.length >= 20) return;
         cheerDeckList.push({ ...card });
     } else {
-        // メインデッキ (必要に応じて50枚上限チェックを入れることも可能)
         mainDeckList.push({ ...card });
     }
     renderDecks();
@@ -81,7 +83,7 @@ function removeFromDeckByName(name, type) {
     renderDecks();
 }
 
-// デッキの状態を描画（メイン・エール共にグループ化）
+// デッキの状態を描画
 function renderDecks() {
     const oshiSummary = document.getElementById('oshiSummary');
     const mainSummary = document.getElementById('mainDeckSummary');
@@ -91,7 +93,7 @@ function renderDecks() {
     oshiSummary.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">外す</button></div>` : "";
     if (selectedOshi) oshiSummary.querySelector('.btn-remove').onclick = () => { selectedOshi = null; renderDecks(); };
 
-    // 2. メインデッキの描画（グループ化 & +/- ボタン）
+    // 2. メインデッキの描画（グループ化）
     mainSummary.innerHTML = "";
     const groupedMain = mainDeckList.reduce((acc, card) => {
         acc[card.name] = (acc[card.name] || { data: card, count: 0 });
@@ -103,49 +105,36 @@ function renderDecks() {
         const item = groupedMain[name];
         const div = document.createElement('div');
         div.className = "deck-item";
-        div.innerHTML = `
-            <span>${name}</span>
-            <div class="deck-item-controls">
-                <button class="btn-minus">-</button>
-                <span class="count-number">${item.count}</span>
-                <button class="btn-plus">+</button>
-            </div>
-        `;
+        div.innerHTML = `<span>${name}</span><div class="deck-item-controls"><button class="btn-minus">-</button><span class="count-number">${item.count}</span><button class="btn-plus">+</button></div>`;
         div.querySelector('.btn-minus').onclick = () => removeFromDeckByName(name, 'holomen');
         div.querySelector('.btn-plus').onclick = () => addToDeck(item.data);
         mainSummary.appendChild(div);
     });
 
-    // 3. エールデッキの描画（グループ化 & +/- ボタン）
+    // 3. エールデッキの描画（【変更】マスターリストに基づき全色を常に表示）
     cheerSummary.innerHTML = "";
-    const groupedCheer = cheerDeckList.reduce((acc, card) => {
-        acc[card.name] = (acc[card.name] || { data: card, count: 0 });
-        acc[card.name].count++;
-        return acc;
-    }, {});
+    const totalCheer = cheerDeckList.length;
 
-    Object.keys(groupedCheer).forEach(name => {
-        const item = groupedCheer[name];
+    AYLE_MASTER.forEach(cardData => {
+        const count = cheerDeckList.filter(c => c.name === cardData.name).length;
         const div = document.createElement('div');
         div.className = "deck-item";
         div.innerHTML = `
-            <span>${name}</span>
+            <span>${cardData.name}</span>
             <div class="deck-item-controls">
-                <button class="btn-minus">-</button>
-                <span class="count-number">${item.count}</span>
-                <button class="btn-plus" ${cheerDeckList.length >= 20 ? 'disabled' : ''}>+</button>
+                <button class="btn-minus" ${count === 0 ? 'disabled' : ''}>-</button>
+                <span class="count-number">${count}</span>
+                <button class="btn-plus" ${totalCheer >= 20 ? 'disabled' : ''}>+</button>
             </div>
         `;
-        div.querySelector('.btn-minus').onclick = () => removeFromDeckByName(name, 'ayle');
-        div.querySelector('.btn-plus').onclick = () => addToDeck(item.data);
+        div.querySelector('.btn-minus').onclick = () => removeFromDeckByName(cardData.name, 'ayle');
+        div.querySelector('.btn-plus').onclick = () => addToDeck(cardData);
         cheerSummary.appendChild(div);
     });
 
     document.getElementById('mainBuildCount').innerText = mainDeckList.length;
-    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
-    
-    // 開始条件：推しが選ばれていて、各デッキにカードがあること
-    document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length === 0);
+    document.getElementById('cheerBuildCount').innerText = totalCheer;
+    document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || totalCheer === 0);
 }
 
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
@@ -166,7 +155,7 @@ document.getElementById('startGameBtn').onclick = () => {
     modal.style.display = "none";
 };
 
-// --- ゲームプレイロジック ---
+// --- ゲームプレイロジック（Pointer Events維持） ---
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 
 socket.on('gameStarted', (data) => {
@@ -182,11 +171,6 @@ socket.on('init', (data) => {
     const existingCards = field.querySelectorAll('.card');
     existingCards.forEach(card => card.remove());
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
-});
-
-socket.on('deckCount', (counts) => {
-    document.getElementById('mainCount').innerText = counts.main;
-    document.getElementById('cheerCount').innerText = counts.cheer;
 });
 
 socket.on('receiveCard', (data) => handDiv.appendChild(createCardElement(data)));
