@@ -9,23 +9,33 @@ const setupModal = document.getElementById('setup-modal');
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 
-// --- 座標の正規化ロジック ---
-// pxを%に変換
-function getPercentPos(pxX, pxY) {
-    const rect = field.getBoundingClientRect();
-    return {
-        x: (parseFloat(pxX) / rect.width) * 100,
-        y: (parseFloat(pxY) / rect.height) * 100
-    };
+// --- 座標計算の核：再配置ロジック ---
+function repositionCards() {
+    const fieldRect = field.getBoundingClientRect();
+    document.querySelectorAll('.card').forEach(card => {
+        if (card.parentElement !== field) return; // 手札は除外
+
+        // 1. 枠（ゾーン）に所属している場合、その中心へ強制移動
+        if (card.dataset.zoneId) {
+            const zone = document.getElementById(card.dataset.zoneId);
+            if (zone) {
+                const zr = zone.getBoundingClientRect();
+                card.style.left = (zr.left - fieldRect.left) + (zr.width - 60) / 2 + 'px';
+                card.style.top = (zr.top - fieldRect.top) + (zr.height - 85) / 2 + 'px';
+                return;
+            }
+        }
+
+        // 2. 枠外にいる場合、％座標で相対位置を維持
+        if (card.dataset.percentX) {
+            card.style.left = (card.dataset.percentX / 100) * fieldRect.width + 'px';
+            card.style.top = (card.dataset.percentY / 100) * fieldRect.height + 'px';
+        }
+    });
 }
-// %をpxに変換
-function getPixelPos(percentX, percentY) {
-    const rect = field.getBoundingClientRect();
-    return {
-        x: (percentX / 100) * rect.width + 'px',
-        y: (percentY / 100) * rect.height + 'px'
-    };
-}
+
+// ウィンドウのリサイズ、またはオリエンテーション変更時に再配置を実行
+window.addEventListener('resize', repositionCards);
 
 // データ読み込み
 async function loadCardData() {
@@ -54,20 +64,14 @@ async function joinRoom(role) {
     if (role === 'player') {
         setupModal.style.display = 'flex';
         await loadCardData();
-        initCollapsible();
+        document.querySelectorAll('.section-header').forEach(h => h.onclick = () => h.parentElement.classList.toggle('collapsed'));
     } else {
         document.body.classList.add('spectator-mode');
         document.getElementById('status').innerText = `Room: ${roomId} (観戦中)`;
-        // 観戦者もカード位置を正しく描画するために必要
         await loadCardData(); 
     }
 }
 
-function initCollapsible() {
-    document.querySelectorAll('.section-header').forEach(h => h.onclick = () => h.parentElement.classList.toggle('collapsed'));
-}
-
-// デッキ構築UI... (略さず全文維持)
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList');
     list.innerHTML = "";
@@ -124,37 +128,39 @@ function renderDecks() {
 
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
 document.getElementById('startGameBtn').onclick = () => {
-    const oz = document.getElementById('oshi').getBoundingClientRect(), fr = field.getBoundingClientRect();
-    const pxX = (oz.left - fr.left) + (oz.width - 60) / 2;
-    const pxY = (oz.top - fr.top) + (oz.height - 85) / 2;
-    const pPos = getPercentPos(pxX, pxY);
-    socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: { name: selectedOshi.name, percentX: pPos.x, percentY: pPos.y } });
+    socket.emit('setGame', { 
+        main: mainDeckList, 
+        cheer: cheerDeckList, 
+        oshi: { name: selectedOshi.name } 
+    });
     setupModal.style.display = "none";
 };
 
-// --- ゲームプレイ同期 ---
-let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
-
+// --- 同期イベント ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
-    updateDeckCounts(data.deckCount);
+    repositionCards();
 });
 
 socket.on('init', (d) => { 
     if (d.role === 'player') document.getElementById('status').innerText = `Player ID: ${d.id}`;
     field.querySelectorAll('.card').forEach(c => c.remove()); 
     for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); 
+    repositionCards();
 });
 
-socket.on('deckCount', updateDeckCounts);
+socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
 socket.on('receiveCard', (d) => handDiv.appendChild(createCardElement(d)));
 socket.on('cardMoved', (d) => { 
     let el = document.getElementById(d.id); 
     if(!el) return restoreCard(d.id, d); 
-    const pos = getPixelPos(d.percentX, d.percentY);
-    el.style.left = pos.x; el.style.top = pos.y; el.style.zIndex = d.zIndex; 
+    el.dataset.zoneId = d.zoneId || "";
+    el.dataset.percentX = d.percentX || "";
+    el.dataset.percentY = d.percentY || "";
+    el.style.zIndex = d.zIndex;
     if(el.parentElement !== field) field.appendChild(el); 
+    repositionCards();
 });
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if(el) el.remove(); });
 socket.on('cardFlipped', (d) => { 
@@ -162,19 +168,8 @@ socket.on('cardFlipped', (d) => {
     if(el) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); } 
 });
 
-function updateDeckCounts(c) { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; }
-
 document.getElementById('main-deck-zone').onpointerdown = (e) => { if(myRole==='player') socket.emit('drawMainCard'); };
 document.getElementById('cheer-deck-zone').onpointerdown = (e) => { if(myRole==='player') socket.emit('drawCheerCard'); };
-
-// ウィンドウサイズ変更時に全カードを再配置
-window.onresize = () => {
-    field.querySelectorAll('.card').forEach(card => {
-        if (!card.dataset.percentX) return;
-        const pos = getPixelPos(card.dataset.percentX, card.dataset.percentY);
-        card.style.left = pos.x; card.style.top = pos.y;
-    });
-};
 
 function createCardElement(data) {
     const el = document.createElement('div'); el.id = data.id; el.innerText = data.name; el.className = `card face-up type-${data.type}`;
@@ -187,16 +182,21 @@ function createCardElement(data) {
 
 function restoreCard(id, info) {
     const el = createCardElement({ id, name: info.name, type: info.type });
-    el.dataset.percentX = info.percentX; el.dataset.percentY = info.percentY;
-    const pos = getPixelPos(info.percentX, info.percentY);
-    el.style.position = 'absolute'; el.style.left = pos.x; el.style.top = pos.y; el.style.zIndex = info.zIndex;
-    el.classList.toggle('face-up', info.isFaceUp !== false); el.classList.toggle('face-down', info.isFaceUp === false);
+    el.dataset.zoneId = info.zoneId || "";
+    el.dataset.percentX = info.percentX || "";
+    el.dataset.percentY = info.percentY || "";
+    el.style.position = 'absolute';
+    el.style.zIndex = info.zIndex;
+    el.classList.toggle('face-up', info.isFaceUp !== false);
+    el.classList.toggle('face-down', info.isFaceUp === false);
     field.appendChild(el);
 }
 
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
+        // 枠内にあるときは裏返し禁止
+        if (el.dataset.zoneId && ['back', 'center', 'collab'].includes(el.dataset.zoneId)) return;
         el.classList.toggle('face-up'); el.classList.toggle('face-down');
         socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
     });
@@ -225,28 +225,34 @@ document.addEventListener('pointerup', (e) => {
     const hRect = handDiv.getBoundingClientRect();
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
         currentCard.style.position = 'relative'; currentCard.style.left = ''; currentCard.style.top = '';
-        delete currentCard.dataset.percentX; delete currentCard.dataset.percentY;
+        delete currentCard.dataset.zoneId; delete currentCard.dataset.percentX;
         handDiv.appendChild(currentCard); socket.emit('returnToHand', { id: currentCard.id });
     } else {
-        snapToZone();
-        const pPos = getPercentPos(currentCard.style.left, currentCard.style.top);
-        currentCard.dataset.percentX = pPos.x; currentCard.dataset.percentY = pPos.y;
-        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, percentX: pPos.x, percentY: pPos.y, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':(currentCard.classList.contains('type-support')?'support':'holomen') });
+        // スナップ判定
+        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 45;
+        const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+        zones.forEach(z => {
+            const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+            const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
+            if (d < minDist) { minDist = d; closest = z; }
+        });
+
+        const fRect = field.getBoundingClientRect();
+        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':(currentCard.classList.contains('type-support')?'support':'holomen') };
+
+        if (closest) {
+            currentCard.dataset.zoneId = closest.id;
+            delete currentCard.dataset.percentX; delete currentCard.dataset.percentY;
+            moveData.zoneId = closest.id;
+        } else {
+            delete currentCard.dataset.zoneId;
+            const pX = (parseFloat(currentCard.style.left) / fRect.width) * 100;
+            const pY = (parseFloat(currentCard.style.top) / fRect.height) * 100;
+            currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY;
+            moveData.percentX = pX; moveData.percentY = pY;
+        }
+        socket.emit('moveCard', moveData);
+        repositionCards();
     }
     isDragging = false; currentCard = null;
 });
-
-function snapToZone() {
-    const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
-    const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
-    zones.forEach(z => {
-        const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
-        const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
-        if (d < minDist) { minDist = d; closest = z; }
-    });
-    if (closest) {
-        const zr = closest.getBoundingClientRect(), fr = field.getBoundingClientRect();
-        currentCard.style.left = (zr.left - fr.left) + (zr.width - cr.width)/2 + 'px';
-        currentCard.style.top = (zr.top - fr.top) + (zr.height - cr.height)/2 + 'px';
-    }
-}
