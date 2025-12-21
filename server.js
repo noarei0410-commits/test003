@@ -60,7 +60,7 @@ io.on('connection', (socket) => {
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = {
             id: oshiId, name: data.oshi.name, type: 'holomen',
-            zoneId: 'oshi', // 初期配置をゾーンIDで指定
+            zoneId: 'oshi',
             zIndex: 100, isFaceUp: true
         };
 
@@ -117,4 +117,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
