@@ -196,8 +196,27 @@ function getZoneUnderCard(card) {
 
 function createCardElement(data) {
     const el = document.createElement('div');
-    el.className = `card face-up type-${data.type}`;
-    el.id = data.id; el.innerText = data.name;
+    el.id = data.id;
+    el.innerText = data.name;
+
+    // 基本クラス
+    el.classList.add('card', 'face-up');
+    
+    // タイプ別クラス
+    if (data.type === 'ayle') {
+        el.classList.add('type-ayle');
+        
+        // 【新規】名前から色を判定してクラスを付与
+        if (data.name.includes('白')) el.classList.add('ayle-white');
+        else if (data.name.includes('緑')) el.classList.add('ayle-green');
+        else if (data.name.includes('赤')) el.classList.add('ayle-red');
+        else if (data.name.includes('青')) el.classList.add('ayle-blue');
+        else if (data.name.includes('黄')) el.classList.add('ayle-yellow');
+        else if (data.name.includes('紫')) el.classList.add('ayle-purple');
+    } else {
+        el.classList.add('type-holomen');
+    }
+
     setupCardEvents(el);
     return el;
 }
@@ -269,3 +288,4 @@ function snapToZone() {
         currentCard.style.top = (zr.top - fr.top) + (zr.height - cr.height)/2 + 'px';
     }
 }
+
