@@ -7,13 +7,62 @@ let currentCard = null, isDragging = false;
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let originalNextSibling = null;
 
-const field = document.getElementById('field');
-const handDiv = document.getElementById('hand');
-const setupModal = document.getElementById('setup-modal');
-const zoomModal = document.getElementById('zoom-modal');
-const zoomDisplay = document.getElementById('zoom-card-display');
+// --- 画面遷移管理 ---
+function showPage(pageId) {
+    // すべてのフルページ要素を隠す
+    document.querySelectorAll('.full-page').forEach(page => page.style.display = 'none');
+    // 指定されたページを表示
+    const target = document.getElementById(pageId);
+    if (target) target.style.display = 'flex';
+    
+    // カードリストを開いた場合はデータを再描画
+    if (pageId === 'card-list-page') renderGlobalCardList();
+}
+
+// 起動時にマスターデータをロード
+window.onload = loadCardData;
+
+// --- ログイン処理 ---
+document.getElementById('loginBtn').onclick = () => {
+    const playerId = document.getElementById('playerIdInput').value;
+    const password = document.getElementById('passwordInput').value;
+    if (!playerId || !password) return alert("入力してください");
+    socket.emit('login', { playerId, password });
+};
+
+socket.on('loginResponse', (data) => {
+    if (data.success) {
+        showPage('room-modal');
+        document.getElementById('status').innerText = `Logged: ${data.playerId}`;
+    } else {
+        alert(data.message);
+    }
+});
+
+// --- カードリスト描画 ---
+function renderGlobalCardList() {
+    const grid = document.getElementById('global-card-grid');
+    grid.innerHTML = "";
+    // 全マスターカードを表示
+    MASTER_CARDS.forEach(card => {
+        const el = document.createElement('div');
+        el.className = 'card face-up';
+        // タイプ別クラス
+        if (card.type === 'ayle') {
+            const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
+            for (let k in colors) if (card.name.includes(k)) el.classList.add(`ayle-${colors[k]}`);
+        } else {
+            el.classList.add(`type-${card.type}`);
+        }
+        el.innerText = card.name;
+        el.onclick = () => openZoom(card.name, el.className);
+        grid.appendChild(el);
+    });
+}
 
 // --- ズーム機能 ---
+const zoomModal = document.getElementById('zoom-modal');
+const zoomDisplay = document.getElementById('zoom-card-display');
 function openZoom(name, classList) {
     zoomDisplay.innerText = name;
     zoomDisplay.className = classList; 
@@ -22,14 +71,12 @@ function openZoom(name, classList) {
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
 
-// --- 再配置ロジック (スマホの狭い画面に対応) ---
+// --- 再配置・同期ロジック ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
-    const cardW = 55, cardH = 77; // CSSと同期
-
+    const cardW = 55, cardH = 77;
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== field || card === currentCard) return; 
-
         if (card.dataset.zoneId) {
             const zone = document.getElementById(card.dataset.zoneId);
             if (zone) {
@@ -47,15 +94,14 @@ function repositionCards() {
 }
 window.addEventListener('resize', repositionCards);
 
-// --- データ読込・入室 ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
             fetch('/data/holomen.json'), fetch('/data/support.json'),
             fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
-        MASTER_CARDS = [...await h.json(), ...await s.json()];
-        AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
+        MASTER_CARDS = [...await h.json(), ...await s.json(), ...await a.json()];
+        OSHI_LIST = await o.json();
         MASTER_CARDS = [...MASTER_CARDS, ...OSHI_LIST];
         updateLibrary(); renderDecks();
     } catch (e) { console.error(e); }
@@ -63,29 +109,27 @@ async function loadCardData() {
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
-    if (!rid) return alert("Room ID required");
+    if (!rid) return alert("ルームIDを入力してください");
     myRole = role;
     socket.emit('joinRoom', { roomId: rid, role });
-    document.getElementById('room-modal').style.display = 'none';
+    showPage(''); // 全モーダルを閉じる
     document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
     if (role === 'player') {
         setupModal.style.display = 'flex';
-        await loadCardData();
         document.querySelectorAll('.section-header').forEach(h => h.onclick = () => h.parentElement.classList.toggle('collapsed'));
     } else {
         document.body.classList.add('spectator-mode');
-        await loadCardData();
     }
 }
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- デッキ構築UI ---
+// デッキ構築UI
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').forEach(card => {
         const div = document.createElement('div'); div.className = "library-item";
-        div.innerHTML = `<span>${card.name}</span> <button class="btn-add">追加</button>`;
+        div.innerHTML = `<span>${card.name}</span><button class="btn-add">追加</button>`;
         div.querySelector('button').onclick = () => addToDeck(card);
         list.appendChild(div);
     });
@@ -105,13 +149,13 @@ function removeFromDeck(name, type) {
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
-    oSum.innerHTML = selectedOshi ? `<div>${selectedOshi.name} <button class="btn-remove">X</button></div>` : "";
+    oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">X</button></div>` : "";
     if (selectedOshi) oSum.querySelector('button').onclick = () => { selectedOshi = null; renderDecks(); };
     mSum.innerHTML = "";
     const gMain = mainDeckList.reduce((acc, c) => { acc[c.name] = (acc[c.name] || { d: c, n: 0 }); acc[c.name].n++; return acc; }, {});
     Object.keys(gMain).forEach(n => {
         const item = gMain[n], div = document.createElement('div');
-        div.innerHTML = `<span>${n} x${item.n}</span> <button class="btn-minus">-</button>`;
+        div.innerHTML = `<span>${n} x${item.n}</span><button class="btn-minus">-</button>`;
         div.querySelector('button').onclick = () => removeFromDeck(n, 'main');
         mSum.appendChild(div);
     });
@@ -119,7 +163,7 @@ function renderDecks() {
     AYLE_MASTER.forEach(card => {
         const count = cheerDeckList.filter(c => c.name === card.name).length;
         const div = document.createElement('div');
-        div.innerHTML = `<span>${card.name.charAt(0)}: ${count}</span> <button class="btn-plus">+</button> <button class="btn-minus">-</button>`;
+        div.innerHTML = `<span>${card.name}: ${count}</span><button class="btn-plus">+</button><button class="btn-minus">-</button>`;
         div.querySelector('.btn-plus').onclick = () => addToDeck(card);
         div.querySelector('.btn-minus').onclick = () => removeFromDeck(card.name, 'ayle');
         cSum.appendChild(div);
@@ -134,7 +178,11 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期処理 ---
+// 同期・ドラッグ&ドロップ処理 (中略なし)
+const field = document.getElementById('field');
+const handDiv = document.getElementById('hand');
+const setupModal = document.getElementById('setup-modal');
+
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -148,11 +196,9 @@ socket.on('init', (d) => {
 socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
 socket.on('receiveCard', (d) => handDiv.appendChild(createCardElement(d)));
 socket.on('cardMoved', (d) => {
-    let el = document.getElementById(d.id);
-    if (!el) return restoreCard(d.id, d);
+    let el = document.getElementById(d.id); if (!el) return restoreCard(d.id, d);
     el.dataset.zoneId = d.zoneId || ""; el.dataset.percentX = d.percentX || ""; el.dataset.percentY = d.percentY || "";
-    el.style.zIndex = d.zIndex;
-    if (el.parentElement !== field) field.appendChild(el);
+    el.style.zIndex = d.zIndex; if (el.parentElement !== field) field.appendChild(el);
     repositionCards();
 });
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
@@ -177,7 +223,6 @@ function restoreCard(id, info) {
     field.appendChild(el);
 }
 
-// --- ドラッグ&ドロップ ---
 function setupCardEvents(el) {
     el.addEventListener('dblclick', () => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
@@ -185,7 +230,6 @@ function setupCardEvents(el) {
         if (el.dataset.zoneId && noFlip.includes(el.dataset.zoneId)) return;
         socket.emit('flipCard', { id: el.id, isFaceUp: !el.classList.contains('face-up') });
     });
-
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (el.parentElement === handDiv) originalNextSibling = el.nextElementSibling;
@@ -210,7 +254,8 @@ document.onpointermove = (e) => {
 };
 
 document.onpointerup = (e) => {
-    if (Math.hypot(e.clientX - startX, e.clientY - startY) < 10 && potentialZoomTarget) {
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    if (potentialZoomTarget && dist < 15) {
         if (!potentialZoomTarget.classList.contains('face-down')) openZoom(potentialZoomTarget.innerText, potentialZoomTarget.className);
     }
     if (myRole === 'spectator' || !isDragging || !currentCard) {
@@ -231,7 +276,8 @@ document.onpointerup = (e) => {
             if (d < minDist) { minDist = d; closest = z; }
         });
         const fRect = field.getBoundingClientRect();
-        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-holomen')?'holomen':'support' };
+        let type = currentCard.classList.contains('type-holomen')?'holomen':'support';
+        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: type };
         if (closest) {
             currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX;
             moveData.zoneId = closest.id;
