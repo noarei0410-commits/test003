@@ -1,10 +1,5 @@
 [
-    { "name": "ときのそら (推し)", "type": "holomen" },
     { "name": "ときのそら (Debut)", "type": "holomen" },
     { "name": "ときのそら (Bloom)", "type": "holomen" },
-    { "name": "AZKi (Debut)", "type": "holomen" },
-    { "name": "AZKi (Bloom)", "type": "holomen" },
-    { "name": "友人A", "type": "holomen" },
-    { "name": "春先のどか", "type": "holomen" },
-    { "name": "マイク", "type": "holomen" }
+    { "name": "AZKi (Debut)", "type": "holomen" }
 ]
