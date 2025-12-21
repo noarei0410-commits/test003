@@ -19,26 +19,20 @@ body {
 .modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; padding: 15px; width: 98vw; height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
 .room-content { width: 320px !important; height: auto !important; gap: 15px; text-align: center; }
 
-/* カードリスト（左から右へ折り返し表示） */
+/* カードリスト・アーカイブ（左から右へ折り返し） */
 .card-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    padding: 15px;
-    overflow-y: auto;
-    flex: 1;
-    justify-content: flex-start;
-    align-content: flex-start;
+    display: flex; flex-wrap: wrap; gap: 12px; padding: 10px;
+    overflow-y: auto; flex: 1; justify-content: flex-start; align-content: flex-start;
 }
 
 /* ボタン・構築UI */
 button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; transition: 0.1s; }
 .btn-add, .btn-plus, .btn-main { background: #00d2ff; color: #04172b; padding: 4px 10px; }
 .btn-minus, .btn-remove { background: #ff5e5e; color: white; padding: 4px 10px; }
-.btn-back, .btn-close { background: #444; color: white; padding: 10px; width: 100%; margin-top: 5px; }
+.btn-back, .btn-close-gray { background: #444; color: white; padding: 10px; width: 100%; margin-top: 5px; }
 #startGameBtn { padding: 12px; background: #00d2ff; width: 100%; font-size: 16px; margin-bottom: 5px; }
 
-/* --- フィールドレイアウト --- */
+/* フィールドレイアウト */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
 
 #field-container { 
@@ -50,16 +44,14 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .column { display: flex; flex-direction: column; gap: 6px; height: 100%; }
 .center-column { justify-content: flex-start; gap: 8px; }
 
-/* 共通ゾーン（サイズ統一） */
 .zone { 
     border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); 
     border-radius: 6px; display: flex; justify-content: center; align-items: center; 
     font-size: 7px; text-align: center; color: rgba(255,255,255,0.4); position: relative;
-    /* ステージ枠に合わせた標準サイズ */
     width: 100%; height: 100%;
 }
+.clickable-zone { cursor: pointer; border-color: #00d2ff; color: #00d2ff; background: rgba(0, 210, 255, 0.05); }
 
-/* 中央ステージ */
 .stage-label-bar { width: 100%; text-align: center; border-bottom: 1px solid #f0ffff; font-size: 12px; color: #f0ffff; height: 20px; }
 .stage-top-row { display: flex; gap: 10px; width: 100%; height: 35%; justify-content: center; }
 .stage-top-row .zone { width: 22%; height: 100%; }
@@ -74,16 +66,16 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 
 .turn-guide-box { width: 100%; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 4px; font-size: 8px; text-align: center; margin-top: auto; }
 
-/* 左右カラム（エール、パワー、デッキ、アーカイブのサイズを調整） */
-.life-zone { height: 60%; } /* ライフのみ表示の都合上少し縦長 */
-.side-column .zone:not(.life-zone) { height: 35%; } /* 他はセンター枠と比率を合わせる */
+/* 左右カラムサイズ同期 */
+.life-zone { height: 60%; }
+.side-column .zone:not(.life-zone) { height: 35%; }
 .deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); color: #00d2ff; cursor: pointer; }
 
 /* 手札 */
 #hand-container { width: 98vw; height: 110px; margin-top: 5px; z-index: 5000; }
 #hand { height: 100%; border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 12px; padding: 10px 15px; background: rgba(4, 23, 43, 0.85); overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
 
-/* カード */
+/* カード共通 */
 .card { width: 52px; height: 74px; background: #fff; color: #000; font-size: 8px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; scroll-snap-align: center; }
 #field .card { position: absolute; }
 
@@ -98,5 +90,8 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .ayle-yellow { border: 3px solid #ffff00 !important; }
 .ayle-purple { border: 3px solid #da70d6 !important; }
 
+/* 拡大 */
 #zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 40000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
 #zoom-card-display { width: 230px !important; height: 322px !important; font-size: 22px !important; }
+
+body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.6; }
