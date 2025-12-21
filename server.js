@@ -16,18 +16,30 @@ let fieldState = {};
 
 io.on('connection', (socket) => {
     socket.emit('init', { id: socket.id, fieldState: fieldState });
-    io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
+    socket.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
 
     socket.on('setGame', (data) => {
-        // デッキの初期化
-        mainDeck = data.main.map(name => ({ id: uuidv4(), name: name, type: 'holomen' }));
-        cheerDeck = data.cheer.map(name => ({ id: uuidv4(), name: name, type: 'ayle' }));
+        fieldState = {}; 
+        
+        // メインデッキの構築（タイプを維持）
+        mainDeck = data.main.map(card => ({ 
+            id: uuidv4(), 
+            name: card.name, 
+            type: card.type 
+        }));
+        
+        // エールデッキの構築
+        cheerDeck = data.cheer.map(card => ({ 
+            id: uuidv4(), 
+            name: card.name, 
+            type: 'ayle' 
+        }));
+        
         shuffle(mainDeck);
         shuffle(cheerDeck);
 
-        // 推しホロメンをフィールドの初期位置に登録
+        // 推しホロメンの配置
         const oshiId = uuidv4();
-        fieldState = {}; // ゲーム開始時にフィールドをリセット
         fieldState[oshiId] = {
             id: oshiId,
             name: data.oshi.name,
@@ -46,14 +58,16 @@ io.on('connection', (socket) => {
 
     socket.on('drawMainCard', () => {
         if (mainDeck.length > 0) {
-            socket.emit('receiveCard', mainDeck.pop());
+            const card = mainDeck.pop();
+            socket.emit('receiveCard', card);
             io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
         }
     });
 
     socket.on('drawCheerCard', () => {
         if (cheerDeck.length > 0) {
-            socket.emit('receiveCard', cheerDeck.pop());
+            const card = cheerDeck.pop();
+            socket.emit('receiveCard', card);
             io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
         }
     });
@@ -84,4 +98,4 @@ function shuffle(array) {
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server: ${PORT}`));
+server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
