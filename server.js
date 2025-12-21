@@ -10,72 +10,110 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-let mainDeck = [];
-let cheerDeck = [];
-let fieldState = {}; 
+// ルームごとの状態を保持するオブジェクト
+let rooms = {};
 
 io.on('connection', (socket) => {
-    socket.emit('init', { id: socket.id, fieldState: fieldState });
-    socket.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
+    socket.on('joinRoom', ({ roomId, role }) => {
+        socket.join(roomId);
+        socket.roomId = roomId;
+        socket.role = role; // 'player' or 'spectator'
+
+        // ルームの初期化（存在しない場合）
+        if (!rooms[roomId]) {
+            rooms[roomId] = {
+                fieldState: {},
+                mainDeck: [],
+                cheerDeck: [],
+                players: []
+            };
+        }
+
+        if (role === 'player') rooms[roomId].players.push(socket.id);
+
+        // 入室したクライアントに現在の状態を送信
+        socket.emit('init', { 
+            id: socket.id, 
+            role: role,
+            fieldState: rooms[roomId].fieldState 
+        });
+
+        // 山札の枚数を同期
+        io.to(roomId).emit('deckCount', { 
+            main: rooms[roomId].mainDeck.length, 
+            cheer: rooms[roomId].cheerDeck.length 
+        });
+
+        console.log(`User ${socket.id} joined room ${roomId} as ${role}`);
+    });
 
     socket.on('setGame', (data) => {
-        fieldState = {}; 
-        mainDeck = data.main.map(card => ({ id: uuidv4(), name: card.name, type: card.type }));
-        cheerDeck = data.cheer.map(card => ({ id: uuidv4(), name: card.name, type: 'ayle' }));
-        shuffle(mainDeck);
-        shuffle(cheerDeck);
+        const roomId = socket.roomId;
+        if (!rooms[roomId] || socket.role !== 'player') return;
+
+        rooms[roomId].fieldState = {}; 
+        rooms[roomId].mainDeck = data.main.map(card => ({ id: uuidv4(), name: card.name, type: card.type }));
+        rooms[roomId].cheerDeck = data.cheer.map(card => ({ id: uuidv4(), name: card.name, type: 'ayle' }));
+        
+        // シャッフル
+        for (let i = rooms[roomId].mainDeck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [rooms[roomId].mainDeck[i], rooms[roomId].mainDeck[j]] = [rooms[roomId].mainDeck[j], rooms[roomId].mainDeck[i]];
+        }
 
         const oshiId = uuidv4();
-        fieldState[oshiId] = {
+        rooms[roomId].fieldState[oshiId] = {
             id: oshiId, name: data.oshi.name, type: 'holomen',
             x: data.oshi.pos.x, y: data.oshi.pos.y,
             zIndex: 100, isFaceUp: true
         };
 
-        io.emit('gameStarted', { 
-            fieldState: fieldState, 
-            deckCount: { main: mainDeck.length, cheer: cheerDeck.length } 
+        io.to(roomId).emit('gameStarted', { 
+            fieldState: rooms[roomId].fieldState, 
+            deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } 
         });
     });
 
     socket.on('drawMainCard', () => {
-        if (mainDeck.length > 0) {
-            socket.emit('receiveCard', mainDeck.pop());
-            io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
+        const roomId = socket.roomId;
+        if (rooms[roomId] && rooms[roomId].mainDeck.length > 0) {
+            socket.emit('receiveCard', rooms[roomId].mainDeck.pop());
+            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
 
     socket.on('drawCheerCard', () => {
-        if (cheerDeck.length > 0) {
-            socket.emit('receiveCard', cheerDeck.pop());
-            io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
+        const roomId = socket.roomId;
+        if (rooms[roomId] && rooms[roomId].cheerDeck.length > 0) {
+            socket.emit('receiveCard', rooms[roomId].cheerDeck.pop());
+            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
 
     socket.on('moveCard', (data) => {
-        fieldState[data.id] = { ...fieldState[data.id], ...data };
-        socket.broadcast.emit('cardMoved', data);
+        const roomId = socket.roomId;
+        if (rooms[roomId]) {
+            rooms[roomId].fieldState[data.id] = { ...rooms[roomId].fieldState[data.id], ...data };
+            socket.to(roomId).emit('cardMoved', data);
+        }
     });
 
     socket.on('returnToHand', (data) => {
-        delete fieldState[data.id];
-        socket.broadcast.emit('cardRemoved', { id: data.id });
+        const roomId = socket.roomId;
+        if (rooms[roomId]) {
+            delete rooms[roomId].fieldState[data.id];
+            socket.to(roomId).emit('cardRemoved', { id: data.id });
+        }
     });
 
     socket.on('flipCard', (data) => {
-        if (fieldState[data.id]) fieldState[data.id].isFaceUp = data.isFaceUp;
-        socket.broadcast.emit('cardFlipped', data);
+        const roomId = socket.roomId;
+        if (rooms[roomId] && rooms[roomId].fieldState[data.id]) {
+            rooms[roomId].fieldState[data.id].isFaceUp = data.isFaceUp;
+            socket.to(roomId).emit('cardFlipped', data);
+        }
     });
-
-    socket.on('disconnect', () => { console.log('User disconnected'); });
 });
-
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
