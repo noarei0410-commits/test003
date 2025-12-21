@@ -192,21 +192,26 @@ function setupCardEvents(el) {
         el.classList.toggle('face-up'); el.classList.toggle('face-down');
         socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
     });
+
     el.addEventListener('pointerdown', (e) => {
         if (myRole === 'spectator') return;
         isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
         
         const rect = el.getBoundingClientRect(); 
+        const fRect = field.getBoundingClientRect();
+
+        // 掴んだ瞬間のマウスとカードの相対距離を記録
         offsetX = e.clientX - rect.left; 
         offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
 
-        // 手札から抜く時の処理
+        // 手札からフィールドへ移動させる直前の座標セット
+        // どの親要素にいても、見た目上の位置を変えずにフィールドに転籍させる
+        el.style.position = 'absolute';
+        el.style.left = (rect.left - fRect.left) + 'px'; 
+        el.style.top = (rect.top - fRect.top) + 'px';
+        
         if (el.parentElement !== field) {
-            const fRect = field.getBoundingClientRect(); 
-            el.style.position = 'absolute';
-            el.style.left = (e.clientX - fRect.left - offsetX) + 'px'; 
-            el.style.top = (e.clientY - fRect.top - offsetY) + 'px';
             field.appendChild(el);
         }
     });
@@ -215,6 +220,7 @@ function setupCardEvents(el) {
 document.addEventListener('pointermove', (e) => {
     if (!isDragging || !currentCard) return;
     const fRect = field.getBoundingClientRect();
+    // 常にフィールドの左上を基準に移動させる
     currentCard.style.left = (e.clientX - fRect.left - offsetX) + 'px';
     currentCard.style.top = (e.clientY - fRect.top - offsetY) + 'px';
 });
@@ -222,8 +228,12 @@ document.addEventListener('pointermove', (e) => {
 document.addEventListener('pointerup', (e) => {
     if (!isDragging || !currentCard) return;
     const hRect = handDiv.getBoundingClientRect();
+    
+    // 手札枠の中に離したか判定
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
-        currentCard.style.position = 'relative'; currentCard.style.left = ''; currentCard.style.top = '';
+        currentCard.style.position = 'relative'; 
+        currentCard.style.left = ''; 
+        currentCard.style.top = '';
         delete currentCard.dataset.zoneId; delete currentCard.dataset.percentX;
         handDiv.appendChild(currentCard); 
         socket.emit('returnToHand', { id: currentCard.id });
