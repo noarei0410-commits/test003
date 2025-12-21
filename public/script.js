@@ -9,16 +9,34 @@ const setupModal = document.getElementById('setup-modal');
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 
-// データの読み込み
+// --- 座標の正規化ロジック ---
+// pxを%に変換
+function getPercentPos(pxX, pxY) {
+    const rect = field.getBoundingClientRect();
+    return {
+        x: (parseFloat(pxX) / rect.width) * 100,
+        y: (parseFloat(pxY) / rect.height) * 100
+    };
+}
+// %をpxに変換
+function getPixelPos(percentX, percentY) {
+    const rect = field.getBoundingClientRect();
+    return {
+        x: (percentX / 100) * rect.width + 'px',
+        y: (percentY / 100) * rect.height + 'px'
+    };
+}
+
+// データ読み込み
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
             fetch('/data/holomen.json'), fetch('/data/support.json'),
             fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
-        const hData = await h.json(), sData = await s.json();
+        MASTER_CARDS = [...await h.json(), ...await s.json()];
         AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
-        MASTER_CARDS = [...hData, ...sData, ...AYLE_MASTER, ...OSHI_LIST];
+        MASTER_CARDS = [...MASTER_CARDS, ...OSHI_LIST];
         updateLibrary(); renderDecks();
     } catch (e) { console.error("Data error", e); }
 }
@@ -36,25 +54,20 @@ async function joinRoom(role) {
     if (role === 'player') {
         setupModal.style.display = 'flex';
         await loadCardData();
-        initCollapsible(); // 畳める機能を初期化
+        initCollapsible();
     } else {
         document.body.classList.add('spectator-mode');
         document.getElementById('status').innerText = `Room: ${roomId} (観戦中)`;
+        // 観戦者もカード位置を正しく描画するために必要
+        await loadCardData(); 
     }
 }
 
-// 畳める機能の初期化
 function initCollapsible() {
-    const headers = document.querySelectorAll('.section-header');
-    headers.forEach(header => {
-        header.onclick = () => {
-            const section = header.parentElement;
-            section.classList.toggle('collapsed');
-        };
-    });
+    document.querySelectorAll('.section-header').forEach(h => h.onclick = () => h.parentElement.classList.toggle('collapsed'));
 }
 
-// デッキ構築UI
+// デッキ構築UI... (略さず全文維持)
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList');
     list.innerHTML = "";
@@ -84,10 +97,8 @@ function removeFromDeck(name, type) {
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
-
     oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">外す</button></div>` : "";
     if (selectedOshi) oSum.querySelector('.btn-remove').onclick = () => { selectedOshi = null; renderDecks(); };
-
     mSum.innerHTML = "";
     const gMain = mainDeckList.reduce((acc, c) => { acc[c.name] = (acc[c.name] || { d: c, n: 0 }); acc[c.name].n++; return acc; }, {});
     Object.keys(gMain).forEach(n => {
@@ -97,7 +108,6 @@ function renderDecks() {
         div.querySelector('.btn-plus').onclick = () => addToDeck(item.d);
         mSum.appendChild(div);
     });
-
     cSum.innerHTML = "";
     AYLE_MASTER.forEach(card => {
         const count = cheerDeckList.filter(c => c.name === card.name).length;
@@ -107,7 +117,6 @@ function renderDecks() {
         div.querySelector('.btn-plus').onclick = () => addToDeck(card);
         cSum.appendChild(div);
     });
-
     document.getElementById('mainBuildCount').innerText = mainDeckList.length;
     document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length === 0);
@@ -116,12 +125,14 @@ function renderDecks() {
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
 document.getElementById('startGameBtn').onclick = () => {
     const oz = document.getElementById('oshi').getBoundingClientRect(), fr = field.getBoundingClientRect();
-    const pos = { x: (oz.left - fr.left) + (oz.width - 60) / 2 + 'px', y: (oz.top - fr.top) + (oz.height - 85) / 2 + 'px' };
-    socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: { name: selectedOshi.name, pos } });
+    const pxX = (oz.left - fr.left) + (oz.width - 60) / 2;
+    const pxY = (oz.top - fr.top) + (oz.height - 85) / 2;
+    const pPos = getPercentPos(pxX, pxY);
+    socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: { name: selectedOshi.name, percentX: pPos.x, percentY: pPos.y } });
     setupModal.style.display = "none";
 };
 
-// ゲームプレイ
+// --- ゲームプレイ同期 ---
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 
 socket.on('gameStarted', (data) => {
@@ -135,22 +146,35 @@ socket.on('init', (d) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); 
     for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); 
 });
+
 socket.on('deckCount', updateDeckCounts);
 socket.on('receiveCard', (d) => handDiv.appendChild(createCardElement(d)));
-socket.on('cardMoved', (d) => { let el = document.getElementById(d.id); if(!el) return restoreCard(d.id, d); el.style.left = d.x; el.style.top = d.y; el.style.zIndex = d.zIndex; if(el.parentElement !== field) field.appendChild(el); });
+socket.on('cardMoved', (d) => { 
+    let el = document.getElementById(d.id); 
+    if(!el) return restoreCard(d.id, d); 
+    const pos = getPixelPos(d.percentX, d.percentY);
+    el.style.left = pos.x; el.style.top = pos.y; el.style.zIndex = d.zIndex; 
+    if(el.parentElement !== field) field.appendChild(el); 
+});
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if(el) el.remove(); });
-socket.on('cardFlipped', (d) => { const el = document.getElementById(d.id); if(el) { if(d.isFaceUp) { el.classList.add('face-up'); el.classList.remove('face-down'); } else { el.classList.add('face-down'); el.classList.remove('face-up'); } } });
+socket.on('cardFlipped', (d) => { 
+    const el = document.getElementById(d.id); 
+    if(el) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); } 
+});
 
 function updateDeckCounts(c) { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; }
 
 document.getElementById('main-deck-zone').onpointerdown = (e) => { if(myRole==='player') socket.emit('drawMainCard'); };
 document.getElementById('cheer-deck-zone').onpointerdown = (e) => { if(myRole==='player') socket.emit('drawCheerCard'); };
 
-function getZoneUnderCard(card) {
-    const zones = document.querySelectorAll('.zone'), cr = card.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
-    for (let z of zones) { const zr = z.getBoundingClientRect(); if (cc.x >= zr.left && cc.x <= zr.right && cc.y >= zr.top && cc.y <= zr.bottom) return z.id; }
-    return null;
-}
+// ウィンドウサイズ変更時に全カードを再配置
+window.onresize = () => {
+    field.querySelectorAll('.card').forEach(card => {
+        if (!card.dataset.percentX) return;
+        const pos = getPixelPos(card.dataset.percentX, card.dataset.percentY);
+        card.style.left = pos.x; card.style.top = pos.y;
+    });
+};
 
 function createCardElement(data) {
     const el = document.createElement('div'); el.id = data.id; el.innerText = data.name; el.className = `card face-up type-${data.type}`;
@@ -163,14 +187,16 @@ function createCardElement(data) {
 
 function restoreCard(id, info) {
     const el = createCardElement({ id, name: info.name, type: info.type });
-    el.style.position = 'absolute'; el.style.left = info.x; el.style.top = info.y; el.style.zIndex = info.zIndex;
-    if (info.isFaceUp === false) { el.classList.add('face-down'); el.classList.remove('face-up'); }
+    el.dataset.percentX = info.percentX; el.dataset.percentY = info.percentY;
+    const pos = getPixelPos(info.percentX, info.percentY);
+    el.style.position = 'absolute'; el.style.left = pos.x; el.style.top = pos.y; el.style.zIndex = info.zIndex;
+    el.classList.toggle('face-up', info.isFaceUp !== false); el.classList.toggle('face-down', info.isFaceUp === false);
     field.appendChild(el);
 }
 
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
-        if (myRole === 'spectator' || el.parentElement === handDiv || ['back', 'center', 'collab'].includes(getZoneUnderCard(el))) return;
+        if (myRole === 'spectator' || el.parentElement === handDiv) return;
         el.classList.toggle('face-up'); el.classList.toggle('face-down');
         socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
     });
@@ -199,10 +225,13 @@ document.addEventListener('pointerup', (e) => {
     const hRect = handDiv.getBoundingClientRect();
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
         currentCard.style.position = 'relative'; currentCard.style.left = ''; currentCard.style.top = '';
+        delete currentCard.dataset.percentX; delete currentCard.dataset.percentY;
         handDiv.appendChild(currentCard); socket.emit('returnToHand', { id: currentCard.id });
     } else {
         snapToZone();
-        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, x: currentCard.style.left, y: currentCard.style.top, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':(currentCard.classList.contains('type-support')?'support':'holomen') });
+        const pPos = getPercentPos(currentCard.style.left, currentCard.style.top);
+        currentCard.dataset.percentX = pPos.x; currentCard.dataset.percentY = pPos.y;
+        socket.emit('moveCard', { id: currentCard.id, name: currentCard.innerText, percentX: pPos.x, percentY: pPos.y, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':(currentCard.classList.contains('type-support')?'support':'holomen') });
     }
     isDragging = false; currentCard = null;
 });
