@@ -5,37 +5,37 @@ body {
     padding-top: 2vh; user-select: none; -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
-
 input { user-select: auto; -webkit-user-select: auto; }
 
-/* モーダル & スクロール設定 */
+/* モーダル */
 #setup-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 20000; display: flex; justify-content: center; align-items: center; }
 .modal-content { background: rgba(4, 23, 43, 1); border: 3px solid rgba(240, 255, 255, 1); border-radius: 20px; padding: 15px; width: 90vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
-.builder-layout { display: flex; flex: 1; gap: 12px; overflow: hidden; }
+.builder-layout { display: flex; flex: 1; gap: 10px; overflow: hidden; }
 .card-library, .deck-lists-container { flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; overflow: hidden; }
-#libraryList, .scroll-list { flex: 1; overflow-y: auto; padding-right: 5px; }
+#libraryList, .scroll-list { flex: 1; overflow-y: auto; }
 
-/* ボタン色分け */
+/* ボタン */
 button { cursor: pointer; border: none; font-weight: bold; border-radius: 4px; transition: 0.2s; }
-.btn-add, .btn-plus { background: #00d2ff; color: #04172b; }
-.btn-minus, .btn-remove { background: #ff5e5e; color: white; }
+.btn-add, .btn-plus { background: #00d2ff; color: #04172b; padding: 6px 10px; }
+.btn-minus, .btn-remove { background: #ff5e5e; color: white; padding: 6px 10px; }
 button:disabled { background: #444 !important; opacity: 0.5; }
-.deck-item-controls { display: flex; gap: 10px; align-items: center; }
+.deck-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.03); margin-bottom: 4px; border-radius: 6px; font-size: 11px; }
 
-/* フィールドレイアウト */
-#field-container { border: 5px double rgba(240, 255, 255, 1); padding: 1.5vh 1.5vw; border-radius: 20px; width: 92vw; height: 60vh; max-width: 1200px; margin-bottom: 120px; }
+/* フィールドレイアウト（3カラム） */
+#field-container { border: 5px double rgba(240, 255, 255, 1); padding: 1.5vh 1.5vw; border-radius: 20px; width: 92vw; height: 62vh; max-width: 1200px; margin-bottom: 110px; background: rgba(255,255,255,0.02); }
 #field { display: grid; grid-template-columns: 15% 1fr 15%; gap: 1.5vw; height: 100%; position: relative; }
 .column { display: flex; flex-direction: column; gap: 1.5vh; justify-content: center; }
 .center-column { align-items: center; justify-content: space-between; }
-.zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; width: 7.5vw; height: 11vh; min-width: 60px; min-height: 85px; display: flex; justify-content: center; align-items: center; font-size: 10px; text-align: center; color: rgba(240,255,255,0.6); }
+
+.zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; width: 7.5vw; height: 10vh; min-width: 55px; min-height: 80px; display: flex; justify-content: center; align-items: center; font-size: 9px; text-align: center; }
 .vertical-zone { height: 25vh; }
-.wide-zone { width: 45vw; height: 15vh; }
+.wide-zone { width: 45vw; height: 14vh; }
 .deck-zone { cursor: pointer; border: 2px solid rgba(240, 255, 255, 1); background: linear-gradient(135deg, #16213e, #04172b); }
 .deck-zone span { pointer-events: none; }
 
 /* 手札 */
 #hand-container { position: fixed; bottom: 10px; width: 90vw; z-index: 5000; }
-#hand { height: 105px; border: 2px dashed rgba(240,255,255,0.2); border-radius: 15px; display: flex; gap: 8px; padding: 10px; background: rgba(4,23,43,0.9); justify-content: center; overflow-x: auto; }
+#hand { height: 100px; border: 2px dashed rgba(240,255,255,0.2); border-radius: 15px; display: flex; gap: 8px; padding: 10px; background: rgba(4,23,43,0.9); justify-content: center; overflow-x: auto; }
 
 /* カード & エールカラー */
 .card { width: 60px; height: 85px; background: #fff; color: #000; font-size: 9px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; }
@@ -51,3 +51,6 @@ button:disabled { background: #444 !important; opacity: 0.5; }
 .ayle-blue  { background: #3498db; color: #fff; }
 .ayle-yellow { background: #f1c40f; color: #333; }
 .ayle-purple { background: #9b59b6; color: #fff; }
+
+.stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; font-size: 0.9rem; letter-spacing: 5px; }
+.stage-row { display: flex; gap: 2vw; }
