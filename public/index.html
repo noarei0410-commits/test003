@@ -13,11 +13,11 @@
             <div class="hub-menu">
                 <button onclick="showPage('room-modal')" class="hub-btn">
                     <span class="hub-icon">⚔️</span>
-                    <span class="hub-text">対戦・シミュレーター</span>
+                    <span class="hub-text">対戦シミュレーター</span>
                 </button>
                 <button onclick="showPage('card-list-page')" class="hub-btn">
                     <span class="hub-icon">📚</span>
-                    <span class="hub-text">カードリストを確認</span>
+                    <span class="hub-text">カードリスト</span>
                 </button>
             </div>
         </div>
@@ -36,7 +36,7 @@
     <div id="room-modal" class="full-page" style="display: none;">
         <div class="modal-content room-content">
             <h2>ルーム選択</h2>
-            <input type="text" id="roomIdInput" placeholder="ルームID">
+            <input type="text" id="roomIdInput" placeholder="ルームIDを入力">
             <div class="room-buttons">
                 <button id="joinPlayerBtn" class="btn-add">対戦に参加</button>
                 <button id="joinSpectatorBtn" class="btn-spectator">観戦する</button>
@@ -49,7 +49,6 @@
         <div class="modal-content">
             <div class="builder-header">
                 <button id="startGameBtn" disabled>ゲーム開始</button>
-                <p class="limit-hint">メイン:制限なし / エール:20枚固定</p>
             </div>
             <div class="builder-layout">
                 <div class="card-library">
@@ -82,7 +81,7 @@
     </div>
 
     <div id="ui-layer">
-        <span id="status">Hub</span>
+        <span id="status">Room 未選択</span>
         <span>M:<span id="mainCount">0</span> C:<span id="cheerCount">0</span></span>
     </div>
 
