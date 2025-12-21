@@ -2,50 +2,48 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>hOCG Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>hOCG Simulator - Mobile Optimized</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="zoom-modal" style="display: none;">
         <div class="zoom-container">
             <div id="zoom-card-display" class="card"></div>
-            <p class="zoom-hint">背景をクリックして閉じる</p>
+            <p class="zoom-hint">背景をタップして閉じる</p>
         </div>
     </div>
 
     <div id="room-modal">
         <div class="modal-content room-content">
             <h2>hOCG ルーム入室</h2>
-            <p>ルームIDを入力してください</p>
-            <input type="text" id="roomIdInput" placeholder="例: room123">
+            <input type="text" id="roomIdInput" placeholder="ルームID">
             <div class="room-buttons">
-                <button id="joinPlayerBtn" class="btn-add">対戦者として入室</button>
-                <button id="joinSpectatorBtn" class="btn-spectator">観戦者として入室</button>
+                <button id="joinPlayerBtn" class="btn-add">対戦に参加</button>
+                <button id="joinSpectatorBtn" class="btn-spectator">観戦する</button>
             </div>
         </div>
     </div>
 
     <div id="setup-modal" style="display: none;">
         <div class="modal-content">
-            <h2>デッキ構築 & 推し選択</h2>
+            <button id="startGameBtn" disabled>ゲーム開始</button>
             <div class="builder-layout">
                 <div class="card-library">
-                    <input type="text" id="searchInput" placeholder="カード検索...">
+                    <input type="text" id="searchInput" placeholder="検索...">
                     <div id="libraryList"></div>
                 </div>
                 <div class="deck-lists-container">
-                    <button id="startGameBtn" disabled>ゲーム開始</button>
                     <div class="deck-section collapsible">
-                        <h3 class="section-header">推しホロメン <span>▼</span></h3>
+                        <h3 class="section-header">推し <span>▼</span></h3>
                         <div id="oshiSummary" class="scroll-list"></div>
                     </div>
                     <div class="deck-section collapsible">
-                        <h3 class="section-header">メインデッキ (<span id="mainBuildCount">0</span>) <span>▼</span></h3>
+                        <h3 class="section-header">メイン (<span id="mainBuildCount">0</span>) <span>▼</span></h3>
                         <div id="mainDeckSummary" class="scroll-list"></div>
                     </div>
                     <div class="deck-section collapsible">
-                        <h3 class="section-header">エールデッキ (<span id="cheerBuildCount">0</span>/20) <span>▼</span></h3>
+                        <h3 class="section-header">エール (<span id="cheerBuildCount">0</span>/20) <span>▼</span></h3>
                         <div id="cheerDeckSummary" class="scroll-list"></div>
                     </div>
                 </div>
@@ -54,41 +52,41 @@
     </div>
 
     <div id="ui-layer">
-        <div id="status">ルーム未入室</div>
-        <div class="deck-info">M: <span id="mainCount">0</span> / C: <span id="cheerCount">0</span></div>
+        <span id="status">接続中...</span>
+        <span>M:<span id="mainCount">0</span> C:<span id="cheerCount">0</span></span>
     </div>
 
     <div id="field-container">
         <div id="field">
             <div class="column side-column">
-                <div class="zone vertical-zone" id="life-zone"><span>ライフ</span></div>
-                <div class="zone deck-zone" id="cheer-deck-zone"><span>エール<br>(引く)</span></div>
+                <div class="zone life-zone" id="life-zone"><span>ライフ</span></div>
+                <div class="zone deck-zone" id="cheer-deck-zone"><span>エール</span></div>
             </div>
+
             <div class="column center-column">
-                <div class="stage-label">STAGE</div>
                 <div class="stage-row top-row">
                     <div class="zone" id="collab"><span>コラボ</span></div>
                     <div class="zone" id="center"><span>センター</span></div>
                     <div class="zone" id="oshi"><span>推し</span></div>
                 </div>
                 <div class="stage-row bottom-row">
-                    <div class="zone" id="back1"><span>バック1</span></div>
-                    <div class="zone" id="back2"><span>バック2</span></div>
-                    <div class="zone" id="back3"><span>バック3</span></div>
-                    <div class="zone" id="back4"><span>バック4</span></div>
-                    <div class="zone" id="back5"><span>バック5</span></div>
+                    <div class="zone back-slot" id="back1"><span>B1</span></div>
+                    <div class="zone back-slot" id="back2"><span>B2</span></div>
+                    <div class="zone back-slot" id="back3"><span>B3</span></div>
+                    <div class="zone back-slot" id="back4"><span>B4</span></div>
+                    <div class="zone back-slot" id="back5"><span>B5</span></div>
                 </div>
             </div>
+
             <div class="column side-column">
-                <div class="zone" id="holopower"><span>ホロパワー</span></div>
-                <div class="zone deck-zone" id="main-deck-zone"><span>メイン<br>(引く)</span></div>
+                <div class="zone" id="holopower"><span>パワー</span></div>
+                <div class="zone deck-zone" id="main-deck-zone"><span>メイン</span></div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
             </div>
         </div>
     </div>
 
     <div id="hand-container">
-        <div id="hand-label">YOUR HAND</div>
         <div id="hand"></div>
     </div>
 
