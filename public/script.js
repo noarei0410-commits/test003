@@ -13,7 +13,8 @@ const handDiv = document.getElementById('hand');
 function repositionCards() {
     const fieldRect = field.getBoundingClientRect();
     document.querySelectorAll('.card').forEach(card => {
-        if (card.parentElement !== field) return; 
+        // ドラッグ中のカードは再配置の対象外にする（ガクつき防止）
+        if (card.parentElement !== field || card.hasPointerCapture(1) || card === currentCard) return; 
 
         if (card.dataset.zoneId) {
             const zone = document.getElementById(card.dataset.zoneId);
@@ -185,6 +186,9 @@ function restoreCard(id, info) {
     field.appendChild(el);
 }
 
+// --- ドラッグ&ドロップの核 ---
+let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 1000;
+
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
@@ -195,83 +199,107 @@ function setupCardEvents(el) {
 
     el.addEventListener('pointerdown', (e) => {
         if (myRole === 'spectator') return;
-        isDragging = true; 
-        currentCard = el; 
         
-        // 1. ポインターキャプチャを有効にする（ドラッグが外れないようにする）
+        isDragging = true;
+        currentCard = el;
         el.setPointerCapture(e.pointerId);
-        
-        const rect = el.getBoundingClientRect(); 
+
+        const rect = el.getBoundingClientRect();
         const fRect = field.getBoundingClientRect();
 
-        // 2. カード内のクリック位置（オフセット）を計算
-        offsetX = e.clientX - rect.left; 
+        // 指/マウスがカードのどの位置にあるか（オフセット）を保持
+        offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
-        
-        // 3. z-indexを最前面へ
-        maxZIndex++; el.style.zIndex = maxZIndex;
 
-        // 4. 【最重要】手札にある場合、見た目上の位置を維持しながらフィールドへ移動
+        maxZIndex++;
+        el.style.zIndex = maxZIndex;
+
+        // 手札からフィールドへ移動させる直前の位置固定
         if (el.parentElement !== field) {
+            // 見た目上の現在位置をフィールド相対座標に変換
+            const initialLeft = rect.left - fRect.left;
+            const initialTop = rect.top - fRect.top;
+            
             el.style.position = 'absolute';
-            el.style.left = (rect.left - fRect.left) + 'px'; 
-            el.style.top = (rect.top - fRect.top) + 'px';
+            el.style.left = initialLeft + 'px';
+            el.style.top = initialTop + 'px';
+            
             field.appendChild(el);
         }
+        e.stopPropagation();
     });
 }
 
 document.addEventListener('pointermove', (e) => {
     if (!isDragging || !currentCard) return;
+
     const fRect = field.getBoundingClientRect();
     
-    // 現在のマウス座標からオフセットを引いて、フィールド内での位置を決定
-    currentCard.style.left = (e.clientX - fRect.left - offsetX) + 'px';
-    currentCard.style.top = (e.clientY - fRect.top - offsetY) + 'px';
+    // フィールドの左上角を基準に、マウス位置からオフセットを引いた座標へ移動
+    let newX = e.clientX - fRect.left - offsetX;
+    let newY = e.clientY - fRect.top - offsetY;
+
+    currentCard.style.left = newX + 'px';
+    currentCard.style.top = newY + 'px';
 });
 
 document.addEventListener('pointerup', (e) => {
     if (!isDragging || !currentCard) return;
+
     const hRect = handDiv.getBoundingClientRect();
     
-    // 手札枠の中に離したか判定
+    // 手札エリアにドロップされた場合
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
-        currentCard.style.position = 'relative'; 
-        currentCard.style.left = ''; 
+        currentCard.style.position = 'relative';
+        currentCard.style.left = '';
         currentCard.style.top = '';
-        delete currentCard.dataset.zoneId; delete currentCard.dataset.percentX; delete currentCard.dataset.percentY;
-        handDiv.appendChild(currentCard); 
+        currentCard.style.zIndex = '';
+        delete currentCard.dataset.zoneId;
+        delete currentCard.dataset.percentX;
+        delete currentCard.dataset.percentY;
+        handDiv.appendChild(currentCard);
         socket.emit('returnToHand', { id: currentCard.id });
     } else {
-        const zones = document.querySelectorAll('.zone'); 
+        // フィールド（枠）への吸着判定
+        const zones = document.querySelectorAll('.zone');
         let closest = null, minDist = 45;
         const cr = currentCard.getBoundingClientRect();
-        const cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
-        
+        const cc = { x: cr.left + cr.width / 2, y: cr.top + cr.height / 2 };
+
         zones.forEach(z => {
             const zr = z.getBoundingClientRect();
-            const zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+            const zc = { x: zr.left + zr.width / 2, y: zr.top + zr.height / 2 };
             const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
             if (d < minDist) { minDist = d; closest = z; }
         });
 
         const fRect = field.getBoundingClientRect();
-        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-ayle')?'ayle':(currentCard.classList.contains('type-support')?'support':'holomen') };
+        let moveData = { 
+            id: currentCard.id, 
+            name: currentCard.innerText, 
+            zIndex: currentCard.style.zIndex, 
+            type: currentCard.classList.contains('type-ayle') ? 'ayle' : (currentCard.classList.contains('type-support') ? 'support' : 'holomen') 
+        };
 
         if (closest) {
             currentCard.dataset.zoneId = closest.id;
-            delete currentCard.dataset.percentX; delete currentCard.dataset.percentY;
+            delete currentCard.dataset.percentX;
+            delete currentCard.dataset.percentY;
             moveData.zoneId = closest.id;
         } else {
             delete currentCard.dataset.zoneId;
             const pX = (parseFloat(currentCard.style.left) / fRect.width) * 100;
             const pY = (parseFloat(currentCard.style.top) / fRect.height) * 100;
-            currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY;
-            moveData.percentX = pX; moveData.percentY = pY;
+            currentCard.dataset.percentX = pX;
+            currentCard.dataset.percentY = pY;
+            moveData.percentX = pX;
+            moveData.percentY = pY;
         }
+
         socket.emit('moveCard', moveData);
         repositionCards();
     }
-    isDragging = false; 
+
+    isDragging = false;
     currentCard = null;
 });
