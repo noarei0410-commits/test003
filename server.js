@@ -21,14 +21,14 @@ io.on('connection', (socket) => {
     socket.on('setGame', (data) => {
         fieldState = {}; 
         
-        // メインデッキの構築（タイプを維持）
+        // メインデッキ（ホロメン・サポート混在）
         mainDeck = data.main.map(card => ({ 
             id: uuidv4(), 
             name: card.name, 
             type: card.type 
         }));
         
-        // エールデッキの構築
+        // エールデッキ
         cheerDeck = data.cheer.map(card => ({ 
             id: uuidv4(), 
             name: card.name, 
@@ -38,7 +38,7 @@ io.on('connection', (socket) => {
         shuffle(mainDeck);
         shuffle(cheerDeck);
 
-        // 推しホロメンの配置
+        // 推しホロメンを初期配置
         const oshiId = uuidv4();
         fieldState[oshiId] = {
             id: oshiId,
@@ -58,16 +58,14 @@ io.on('connection', (socket) => {
 
     socket.on('drawMainCard', () => {
         if (mainDeck.length > 0) {
-            const card = mainDeck.pop();
-            socket.emit('receiveCard', card);
+            socket.emit('receiveCard', mainDeck.pop());
             io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
         }
     });
 
     socket.on('drawCheerCard', () => {
         if (cheerDeck.length > 0) {
-            const card = cheerDeck.pop();
-            socket.emit('receiveCard', card);
+            socket.emit('receiveCard', cheerDeck.pop());
             io.emit('deckCount', { main: mainDeck.length, cheer: cheerDeck.length });
         }
     });
