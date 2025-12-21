@@ -9,7 +9,7 @@ const setupModal = document.getElementById('setup-modal');
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 
-// --- データの読み込み ---
+// データの読み込み
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
@@ -23,28 +23,38 @@ async function loadCardData() {
     } catch (e) { console.error("Data error", e); }
 }
 
-// --- ルーム入室処理 ---
+// ルーム入室
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
 async function joinRoom(role) {
     const roomId = document.getElementById('roomIdInput').value;
     if (!roomId) return alert("ルームIDを入力してください");
-
     myRole = role;
     socket.emit('joinRoom', { roomId, role });
     roomModal.style.display = 'none';
-
     if (role === 'player') {
-        setupModal.style.display = 'flex'; // 構築画面を表示
-        await loadCardData(); // 入室後にデータをロード
+        setupModal.style.display = 'flex';
+        await loadCardData();
+        initCollapsible(); // 畳める機能を初期化
     } else {
         document.body.classList.add('spectator-mode');
         document.getElementById('status').innerText = `Room: ${roomId} (観戦中)`;
     }
 }
 
-// --- デッキ構築UIロジック ---
+// 畳める機能の初期化
+function initCollapsible() {
+    const headers = document.querySelectorAll('.section-header');
+    headers.forEach(header => {
+        header.onclick = () => {
+            const section = header.parentElement;
+            section.classList.toggle('collapsed');
+        };
+    });
+}
+
+// デッキ構築UI
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList');
     list.innerHTML = "";
@@ -73,7 +83,7 @@ function removeFromDeck(name, type) {
 
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
-    if (!oSum || !mSum || !cSum) return;
+    if (!oSum) return;
 
     oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">外す</button></div>` : "";
     if (selectedOshi) oSum.querySelector('.btn-remove').onclick = () => { selectedOshi = null; renderDecks(); };
@@ -111,7 +121,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- ゲームプレイロジック ---
+// ゲームプレイ
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 100;
 
 socket.on('gameStarted', (data) => {
