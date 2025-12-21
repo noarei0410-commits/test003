@@ -3,6 +3,7 @@ const socket = io();
 let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
 let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator';
+let currentRoomId = "";
 
 const roomModal = document.getElementById('room-modal');
 const setupModal = document.getElementById('setup-modal');
@@ -15,7 +16,7 @@ const handDiv = document.getElementById('hand');
 function openZoom(name, classList) {
     zoomDisplay.innerText = name;
     zoomDisplay.className = classList; 
-    zoomDisplay.classList.remove('face-down'); // 拡大時は常に表
+    zoomDisplay.classList.remove('face-down'); 
     zoomModal.style.display = 'flex';
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
@@ -64,15 +65,19 @@ async function joinRoom(role) {
     const roomId = document.getElementById('roomIdInput').value;
     if (!roomId) return alert("ルームIDを入力してください");
     myRole = role;
+    currentRoomId = roomId;
     socket.emit('joinRoom', { roomId, role });
     roomModal.style.display = 'none';
+    
+    // UI表示の統一
+    document.getElementById('status').innerText = `Room: ${roomId}${role === 'spectator' ? ' (観戦中)' : ''}`;
+
     if (role === 'player') {
         setupModal.style.display = 'flex';
         await loadCardData();
         document.querySelectorAll('.section-header').forEach(h => h.onclick = () => h.parentElement.classList.toggle('collapsed'));
     } else {
         document.body.classList.add('spectator-mode');
-        document.getElementById('status').innerText = `Room: ${roomId} (観戦中)`;
         await loadCardData(); 
     }
 }
@@ -144,7 +149,6 @@ socket.on('gameStarted', (data) => {
     repositionCards();
 });
 socket.on('init', (d) => { 
-    if (d.role === 'player') document.getElementById('status').innerText = `Player ID: ${d.id}`;
     field.querySelectorAll('.card').forEach(c => c.remove()); 
     for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); 
     repositionCards();
@@ -202,19 +206,15 @@ function setupCardEvents(el) {
     });
 
     el.addEventListener('pointerdown', (e) => {
-        // 全員共通：クリック座標とターゲットを記録
         startX = e.clientX; startY = e.clientY;
         potentialZoomTarget = el;
-
-        if (myRole === 'spectator') return; // 観戦者はここで終了（ドラッグはさせない）
+        if (myRole === 'spectator') return; 
         
         isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
-        
         const rect = el.getBoundingClientRect();
         const fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
-
         maxZIndex++; el.style.zIndex = maxZIndex;
 
         if (el.parentElement !== field) {
@@ -235,22 +235,14 @@ document.addEventListener('pointermove', (e) => {
 });
 
 document.addEventListener('pointerup', (e) => {
-    // 【最優先】クリック判定（移動距離が10px未満なら拡大表示を実行）
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (potentialZoomTarget && dist < 10) {
+    if (potentialZoomTarget && dist < 15) { // 判定の遊びを15pxに広げた
         if (!potentialZoomTarget.classList.contains('face-down')) {
             openZoom(potentialZoomTarget.innerText, potentialZoomTarget.className);
         }
     }
-
-    // 観戦者なら後続の移動ロジックは無視
-    if (myRole === 'spectator') {
+    if (myRole === 'spectator' || !isDragging || !currentCard) {
         isDragging = false; currentCard = null; potentialZoomTarget = null;
-        return;
-    }
-
-    if (!isDragging || !currentCard) {
-        potentialZoomTarget = null;
         return;
     }
 
@@ -271,7 +263,7 @@ document.addEventListener('pointerup', (e) => {
             if (d < minDist) { minDist = d; closest = z; }
         });
         const fRect = field.getBoundingClientRect();
-        let type = currentCard.classList.contains('type-ayle') ? 'ayle' : (currentCard.classList.contains('type-support') ? 'support' : 'holomen');
+        let type = currentCard.classList.contains('type-holomen') ? 'holomen' : (currentCard.classList.contains('type-support') ? 'support' : 'ayle');
         let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: type };
         if (closest) {
             currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX; delete currentCard.dataset.percentY;
