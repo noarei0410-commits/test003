@@ -7,7 +7,7 @@ body {
     user-select: none; -webkit-user-select: none; touch-action: none;
 }
 
-/* ページ・モーダル */
+/* ページ制御 */
 .full-page { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10000; }
 #hub-page { background: radial-gradient(circle, #0a2d4d, #04172b); }
 .hub-container { text-align: center; width: 100%; max-width: 400px; padding: 20px; }
@@ -19,20 +19,20 @@ body {
 .modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; padding: 15px; width: 98vw; height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
 .room-content { width: 320px !important; height: auto !important; gap: 15px; text-align: center; }
 
+/* フィルターバー */
+.filter-bar { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+.filter-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 6px 12px; font-size: 11px; white-space: nowrap; flex-shrink: 0; border-radius: 4px; }
+.filter-btn.active { background: #00d2ff; color: #04172b; border-color: #00d2ff; }
+
 /* カードリスト・アーカイブ */
-.card-grid {
-    display: flex; flex-wrap: wrap; gap: 15px; padding: 10px;
-    overflow-y: auto; flex: 1; justify-content: flex-start; align-content: flex-start;
-}
-/* アーカイブ内のカードラッパー */
+.card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; overflow-y: auto; flex: 1; justify-content: flex-start; align-content: flex-start; }
 .archive-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .btn-recover { background: #2ecc71; color: white; font-size: 9px; padding: 4px 8px; width: 100%; border-radius: 4px; }
 
-/* デッキ構築画面レイアウト */
+/* 構築UI */
 .builder-layout { display: flex; flex: 1; gap: 10px; overflow: hidden; }
-.card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; overflow: hidden; order: 1; } /* 左 */
-.deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; order: 2; } /* 右 */
-
+.card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; overflow: hidden; order: 1; }
+.deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; order: 2; }
 #libraryList, .scroll-list { flex: 1; overflow-y: auto; }
 .mini-list { max-height: 60px; }
 .deck-section { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px; margin-bottom: 4px; }
@@ -45,7 +45,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .btn-back, .btn-close-gray { background: #444; color: white; padding: 10px; width: 100%; margin-top: 5px; }
 #startGameBtn { padding: 12px; background: #00d2ff; width: 100%; font-size: 16px; margin-bottom: 5px; }
 
-/* フィールドレイアウト */
+/* フィールド */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
 #field-container { width: 98vw; height: 60vh; max-height: 550px; border: 3px double #f0ffff; border-radius: 12px; background: rgba(255,255,255,0.02); padding: 6px; margin-bottom: 4px; }
 #field { display: grid; grid-template-columns: 16% 1fr 16%; gap: 6px; height: 100%; position: relative; }
@@ -65,7 +65,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 
 .turn-guide-box { width: 100%; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 4px; font-size: 8px; text-align: center; margin-top: auto; }
 
-/* 左右カラムサイズ同期 */
+/* 左右カラム */
 .life-zone { height: 60%; }
 .side-column .zone:not(.life-zone) { height: 35%; }
 .deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); color: #00d2ff; cursor: pointer; }
@@ -78,7 +78,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .card { width: 52px; height: 74px; background: #fff; color: #000; font-size: 8px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; scroll-snap-align: center; }
 #field .card { position: absolute; }
 
-/* 属性・色 */
+/* 属性 */
 .type-holomen { border: 2px solid #00d2ff; }
 .type-support { border: 2px solid #2ecc71; }
 .face-down { background: #16213e !important; color: transparent !important; border: 1.5px solid white !important; }
