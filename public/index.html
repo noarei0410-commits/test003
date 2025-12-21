@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>hOCG Simulator</title>
+    <title>hOCG Simulator - Responsive Fix</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,13 +24,11 @@
             <h2>デッキ構築 & 推し選択</h2>
             <div class="builder-layout">
                 <div class="card-library">
-                    <input type="text" id="searchInput" placeholder="カード名で検索...">
+                    <input type="text" id="searchInput" placeholder="カード検索...">
                     <div id="libraryList"></div>
                 </div>
-                
                 <div class="deck-lists-container">
                     <button id="startGameBtn" disabled>ゲーム開始</button>
-
                     <div class="deck-section collapsible">
                         <h3 class="section-header">推しホロメン <span>▼</span></h3>
                         <div id="oshiSummary" class="scroll-list"></div>
@@ -50,7 +48,7 @@
 
     <div id="ui-layer">
         <div id="status">ルーム未入室</div>
-        <div class="deck-info">Main: <span id="mainCount">0</span> / Cheer: <span id="cheerCount">0</span></div>
+        <div class="deck-info">M: <span id="mainCount">0</span> / C: <span id="cheerCount">0</span></div>
     </div>
 
     <div id="field-container">
