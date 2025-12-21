@@ -7,7 +7,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* ステージと手札を中央付近にまとめる */
     justify-content: center; 
     height: 100vh;
     color: white;
@@ -52,7 +51,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
 /* UIレイヤー */
 #ui-layer { position: absolute; top: 10px; left: 10px; z-index: 1000; font-size: 12px; }
 
-/* ステージ（高さを手札分少し削る） */
+/* ステージ */
 #field-container { 
     border: 5px double rgba(240, 255, 255, 1); 
     padding: 1.5vh 1.5vw; 
@@ -62,7 +61,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
     max-width: 1200px; 
     background: rgba(255,255,255,0.02); 
     box-sizing: border-box; 
-    margin-bottom: 10px; /* 手札との隙間を小さく */
+    margin-bottom: 10px; 
 }
 #field { display: grid; grid-template-columns: 15% 1fr 15%; gap: 1.5vw; height: 100%; position: relative; }
 .column { display: flex; flex-direction: column; gap: 1.5vh; justify-content: center; }
@@ -72,26 +71,31 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
 .wide-zone { width: 50vw; height: 12vh; }
 .deck-zone { cursor: pointer; border: 2px solid rgba(240, 255, 255, 1); background: linear-gradient(135deg, #16213e, #04172b); }
 
-/* 手札（位置を固定解除し、ステージの近くに配置） */
+/* --- 手札（横スクロール改善版） --- */
 #hand-container { 
-    position: relative; /* fixedから変更 */
+    position: relative;
     width: 95vw; 
     max-width: 1000px;
     z-index: 5000;
 }
-#hand-label { font-size: 10px; color: rgba(240, 255, 255, 0.4); text-align: center; margin-bottom: 5px; letter-spacing: 2px; }
+#hand-label { font-size: 10px; color: rgba(240, 255, 255, 0.4); text-align: center; margin-bottom: 5px; }
 #hand { 
-    height: 105px;
+    height: 115px;
     border: 2px dashed rgba(240, 255, 255, 0.2); 
     border-radius: 15px; 
     display: flex; 
     flex-wrap: nowrap; 
-    gap: 10px; 
-    padding: 10px; 
+    gap: 15px; /* スワイプしやすくするため隙間を広げた */
+    padding: 10px 20px; 
     background: rgba(4, 23, 43, 0.9); 
-    justify-content: center; 
+    justify-content: flex-start; 
+    
+    /* 横スクロール設定 */
     overflow-x: auto; 
     overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; /* 慣性スクロール */
+    scroll-snap-type: x proximity; /* カード位置に吸着 */
+    scrollbar-width: thin; /* Firefox用 */
 }
 
 /* カード共通 */
@@ -102,22 +106,22 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
     position: relative; flex-shrink: 0; z-index: 1000; 
     touch-action: none; 
     padding: 4px; box-sizing: border-box; 
+    scroll-snap-align: center; /* スクロール時に中央で止まる */
 }
 #field .card { position: absolute; }
 
-/* カードタイプ別 */
-.type-ayle { border: 3px solid #ff00ff; }
+/* カードタイプ別枠色 */
 .type-holomen { border: 3px solid #00d2ff; }
 .type-support { border: 3px solid #2ecc71; }
 .face-down { background: #16213e !important; color: transparent !important; border: 2px solid white !important; }
 
-/* エールカラー */
-.ayle-white { background: #f8f9fa; color: #333; }
-.ayle-green { background: #2ecc71; color: #fff; }
-.ayle-red   { background: #e74c3c; color: #fff; }
-.ayle-blue  { background: #3498db; color: #fff; }
-.ayle-yellow { background: #f1c40f; color: #333; }
-.ayle-purple { background: #9b59b6; color: #fff; }
+/* --- エール属性別枠色（個別適用） --- */
+.ayle-white { background: #f8f9fa; color: #333; border: 4px solid #ffffff !important; }
+.ayle-green { background: #2ecc71; color: #fff; border: 4px solid #00ff7f !important; }
+.ayle-red   { background: #e74c3c; color: #fff; border: 4px solid #ff4500 !important; }
+.ayle-blue  { background: #3498db; color: #fff; border: 4px solid #1e90ff !important; }
+.ayle-yellow { background: #f1c40f; color: #333; border: 4px solid #ffff00 !important; }
+.ayle-purple { background: #9b59b6; color: #fff; border: 4px solid #da70d6 !important; }
 
 .stage-label { color: rgba(240, 255, 255, 1); font-weight: bold; font-size: 1rem; letter-spacing: 5px; }
 .stage-row { display: flex; gap: 2vw; }
