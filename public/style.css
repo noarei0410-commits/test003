@@ -3,89 +3,85 @@
 body {
     margin: 0; overflow: hidden; background-color: #04172b;
     font-family: sans-serif; display: flex; flex-direction: column;
-    align-items: center; justify-content: flex-start; height: 100vh; color: white;
+    align-items: center; justify-content: center; 
+    height: 100vh; color: white;
     user-select: none; -webkit-user-select: none; touch-action: none;
 }
 
-/* モーダル */
-#room-modal, #setup-modal, #zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10000; }
-#room-modal { background: #04172b; z-index: 30000; }
-#setup-modal { background: rgba(0,0,0,0.9); z-index: 20000; }
-#zoom-modal { background: rgba(0,0,0,0.8); z-index: 40000; cursor: pointer; }
-
-.modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 15px; padding: 15px; width: 95vw; height: 90vh; display: flex; flex-direction: column; }
-.room-content { width: 300px !important; height: auto !important; text-align: center; }
-
-/* 構築UI */
-.builder-layout { display: flex; flex: 1; gap: 8px; overflow: hidden; }
-.card-library, .deck-lists-container { flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 8px; overflow: hidden; }
-#libraryList, .scroll-list { flex: 1; overflow-y: auto; }
-.section-header { cursor: pointer; background: rgba(255,255,255,0.1); padding: 5px; font-size: 12px; display: flex; justify-content: space-between; }
-.collapsed .scroll-list { display: none; }
-
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; }
-.btn-add, .btn-plus { background: #00d2ff; color: #04172b; }
-.btn-minus, .btn-remove { background: #ff5e5e; color: white; }
-#startGameBtn { padding: 10px; background: #00d2ff; margin-bottom: 10px; width: 100%; }
-
-/* UIレイヤー */
-#ui-layer { width: 100%; padding: 5px 10px; display: flex; justify-content: space-between; font-size: 11px; height: 25px; }
-
-/* フィールド（最重要：1画面に収める） */
-#field-container {
-    width: 98vw; height: 60vh; max-height: 500px;
-    border: 2px solid #f0ffff; border-radius: 10px;
-    background: rgba(255,255,255,0.02);
-    padding: 5px; margin-bottom: 5px;
+/* ページ制御 */
+.full-page {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex; justify-content: center; align-items: center; z-index: 10000;
 }
-#field { display: grid; grid-template-columns: 18% 1fr 18%; gap: 5px; height: 100%; position: relative; }
-.column { display: flex; flex-direction: column; gap: 5px; height: 100%; }
+
+/* ハブ画面スタイル */
+#hub-page { background: radial-gradient(circle, #0a2d4d, #04172b); z-index: 10000; }
+.hub-container { text-align: center; width: 100%; max-width: 500px; padding: 20px; }
+.hub-menu { display: grid; grid-template-columns: 1fr; gap: 20px; margin: 40px 0; }
+.hub-btn {
+    background: rgba(255,255,255,0.05); border: 2px solid #00d2ff;
+    padding: 30px; border-radius: 15px; color: white; font-size: 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.hub-btn:hover { background: rgba(0,210,255,0.1); transform: translateY(-3px); }
+.hub-icon { font-size: 40px; }
+
+/* カードリスト画面スタイル */
+#card-list-page { background: #04172b; z-index: 15000; }
+.list-content { width: 95vw; height: 90vh; }
+.list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 15px; overflow-y: auto; flex: 1; padding: 10px;
+}
+
+/* モーダル共通 */
+.modal-content {
+    background: #04172b; border: 2px solid #00d2ff;
+    border-radius: 20px; padding: 25px; display: flex; flex-direction: column;
+}
+.auth-content, .room-content { width: 340px !important; height: auto !important; gap: 15px; }
+
+input {
+    width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 210, 255, 0.5); border-radius: 8px;
+    color: white; font-size: 16px; margin-bottom: 10px;
+}
+
+button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; transition: 0.2s; }
+.btn-main, .btn-add, .btn-plus { background: #00d2ff; color: #04172b; }
+.btn-back, .btn-close-list { background: #444; color: white; padding: 10px; }
+.btn-spectator { background: #9b59b6; color: white; padding: 12px; }
+#startGameBtn { padding: 15px; background: #f0ffff; color: #04172b; width: 100%; margin-bottom: 10px; }
+
+/* ステージ & カード */
+#ui-layer { position: absolute; top: 10px; width: 94vw; display: flex; justify-content: space-between; font-size: 11px; z-index: 1000; }
+#field-container { border: 5px double #00d2ff; padding: 1vh 1vw; border-radius: 15px; width: 96vw; height: 58vh; background: rgba(255,255,255,0.02); margin-bottom: 10px; }
+#field { display: grid; grid-template-columns: 18% 1fr 18%; gap: 1vw; height: 100%; position: relative; }
+.column { display: flex; flex-direction: column; gap: 1vh; justify-content: center; }
 .center-column { justify-content: space-between; }
+.zone { border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 8px; color: rgba(240,255,255,0.5); position: relative; }
+.stage-row { display: flex; gap: 1vw; width: 100%; height: 48%; }
+.deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); }
 
-.zone {
-    border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03);
-    border-radius: 6px; display: flex; justify-content: center; align-items: center;
-    font-size: 8px; text-align: center; color: rgba(255,255,255,0.4);
-    width: 100%; height: 100%; position: relative;
-}
+#hand-container { position: relative; width: 96vw; max-width: 1000px; z-index: 5000; }
+#hand { height: 115px; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 15px; display: flex; flex-wrap: nowrap; gap: 15px; padding: 10px 20px; background: rgba(4, 23, 43, 0.9); overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
 
-.stage-row { display: flex; gap: 5px; width: 100%; height: 48%; }
-.back-slot { flex: 1; min-width: 0; } /* 5枚並んでもはみ出さないように */
-
-.life-zone { height: 60%; }
-.deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); cursor: pointer; }
-
-/* 手札 */
-#hand-container { width: 98vw; height: 120px; z-index: 5000; }
-#hand {
-    height: 100%; border: 2px dashed rgba(255,255,255,0.1); border-radius: 10px;
-    display: flex; gap: 10px; padding: 10px; background: rgba(4,23,43,0.8);
-    overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
-}
-
-/* カード */
-.card {
-    width: 55px; height: 77px; background: #fff; color: #000;
-    font-size: 8px; display: flex; align-items: center; justify-content: center;
-    text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-    position: relative; flex-shrink: 0; z-index: 1000; padding: 3px;
-    scroll-snap-align: center;
-}
+.card { width: 55px; height: 77px; background: #fff; color: #000; font-size: 8px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; scroll-snap-align: center; }
 #field .card { position: absolute; }
 
-/* ズーム表示用 */
-#zoom-card-display { width: 220px !important; height: 308px !important; font-size: 20px !important; }
-
-/* 属性別枠色 */
-.type-holomen { border: 2px solid #00d2ff; }
-.type-support { border: 2px solid #2ecc71; }
-.face-down { background: #16213e !important; color: transparent !important; border: 1.5px solid white !important; }
-.ayle-white { border: 3px solid #ffffff !important; }
+/* 属性別 */
+.type-holomen { border: 3px solid #00d2ff; }
+.type-support { border: 3px solid #2ecc71; }
+.face-down { background: #16213e !important; color: transparent !important; border: 2px solid white !important; }
+.ayle-white { border: 4px solid #ffffff !important; }
 .ayle-green { border: 3px solid #00ff7f !important; }
 .ayle-red   { border: 3px solid #ff4500 !important; }
 .ayle-blue  { border: 3px solid #1e90ff !important; }
 .ayle-yellow { border: 3px solid #ffff00 !important; }
 .ayle-purple { border: 3px solid #da70d6 !important; }
 
-body.spectator-mode .deck-zone { pointer-events: none; }
+/* ズーム */
+#zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 40000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+.zoom-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+#zoom-card-display { width: 250px !important; height: 350px !important; font-size: 24px !important; }
