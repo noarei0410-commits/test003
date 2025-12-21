@@ -49,7 +49,6 @@
         <div class="modal-content">
             <div class="builder-header">
                 <button id="startGameBtn" disabled>ゲーム開始</button>
-                <p class="limit-hint">メイン:無制限 / エール:20枚</p>
             </div>
             <div class="builder-layout">
                 <div class="card-library">
@@ -57,18 +56,9 @@
                     <div id="libraryList"></div>
                 </div>
                 <div class="deck-lists-container">
-                    <div class="deck-section">
-                        <h3 class="section-header">推しホロメン</h3>
-                        <div id="oshiSummary" class="scroll-list mini-list"></div>
-                    </div>
-                    <div class="deck-section">
-                        <h3 class="section-header">メイン (<span id="mainBuildCount">0</span>)</h3>
-                        <div id="mainDeckSummary" class="scroll-list"></div>
-                    </div>
-                    <div class="deck-section">
-                        <h3 class="section-header">エール (<span id="cheerBuildCount">0</span>/20)</h3>
-                        <div id="cheerDeckSummary" class="scroll-list"></div>
-                    </div>
+                    <div class="deck-section"><h3 class="section-header">推し</h3><div id="oshiSummary" class="scroll-list mini-list"></div></div>
+                    <div class="deck-section"><h3 class="section-header">メイン (<span id="mainBuildCount">0</span>)</h3><div id="mainDeckSummary" class="scroll-list"></div></div>
+                    <div class="deck-section"><h3 class="section-header">エール (<span id="cheerBuildCount">0</span>/20)</h3><div id="cheerDeckSummary" class="scroll-list"></div></div>
                 </div>
             </div>
         </div>
@@ -82,7 +72,7 @@
     </div>
 
     <div id="ui-layer">
-        <span id="status">Hub</span>
+        <span id="status">Room: ---</span>
         <span>M:<span id="mainCount">0</span> C:<span id="cheerCount">0</span></span>
     </div>
 
@@ -90,25 +80,34 @@
         <div id="field">
             <div class="column side-column">
                 <div class="zone life-zone" id="life-zone"><span>ライフ</span></div>
-                <div class="zone deck-zone" id="cheer-deck-zone"><span>エール</span></div>
+                <div class="zone deck-zone" id="cheer-deck-zone"><span>エール<br>デッキ</span></div>
             </div>
+
             <div class="column center-column">
-                <div class="stage-row top-row">
-                    <div class="zone" id="collab"><span>コラボ</span></div>
-                    <div class="zone" id="center"><span>センター</span></div>
-                    <div class="zone" id="oshi"><span>推し</span></div>
+                <div class="stage-label-bar">ステージ</div>
+                <div class="stage-top-row">
+                    <div class="zone" id="collab"><span>コラボ<br>ポジション</span></div>
+                    <div class="zone" id="center"><span>センター<br>ポジション</span></div>
+                    <div class="zone" id="oshi"><span>推し<br>ポジション</span></div>
                 </div>
-                <div class="stage-row bottom-row">
-                    <div class="zone back-slot" id="back1"><span>B1</span></div>
-                    <div class="zone back-slot" id="back2"><span>B2</span></div>
-                    <div class="zone back-slot" id="back3"><span>B3</span></div>
-                    <div class="zone back-slot" id="back4"><span>B4</span></div>
-                    <div class="zone back-slot" id="back5"><span>B5</span></div>
+                <div class="stage-bottom-row">
+                    <div class="back-position-container">
+                        <div class="zone back-slot" id="back1"><span>B1</span></div>
+                        <div class="zone back-slot" id="back2"><span>B2</span></div>
+                        <div class="zone back-slot" id="back3"><span>B3</span></div>
+                        <div class="zone back-slot" id="back4"><span>B4</span></div>
+                        <div class="zone back-slot" id="back5"><span>B5</span></div>
+                        <div class="back-label">バックポジション</div>
+                    </div>
+                </div>
+                <div class="turn-guide-box">
+                    <span>1.リセット 2.手札 3.エール 4.メイン 5.パフォーマンス 6.エンド</span>
                 </div>
             </div>
+
             <div class="column side-column">
-                <div class="zone" id="holopower"><span>パワー</span></div>
-                <div class="zone deck-zone" id="main-deck-zone"><span>メイン</span></div>
+                <div class="zone" id="holopower"><span>ホロパワー</span></div>
+                <div class="zone deck-zone" id="main-deck-zone"><span>メイン<br>デッキ</span></div>
                 <div class="zone" id="archive"><span>アーカイブ</span></div>
             </div>
         </div>
