@@ -40,7 +40,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
     padding: 1.5vh 1.5vw; 
     border-radius: 20px; 
     width: 94vw; 
-    height: 62vh; 
+    height: 60vh; 
     max-width: 1200px; 
     background: rgba(255,255,255,0.02); 
     box-sizing: border-box; 
@@ -68,14 +68,13 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
     border: 2px dashed rgba(240, 255, 255, 0.2); 
     border-radius: 15px; 
     display: flex; 
-    flex-wrap: nowrap; /* 折り返し禁止 */
-    flex-direction: row;
+    flex-wrap: nowrap; 
     gap: 10px; 
     padding: 10px; 
     background: rgba(4, 23, 43, 0.9); 
-    justify-content: flex-start; /* 左詰め（スクロール用） */
-    overflow-x: auto; /* 横スクロールを許可 */
-    overflow-y: hidden; /* 縦スクロール禁止 */
+    justify-content: flex-start; 
+    overflow-x: auto; 
+    overflow-y: hidden;
 }
 
 /* カード */
@@ -83,7 +82,8 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
     width: 60px; height: 85px; background: #fff; color: #000; 
     font-size: 9px; display: flex; align-items: center; justify-content: center; 
     text-align: center; border-radius: 6px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5); 
-    position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; 
+    position: relative; flex-shrink: 0; z-index: 1000; 
+    touch-action: none; /* スマホでのブラウザジェスチャー無効 */
     padding: 4px; box-sizing: border-box; 
 }
 #field .card { position: absolute; }
