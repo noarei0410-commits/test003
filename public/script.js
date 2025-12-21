@@ -11,6 +11,8 @@ const handDiv = document.getElementById('hand');
 const setupModal = document.getElementById('setup-modal');
 const zoomModal = document.getElementById('zoom-modal');
 const zoomDisplay = document.getElementById('zoom-card-display');
+const archiveModal = document.getElementById('archive-modal');
+const archiveGrid = document.getElementById('archive-card-grid');
 
 // --- 画面遷移 ---
 function showPage(pageId) {
@@ -21,7 +23,34 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- カードリスト描画 (折り返し対応) ---
+// --- アーカイブ閲覧機能 ---
+function openArchive() {
+    archiveGrid.innerHTML = "";
+    // 現在アーカイブ枠(zoneId="archive")に置かれているカードを探す
+    const archiveCards = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === 'archive');
+    
+    if (archiveCards.length === 0) {
+        archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>アーカイブは空です</p>";
+    } else {
+        archiveCards.forEach(card => {
+            const el = document.createElement('div');
+            el.className = card.className;
+            el.classList.remove('face-down'); // 一覧では必ず表向き
+            el.classList.add('face-up');
+            el.innerText = card.innerText;
+            // リスト内でもクリックで拡大可能
+            el.onclick = () => openZoom(card.innerText, card.className);
+            archiveGrid.appendChild(el);
+        });
+    }
+    archiveModal.style.display = 'flex';
+}
+
+function closeArchive() {
+    archiveModal.style.display = 'none';
+}
+
+// --- カードリスト描画 ---
 function renderGlobalCardList() {
     const grid = document.getElementById('global-card-grid');
     grid.innerHTML = "";
