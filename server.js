@@ -60,7 +60,7 @@ io.on('connection', (socket) => {
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = {
             id: oshiId, name: data.oshi.name, type: 'holomen',
-            percentX: data.oshi.percentX, percentY: data.oshi.percentY,
+            zoneId: 'oshi', // 初期配置をゾーンIDで指定
             zIndex: 100, isFaceUp: true
         };
 
