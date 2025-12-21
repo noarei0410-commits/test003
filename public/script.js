@@ -9,13 +9,12 @@ const setupModal = document.getElementById('setup-modal');
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 
-// --- 座標計算の核：再配置ロジック ---
+// --- 座標・再配置ロジック ---
 function repositionCards() {
     const fieldRect = field.getBoundingClientRect();
     document.querySelectorAll('.card').forEach(card => {
-        if (card.parentElement !== field) return; // 手札は除外
+        if (card.parentElement !== field) return; 
 
-        // 1. 枠（ゾーン）に所属している場合、その中心へ強制移動
         if (card.dataset.zoneId) {
             const zone = document.getElementById(card.dataset.zoneId);
             if (zone) {
@@ -26,7 +25,6 @@ function repositionCards() {
             }
         }
 
-        // 2. 枠外にいる場合、％座標で相対位置を維持
         if (card.dataset.percentX) {
             card.style.left = (card.dataset.percentX / 100) * fieldRect.width + 'px';
             card.style.top = (card.dataset.percentY / 100) * fieldRect.height + 'px';
@@ -34,10 +32,9 @@ function repositionCards() {
     });
 }
 
-// ウィンドウのリサイズ、またはオリエンテーション変更時に再配置を実行
 window.addEventListener('resize', repositionCards);
 
-// データ読み込み
+// データロード
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
@@ -51,7 +48,7 @@ async function loadCardData() {
     } catch (e) { console.error("Data error", e); }
 }
 
-// ルーム入室
+// 入室処理
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
@@ -128,15 +125,11 @@ function renderDecks() {
 
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
 document.getElementById('startGameBtn').onclick = () => {
-    socket.emit('setGame', { 
-        main: mainDeckList, 
-        cheer: cheerDeckList, 
-        oshi: { name: selectedOshi.name } 
-    });
+    socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: { name: selectedOshi.name } });
     setupModal.style.display = "none";
 };
 
-// --- 同期イベント ---
+// 同期イベント
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -195,7 +188,6 @@ function restoreCard(id, info) {
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
-        // 枠内にあるときは裏返し禁止
         if (el.dataset.zoneId && ['back', 'center', 'collab'].includes(el.dataset.zoneId)) return;
         el.classList.toggle('face-up'); el.classList.toggle('face-down');
         socket.emit('flipCard', { id: el.id, isFaceUp: el.classList.contains('face-up') });
@@ -203,11 +195,18 @@ function setupCardEvents(el) {
     el.addEventListener('pointerdown', (e) => {
         if (myRole === 'spectator') return;
         isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
-        const rect = el.getBoundingClientRect(); offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
+        
+        const rect = el.getBoundingClientRect(); 
+        offsetX = e.clientX - rect.left; 
+        offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
+
+        // 手札から抜く時の処理
         if (el.parentElement !== field) {
-            const fRect = field.getBoundingClientRect(); el.style.position = 'absolute';
-            el.style.left = (e.clientX - fRect.left - offsetX) + 'px'; el.style.top = (e.clientY - fRect.top - offsetY) + 'px';
+            const fRect = field.getBoundingClientRect(); 
+            el.style.position = 'absolute';
+            el.style.left = (e.clientX - fRect.left - offsetX) + 'px'; 
+            el.style.top = (e.clientY - fRect.top - offsetY) + 'px';
             field.appendChild(el);
         }
     });
@@ -226,9 +225,9 @@ document.addEventListener('pointerup', (e) => {
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
         currentCard.style.position = 'relative'; currentCard.style.left = ''; currentCard.style.top = '';
         delete currentCard.dataset.zoneId; delete currentCard.dataset.percentX;
-        handDiv.appendChild(currentCard); socket.emit('returnToHand', { id: currentCard.id });
+        handDiv.appendChild(currentCard); 
+        socket.emit('returnToHand', { id: currentCard.id });
     } else {
-        // スナップ判定
         const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 45;
         const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
         zones.forEach(z => {
