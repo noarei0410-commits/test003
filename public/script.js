@@ -191,6 +191,7 @@ function restoreCard(id, info) {
 // --- ドラッグ&ズームロジック ---
 let isDragging = false, currentCard = null, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let startX = 0, startY = 0; // クリック判定用
+let potentialZoomTarget = null; // 観戦者用のクリック判定ターゲット
 
 function setupCardEvents(el) {
     el.addEventListener('dblclick', (e) => {
@@ -201,11 +202,14 @@ function setupCardEvents(el) {
     });
 
     el.addEventListener('pointerdown', (e) => {
-        if (myRole === 'spectator') return;
+        // クリック開始位置を全員記録
+        startX = e.clientX; startY = e.clientY;
+        potentialZoomTarget = el;
+
+        if (myRole === 'spectator') return; // 観戦者はドラッグ開始処理をスキップ
+        
         isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
         
-        startX = e.clientX; startY = e.clientY; // 座標を記録
-
         const rect = el.getBoundingClientRect();
         const fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
@@ -231,12 +235,17 @@ document.addEventListener('pointermove', (e) => {
 });
 
 document.addEventListener('pointerup', (e) => {
-    if (!isDragging || !currentCard) return;
-
-    // クリック判定（移動距離が5px未満なら拡大表示）
+    // クリック判定（移動距離がわずかならズーム表示）
+    // 観戦者でもプレイヤーでも動作するようにする
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (dist < 5 && !currentCard.classList.contains('face-down')) {
-        openZoom(currentCard.innerText, currentCard.className);
+    if (dist < 5 && potentialZoomTarget && !potentialZoomTarget.classList.contains('face-down')) {
+        openZoom(potentialZoomTarget.innerText, potentialZoomTarget.className);
+    }
+    potentialZoomTarget = null;
+
+    if (myRole === 'spectator' || !isDragging || !currentCard) {
+        isDragging = false; currentCard = null;
+        return;
     }
 
     const hRect = handDiv.getBoundingClientRect();
