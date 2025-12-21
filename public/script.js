@@ -21,7 +21,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- カードリスト描画 ---
+// --- カードリスト描画 (折り返し対応) ---
 function renderGlobalCardList() {
     const grid = document.getElementById('global-card-grid');
     grid.innerHTML = "";
@@ -41,7 +41,7 @@ function openZoom(name, classList) {
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
 
-// --- 再配置ロジック (重要) ---
+// --- 再配置ロジック ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
@@ -238,7 +238,8 @@ document.onpointerup = (e) => {
             if (d < minDist) { minDist = d; closest = z; }
         });
         const fRect = field.getBoundingClientRect();
-        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: currentCard.classList.contains('type-holomen')?'holomen':'support' };
+        let type = currentCard.classList.contains('type-holomen')?'holomen':'support';
+        let moveData = { id: currentCard.id, name: currentCard.innerText, zIndex: currentCard.style.zIndex, type: type };
         if (closest) {
             currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX;
             moveData.zoneId = closest.id;
