@@ -26,7 +26,6 @@ io.on('connection', (socket) => {
                 players: []
             };
         }
-
         if (role === 'player') rooms[roomId].players.push(socket.id);
 
         socket.emit('init', { 
@@ -61,7 +60,7 @@ io.on('connection', (socket) => {
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = {
             id: oshiId, name: data.oshi.name, type: 'holomen',
-            x: data.oshi.pos.x, y: data.oshi.pos.y,
+            percentX: data.oshi.percentX, percentY: data.oshi.percentY,
             zIndex: 100, isFaceUp: true
         };
 
@@ -113,9 +112,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const roomId = socket.roomId;
-        if (rooms[roomId]) {
-            rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
-        }
+        if (rooms[roomId]) rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
     });
 });
 
