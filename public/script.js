@@ -12,10 +12,9 @@ async function loadCardData() {
             fetch('/data/holomen.json'), fetch('/data/support.json'),
             fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
-        MASTER_CARDS = [...await h.json(), ...await s.json()];
-        AYLE_MASTER = await a.json();
-        OSHI_LIST = await o.json();
-        MASTER_CARDS = [...MASTER_CARDS, ...OSHI_LIST];
+        const hData = await h.json(), sData = await s.json();
+        AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
+        MASTER_CARDS = [...hData, ...sData, ...AYLE_MASTER, ...OSHI_LIST];
         updateLibrary(); renderDecks();
     } catch (e) { console.error("Data error", e); }
 }
@@ -26,10 +25,9 @@ function updateLibrary(f = "") {
     const list = document.getElementById('libraryList');
     list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').forEach(card => {
-        const div = document.createElement('div');
-        div.className = "library-item";
+        const div = document.createElement('div'); div.className = "library-item";
         const isOshi = OSHI_LIST.some(o => o.name === card.name);
-        div.innerHTML = `<span>${card.name}</span><button class="btn-add">${isOshi ? '設定' : '追加'}</button>`;
+        div.innerHTML = `<span>${card.name}</span><button class="btn-add">${isOshi ? '推し' : '追加'}</button>`;
         div.querySelector('.btn-add').onclick = () => addToDeck(card);
         list.appendChild(div);
     });
@@ -37,9 +35,8 @@ function updateLibrary(f = "") {
 
 function addToDeck(card) {
     if (OSHI_LIST.some(o => o.name === card.name)) selectedOshi = { ...card };
-    else if (card.type === 'ayle') {
-        if (cheerDeckList.length < 20) cheerDeckList.push({ ...card });
-    } else mainDeckList.push({ ...card });
+    else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card }); }
+    else mainDeckList.push({ ...card });
     renderDecks();
 }
 
@@ -55,7 +52,6 @@ function renderDecks() {
     oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">外す</button></div>` : "";
     if (selectedOshi) oSum.querySelector('.btn-remove').onclick = () => { selectedOshi = null; renderDecks(); };
 
-    // メイン描画
     mSum.innerHTML = "";
     const gMain = mainDeckList.reduce((acc, c) => { acc[c.name] = (acc[c.name] || { d: c, n: 0 }); acc[c.name].n++; return acc; }, {});
     Object.keys(gMain).forEach(n => {
@@ -66,7 +62,6 @@ function renderDecks() {
         mSum.appendChild(div);
     });
 
-    // エール描画
     cSum.innerHTML = "";
     AYLE_MASTER.forEach(card => {
         const count = cheerDeckList.filter(c => c.name === card.name).length;
