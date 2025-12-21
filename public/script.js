@@ -23,32 +23,55 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- アーカイブ閲覧機能 ---
+// --- アーカイブ閲覧 & 復帰機能 ---
 function openArchive() {
     archiveGrid.innerHTML = "";
-    // 現在アーカイブ枠(zoneId="archive")に置かれているカードを探す
-    const archiveCards = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === 'archive');
+    // 現在アーカイブ枠に置かれている「実体カード」を取得
+    const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
     
     if (archiveCards.length === 0) {
-        archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>アーカイブは空です</p>";
+        archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>アーカイブは空です</p>";
     } else {
         archiveCards.forEach(card => {
+            const container = document.createElement('div');
+            container.className = "archive-item";
+
             const el = document.createElement('div');
             el.className = card.className;
-            el.classList.remove('face-down'); // 一覧では必ず表向き
+            el.classList.remove('face-down');
             el.classList.add('face-up');
             el.innerText = card.innerText;
-            // リスト内でもクリックで拡大可能
             el.onclick = () => openZoom(card.innerText, card.className);
-            archiveGrid.appendChild(el);
+            
+            // 復帰ボタン (観戦者は非表示)
+            if (myRole === 'player') {
+                const recoverBtn = document.createElement('button');
+                recoverBtn.className = "btn-recover";
+                recoverBtn.innerText = "手札へ";
+                recoverBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    returnArchiveToHand(card);
+                };
+                container.appendChild(el);
+                container.appendChild(recoverBtn);
+            } else {
+                container.appendChild(el);
+            }
+            
+            archiveGrid.appendChild(container);
         });
     }
     archiveModal.style.display = 'flex';
 }
 
-function closeArchive() {
-    archiveModal.style.display = 'none';
+function returnArchiveToHand(card) {
+    // script内の手札戻し関数を呼び出し
+    originalNextSibling = null; // アーカイブからの場合は末尾へ
+    returnToHand(card);
+    closeArchive();
 }
+
+function closeArchive() { archiveModal.style.display = 'none'; }
 
 // --- カードリスト描画 ---
 function renderGlobalCardList() {
