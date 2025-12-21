@@ -195,23 +195,27 @@ function setupCardEvents(el) {
 
     el.addEventListener('pointerdown', (e) => {
         if (myRole === 'spectator') return;
-        isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
+        isDragging = true; 
+        currentCard = el; 
+        
+        // 1. ポインターキャプチャを有効にする（ドラッグが外れないようにする）
+        el.setPointerCapture(e.pointerId);
         
         const rect = el.getBoundingClientRect(); 
         const fRect = field.getBoundingClientRect();
 
-        // 掴んだ瞬間のマウスとカードの相対距離を記録
+        // 2. カード内のクリック位置（オフセット）を計算
         offsetX = e.clientX - rect.left; 
         offsetY = e.clientY - rect.top;
+        
+        // 3. z-indexを最前面へ
         maxZIndex++; el.style.zIndex = maxZIndex;
 
-        // 手札からフィールドへ移動させる直前の座標セット
-        // どの親要素にいても、見た目上の位置を変えずにフィールドに転籍させる
-        el.style.position = 'absolute';
-        el.style.left = (rect.left - fRect.left) + 'px'; 
-        el.style.top = (rect.top - fRect.top) + 'px';
-        
+        // 4. 【最重要】手札にある場合、見た目上の位置を維持しながらフィールドへ移動
         if (el.parentElement !== field) {
+            el.style.position = 'absolute';
+            el.style.left = (rect.left - fRect.left) + 'px'; 
+            el.style.top = (rect.top - fRect.top) + 'px';
             field.appendChild(el);
         }
     });
@@ -220,7 +224,8 @@ function setupCardEvents(el) {
 document.addEventListener('pointermove', (e) => {
     if (!isDragging || !currentCard) return;
     const fRect = field.getBoundingClientRect();
-    // 常にフィールドの左上を基準に移動させる
+    
+    // 現在のマウス座標からオフセットを引いて、フィールド内での位置を決定
     currentCard.style.left = (e.clientX - fRect.left - offsetX) + 'px';
     currentCard.style.top = (e.clientY - fRect.top - offsetY) + 'px';
 });
@@ -234,14 +239,18 @@ document.addEventListener('pointerup', (e) => {
         currentCard.style.position = 'relative'; 
         currentCard.style.left = ''; 
         currentCard.style.top = '';
-        delete currentCard.dataset.zoneId; delete currentCard.dataset.percentX;
+        delete currentCard.dataset.zoneId; delete currentCard.dataset.percentX; delete currentCard.dataset.percentY;
         handDiv.appendChild(currentCard); 
         socket.emit('returnToHand', { id: currentCard.id });
     } else {
-        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 45;
-        const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+        const zones = document.querySelectorAll('.zone'); 
+        let closest = null, minDist = 45;
+        const cr = currentCard.getBoundingClientRect();
+        const cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+        
         zones.forEach(z => {
-            const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+            const zr = z.getBoundingClientRect();
+            const zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
             const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
             if (d < minDist) { minDist = d; closest = z; }
         });
@@ -263,5 +272,6 @@ document.addEventListener('pointerup', (e) => {
         socket.emit('moveCard', moveData);
         repositionCards();
     }
-    isDragging = false; currentCard = null;
+    isDragging = false; 
+    currentCard = null;
 });
