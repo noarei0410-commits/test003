@@ -20,34 +20,16 @@ io.on('connection', (socket) => {
 
     socket.on('setGame', (data) => {
         fieldState = {}; 
-        
-        // メインデッキ（ホロメン・サポート混在）
-        mainDeck = data.main.map(card => ({ 
-            id: uuidv4(), 
-            name: card.name, 
-            type: card.type 
-        }));
-        
-        // エールデッキ
-        cheerDeck = data.cheer.map(card => ({ 
-            id: uuidv4(), 
-            name: card.name, 
-            type: 'ayle' 
-        }));
-        
+        mainDeck = data.main.map(card => ({ id: uuidv4(), name: card.name, type: card.type }));
+        cheerDeck = data.cheer.map(card => ({ id: uuidv4(), name: card.name, type: 'ayle' }));
         shuffle(mainDeck);
         shuffle(cheerDeck);
 
-        // 推しホロメンを初期配置
         const oshiId = uuidv4();
         fieldState[oshiId] = {
-            id: oshiId,
-            name: data.oshi.name,
-            type: 'holomen',
-            x: data.oshi.pos.x,
-            y: data.oshi.pos.y,
-            zIndex: 100,
-            isFaceUp: true
+            id: oshiId, name: data.oshi.name, type: 'holomen',
+            x: data.oshi.pos.x, y: data.oshi.pos.y,
+            zIndex: 100, isFaceUp: true
         };
 
         io.emit('gameStarted', { 
