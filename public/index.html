@@ -24,23 +24,25 @@
             <h2>デッキ構築 & 推し選択</h2>
             <div class="builder-layout">
                 <div class="card-library">
-                    <input type="text" id="searchInput" placeholder="メインカードを検索...">
+                    <input type="text" id="searchInput" placeholder="カード名で検索...">
                     <div id="libraryList"></div>
                 </div>
+                
                 <div class="deck-lists-container">
-                    <div class="deck-section">
-                        <h3>推しホロメン</h3>
+                    <button id="startGameBtn" disabled>ゲーム開始</button>
+
+                    <div class="deck-section collapsible">
+                        <h3 class="section-header">推しホロメン <span>▼</span></h3>
                         <div id="oshiSummary" class="scroll-list"></div>
                     </div>
-                    <div class="deck-section">
-                        <h3>メインデッキ (<span id="mainBuildCount">0</span>)</h3>
+                    <div class="deck-section collapsible">
+                        <h3 class="section-header">メインデッキ (<span id="mainBuildCount">0</span>) <span>▼</span></h3>
                         <div id="mainDeckSummary" class="scroll-list"></div>
                     </div>
-                    <div class="deck-section">
-                        <h3>エールデッキ (<span id="cheerBuildCount">0</span>/20)</h3>
+                    <div class="deck-section collapsible">
+                        <h3 class="section-header">エールデッキ (<span id="cheerBuildCount">0</span>/20) <span>▼</span></h3>
                         <div id="cheerDeckSummary" class="scroll-list"></div>
                     </div>
-                    <button id="startGameBtn" disabled>ゲーム開始</button>
                 </div>
             </div>
         </div>
