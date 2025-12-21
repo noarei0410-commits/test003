@@ -62,13 +62,22 @@
             </div>
             <div class="builder-layout">
                 <div class="card-library">
-                    <input type="text" id="searchInput" placeholder="検索...">
+                    <input type="text" id="searchInput" placeholder="カード検索...">
                     <div id="libraryList"></div>
                 </div>
                 <div class="deck-lists-container">
-                    <div class="deck-section"><h3 class="section-header">推し</h3><div id="oshiSummary" class="scroll-list mini-list"></div></div>
-                    <div class="deck-section"><h3 class="section-header">メイン (<span id="mainBuildCount">0</span>)</h3><div id="mainDeckSummary" class="scroll-list"></div></div>
-                    <div class="deck-section"><h3 class="section-header">エール (<span id="cheerBuildCount">0</span>/20)</h3><div id="cheerDeckSummary" class="scroll-list"></div></div>
+                    <div class="deck-section">
+                        <h3 class="section-header">推しホロメン</h3>
+                        <div id="oshiSummary" class="scroll-list mini-list"></div>
+                    </div>
+                    <div class="deck-section">
+                        <h3 class="section-header">メインデッキ (<span id="mainBuildCount">0</span>)</h3>
+                        <div id="mainDeckSummary" class="scroll-list"></div>
+                    </div>
+                    <div class="deck-section">
+                        <h3 class="section-header">エールデッキ (<span id="cheerBuildCount">0</span>/20)</h3>
+                        <div id="cheerDeckSummary" class="scroll-list"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -100,7 +109,7 @@
                     <div class="zone" id="center"><span>センター<br>ポジション</span></div>
                     <div class="zone" id="oshi"><span>推し<br>ポジション</span></div>
                 </div>
-                <div class="stage-bottom-row">
+                <div class="stage-row bottom-row">
                     <div class="back-position-container">
                         <div class="zone back-slot" id="back1"><span>B1</span></div>
                         <div class="zone back-slot" id="back2"><span>B2</span></div>
