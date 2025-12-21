@@ -8,7 +8,7 @@ body {
     user-select: none; -webkit-user-select: none; touch-action: none;
 }
 
-/* ページ・モーダル管理 */
+/* ページ制御 */
 .full-page {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     display: flex; justify-content: center; align-items: center; z-index: 10000;
@@ -27,60 +27,63 @@ body {
 .hub-btn:active { background: rgba(0,210,255,0.2); transform: scale(0.98); }
 .hub-icon { font-size: 36px; }
 
-/* モーダル共通 */
+/* モーダル・構築画面 */
 .modal-content {
     background: #04172b; border: 2px solid #00d2ff;
-    border-radius: 20px; padding: 20px; width: 95vw; height: 90vh;
+    border-radius: 20px; padding: 15px; width: 96vw; height: 92vh;
     display: flex; flex-direction: column; overflow: hidden;
 }
 .room-content { width: 320px !important; height: auto !important; gap: 15px; text-align: center; }
-.list-content { width: 95vw; height: 90vh; }
+.builder-header { margin-bottom: 10px; text-align: center; }
+.limit-hint { font-size: 10px; color: #aaa; margin: 5px 0 0 0; }
 
-.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.builder-layout { display: flex; flex: 1; gap: 10px; overflow: hidden; }
+.card-library { flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; overflow: hidden; }
+.deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 
-/* カードリスト表示 */
-.card-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
-    gap: 12px; overflow-y: auto; flex: 1; padding: 10px;
-}
+#libraryList { flex: 1; overflow-y: auto; margin-top: 5px; }
+.library-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.03); margin-bottom: 4px; border-radius: 5px; font-size: 12px; }
 
-/* 入力・ボタン */
-input {
-    width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 210, 255, 0.5); border-radius: 8px;
-    color: white; font-size: 16px; margin-bottom: 10px;
-}
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; transition: 0.2s; }
-.btn-add, .btn-plus, .btn-main { background: #00d2ff; color: #04172b; }
-.btn-minus, .btn-remove { background: #ff5e5e; color: white; }
-.btn-spectator { background: #9b59b6; color: white; padding: 12px; width: 100%; }
-.btn-back, .btn-close { background: #444; color: white; padding: 10px; width: 100%; }
-#startGameBtn { padding: 15px; background: #00d2ff; color: #04172b; width: 100%; margin-bottom: 10px; font-size: 18px; }
+.deck-section { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px; }
+.section-header { margin: 0 0 5px 0; font-size: 12px; color: #00d2ff; border-bottom: 1px solid #00d2ff; padding-bottom: 2px; }
+.scroll-list { max-height: 150px; overflow-y: auto; }
+.mini-list { max-height: 50px; }
+
+.deck-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; background: rgba(0,0,0,0.2); margin-bottom: 3px; border-radius: 4px; font-size: 11px; }
+.deck-item-controls { display: flex; align-items: center; gap: 8px; }
+
+/* ボタン */
+button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; transition: 0.1s; }
+.btn-add, .btn-plus { background: #00d2ff; color: #04172b; padding: 5px 10px; }
+.btn-minus, .btn-remove { background: #ff5e5e; color: white; padding: 5px 10px; }
+#startGameBtn { padding: 12px; background: #00d2ff; color: #04172b; width: 100%; font-size: 16px; }
+#startGameBtn:disabled { background: #444; color: #888; }
+.btn-back, .btn-close { background: #444; color: white; padding: 10px; width: 100%; margin-top: 10px; }
 
 /* 対戦フィールド */
-#ui-layer { position: absolute; top: 10px; width: 94vw; display: flex; justify-content: space-between; font-size: 11px; z-index: 1000; }
-#field-container { border: 5px double #00d2ff; padding: 1vh 1vw; border-radius: 15px; width: 96vw; height: 58vh; max-width: 1200px; background: rgba(255,255,255,0.02); box-sizing: border-box; margin-bottom: 10px; }
-#field { display: grid; grid-template-columns: 18% 1fr 18%; gap: 1vw; height: 100%; position: relative; }
-.column { display: flex; flex-direction: column; gap: 1vh; justify-content: center; }
+#ui-layer { position: absolute; top: 5px; width: 94vw; display: flex; justify-content: space-between; font-size: 10px; z-index: 1000; }
+#field-container { border: 4px double #00d2ff; padding: 5px; border-radius: 12px; width: 98vw; height: 58vh; max-width: 1200px; background: rgba(255,255,255,0.02); margin-bottom: 5px; }
+#field { display: grid; grid-template-columns: 18% 1fr 18%; gap: 5px; height: 100%; position: relative; }
+.column { display: flex; flex-direction: column; gap: 5px; justify-content: center; }
 .center-column { justify-content: space-between; }
-.zone { border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 8px; text-align: center; color: rgba(240,255,255,0.5); position: relative; }
-.stage-row { display: flex; gap: 1vw; width: 100%; height: 48%; }
+.zone { border: 1px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 8px; text-align: center; color: rgba(240,255,255,0.4); position: relative; }
+.stage-row { display: flex; gap: 4px; width: 100%; height: 48%; }
 .back-slot { flex: 1; }
 .life-zone { height: 60%; }
 .deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); }
 
 /* 手札 */
-#hand-container { position: relative; width: 96vw; max-width: 1000px; z-index: 5000; }
-#hand { height: 115px; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 15px; display: flex; flex-wrap: nowrap; gap: 15px; padding: 10px 20px; background: rgba(4, 23, 43, 0.9); justify-content: flex-start; overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+#hand-container { position: relative; width: 98vw; height: 110px; z-index: 5000; }
+#hand { height: 100%; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 12px; padding: 8px 15px; background: rgba(4, 23, 43, 0.9); overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
 
 /* カード */
-.card { width: 55px; height: 77px; background: #fff; color: #000; font-size: 8px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; box-shadow: 2px 2px 6px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; scroll-snap-align: center; }
+.card { width: 55px; height: 77px; background: #fff; color: #000; font-size: 8px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; scroll-snap-align: center; }
 #field .card { position: absolute; }
 
 /* 属性別 */
 .type-holomen { border: 2px solid #00d2ff; }
 .type-support { border: 2px solid #2ecc71; }
-.face-down { background: #16213e !important; color: transparent !important; border: 2px solid white !important; }
+.face-down { background: #16213e !important; color: transparent !important; border: 1.5px solid white !important; }
 .ayle-white { border: 3px solid #ffffff !important; }
 .ayle-green { border: 3px solid #00ff7f !important; }
 .ayle-red   { border: 3px solid #ff4500 !important; }
@@ -88,9 +91,8 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; t
 .ayle-yellow { border: 3px solid #ffff00 !important; }
 .ayle-purple { border: 3px solid #da70d6 !important; }
 
-/* 拡大表示 */
+/* 拡大 */
 #zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 40000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
-.zoom-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-#zoom-card-display { width: 250px !important; height: 350px !important; font-size: 24px !important; }
+#zoom-card-display { width: 240px !important; height: 336px !important; font-size: 22px !important; }
 
 body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.7; }
