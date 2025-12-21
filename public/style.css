@@ -7,7 +7,7 @@ body {
     user-select: none; -webkit-user-select: none; touch-action: none;
 }
 
-/* ページ・モーダル */
+/* ページ制御 */
 .full-page { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10000; }
 #hub-page { background: radial-gradient(circle, #0a2d4d, #04172b); }
 .hub-container { text-align: center; width: 100%; max-width: 400px; padding: 20px; }
@@ -16,58 +16,73 @@ body {
 .hub-btn { background: rgba(255,255,255,0.05); border: 2px solid #00d2ff; padding: 25px; border-radius: 15px; color: white; font-size: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .hub-btn:active { background: rgba(0,210,255,0.2); transform: scale(0.98); }
 
+/* モーダル */
 .modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; padding: 15px; width: 98vw; height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
 .room-content { width: 320px !important; height: auto !important; gap: 15px; text-align: center; }
-
-/* 構築UI */
 .builder-layout { display: flex; flex: 1; gap: 8px; overflow: hidden; }
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; overflow: hidden; }
-.deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; }
 #libraryList, .scroll-list { flex: 1; overflow-y: auto; }
 .mini-list { max-height: 60px; }
-.deck-section { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px; margin-bottom: 5px; }
-.section-header { font-size: 11px; color: #00d2ff; margin: 0 0 5px 0; border-bottom: 1px solid rgba(0,210,255,0.3); }
+.deck-section { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px; margin-bottom: 4px; }
+.section-header { font-size: 10px; color: #00d2ff; margin: 0 0 4px 0; border-bottom: 1px solid rgba(0,210,255,0.3); }
 
 /* ボタン */
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; }
-.btn-add, .btn-plus, .btn-main { background: #00d2ff; color: #04172b; padding: 5px 10px; }
-.btn-minus, .btn-remove { background: #ff5e5e; color: white; padding: 5px 10px; }
-.btn-back, .btn-close { background: #444; color: white; padding: 10px; width: 100%; margin-top: 5px; }
+button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; transition: 0.1s; }
+.btn-add, .btn-plus, .btn-main { background: #00d2ff; color: #04172b; padding: 4px 10px; }
+.btn-minus, .btn-remove { background: #ff5e5e; color: white; padding: 4px 10px; }
+.btn-back, .btn-close { background: #444; color: white; padding: 8px; width: 100%; margin-top: 5px; }
 #startGameBtn { padding: 12px; background: #00d2ff; width: 100%; font-size: 16px; margin-bottom: 5px; }
 
-/* --- フィールドレイアウト (スマホ最適化) --- */
-#ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 11px; height: 30px; align-items: center; }
+/* --- フィールドレイアウト (画像準拠) --- */
+#ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
 
 #field-container { 
-    width: 98vw; height: 60vh; max-height: 520px; 
-    border: 2px solid #f0ffff; border-radius: 10px; 
-    background: rgba(255,255,255,0.02); padding: 5px; margin-bottom: 5px;
+    width: 98vw; height: 60vh; max-height: 550px; 
+    border: 3px double #f0ffff; border-radius: 12px; 
+    background: rgba(255,255,255,0.02); padding: 6px; margin-bottom: 4px;
 }
-#field { display: grid; grid-template-columns: 18% 1fr 18%; gap: 5px; height: 100%; position: relative; }
-.column { display: flex; flex-direction: column; gap: 5px; height: 100%; }
-.center-column { justify-content: space-between; }
+#field { display: grid; grid-template-columns: 16% 1fr 16%; gap: 6px; height: 100%; position: relative; }
+.column { display: flex; flex-direction: column; gap: 6px; height: 100%; }
+.center-column { justify-content: flex-start; gap: 8px; }
 
+/* 共通ゾーン */
 .zone { 
     border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); 
     border-radius: 6px; display: flex; justify-content: center; align-items: center; 
-    font-size: 8px; text-align: center; color: rgba(255,255,255,0.3); position: relative; 
+    font-size: 7px; text-align: center; color: rgba(255,255,255,0.4); position: relative; 
 }
-.stage-row { display: flex; gap: 5px; width: 100%; height: 48%; }
-.back-slot { flex: 1; min-width: 0; }
-.life-zone { height: 60%; }
+
+/* 中央ステージ（画像配置） */
+.stage-label-bar { width: 100%; text-align: center; border-bottom: 1px solid #f0ffff; font-size: 12px; color: #f0ffff; height: 20px; }
+.stage-top-row { display: flex; gap: 10px; width: 100%; height: 35%; justify-content: center; }
+.stage-top-row .zone { width: 22%; height: 100%; }
+
+.stage-bottom-row { width: 100%; height: 35%; display: flex; justify-content: center; }
+.back-position-container { 
+    width: 90%; height: 100%; border: 2px dashed rgba(240, 255, 255, 0.2); 
+    border-radius: 10px; display: flex; gap: 5px; padding: 5px; position: relative; justify-content: center;
+}
+.back-slot { flex: 1; height: 100%; border: 1px solid rgba(240,255,255,0.1); background: transparent; }
+.back-label { position: absolute; bottom: -15px; font-size: 8px; color: rgba(240,255,255,0.4); }
+
+.turn-guide-box { width: 100%; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 4px; font-size: 8px; text-align: center; margin-top: auto; }
+
+/* 左右カラム */
+.life-zone { height: 65%; }
 .deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); color: #00d2ff; cursor: pointer; }
 
 /* 手札 */
-#hand-container { width: 98vw; height: 120px; margin-top: 5px; z-index: 5000; }
+#hand-container { width: 98vw; height: 110px; margin-top: 5px; z-index: 5000; }
 #hand { 
     height: 100%; border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; 
-    display: flex; flex-wrap: nowrap; gap: 10px; padding: 10px 15px; 
+    display: flex; flex-wrap: nowrap; gap: 12px; padding: 10px 15px; 
     background: rgba(4, 23, 43, 0.85); overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
 }
 
-/* カード */
+/* カード共通 */
 .card { 
-    width: 55px; height: 77px; background: #fff; color: #000; font-size: 8px; 
+    width: 52px; height: 74px; background: #fff; color: #000; font-size: 8px; 
     display: flex; align-items: center; justify-content: center; text-align: center; 
     border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: relative; 
     flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; 
@@ -86,7 +101,8 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; }
 .ayle-yellow { border: 3px solid #ffff00 !important; }
 .ayle-purple { border: 3px solid #da70d6 !important; }
 
-/* 拡大・観戦 */
+/* 拡大 */
 #zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 40000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
 #zoom-card-display { width: 230px !important; height: 322px !important; font-size: 22px !important; }
+
 body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.6; }
