@@ -38,12 +38,22 @@ button:disabled { background: #444 !important; opacity: 0.5; color: #888 !import
 .deck-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.03); margin-bottom: 4px; border-radius: 6px; font-size: 12px; }
 .count-number { min-width: 20px; text-align: center; color: #00d2ff; font-weight: bold; }
 
-/* フィールド（相対位置管理の基盤） */
-#field-container { border: 5px double rgba(240, 255, 255, 1); padding: 1.5vh 1.5vw; border-radius: 20px; width: 94vw; height: 60vh; max-width: 1200px; margin-bottom: 120px; background: rgba(255,255,255,0.02); box-sizing: border-box; }
+/* フィールド（レスポンシブなグリッド基盤） */
+#field-container { 
+    border: 5px double rgba(240, 255, 255, 1); 
+    padding: 1.5vh 1.5vw; 
+    border-radius: 20px; 
+    width: 94vw; 
+    height: 60vh; 
+    max-width: 1200px; 
+    margin-bottom: 120px; 
+    background: rgba(255,255,255,0.02); 
+    box-sizing: border-box; 
+}
 #field { display: grid; grid-template-columns: 15% 1fr 15%; gap: 1.5vw; height: 100%; position: relative; }
 .column { display: flex; flex-direction: column; gap: 1.5vh; justify-content: center; }
 .center-column { align-items: center; justify-content: space-between; }
-.zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; width: 8vw; height: 10vh; min-width: 55px; min-height: 80px; display: flex; justify-content: center; align-items: center; font-size: 9px; text-align: center; color: rgba(240,255,255,0.5); }
+.zone { border: 2px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 10px; width: 8vw; height: 10vh; min-width: 55px; min-height: 80px; display: flex; justify-content: center; align-items: center; font-size: 9px; text-align: center; color: rgba(240,255,255,0.5); position: relative; }
 .vertical-zone { height: 26vh; }
 .wide-zone { width: 50vw; height: 14vh; }
 .deck-zone { cursor: pointer; border: 2px solid rgba(240, 255, 255, 1); background: linear-gradient(135deg, #16213e, #04172b); }
