@@ -5,6 +5,7 @@ let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator', currentDragEl = null, isDragging = false;
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let originalNextSibling = null, potentialZoomTarget = null;
+let currentFilter = 'all';
 
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
@@ -12,44 +13,16 @@ const zoomModal = document.getElementById('zoom-modal');
 const deckModal = document.getElementById('deck-inspection-modal');
 const deckGrid = document.getElementById('deck-card-grid');
 
-// --- 画面遷移管理 (固定設定) ---
+// --- 画面遷移管理 ---
 function showPage(pageId) {
-    const pages = document.querySelectorAll('.full-page');
-    pages.forEach(p => p.style.display = 'none');
-    
+    document.querySelectorAll('.full-page').forEach(p => { p.style.display = 'none'; });
     const target = document.getElementById(pageId);
     if (target) {
         target.style.display = 'flex';
         if (pageId === 'card-list-page') filterLibrary('all');
     }
 }
-
-// --- データ読込 ---
-async function loadCardData() {
-    try {
-        const [h, s, a, o] = await Promise.all([
-            fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
-        ]);
-        const hD = await h.json(), sD = await s.json(), aD = await a.json();
-        MASTER_CARDS = [...hD, ...sD, ...aD];
-        OSHI_LIST = await o.json();
-        AYLE_MASTER = aD;
-        updateLibrary(); renderDecks();
-    } catch (e) { console.warn("Data load failed, simulator continues with empty state.", e); }
-}
-
-// --- ルーム参加 ---
-async function joinRoom(role) {
-    const rid = document.getElementById('roomIdInput').value;
-    if (!rid) return alert("ルームIDを入力してください");
-    myRole = role; socket.emit('joinRoom', { roomId: rid, role });
-    showPage(''); // 全モーダルを隠してフィールド表示
-    document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
-    if (role === 'player') document.getElementById('setup-modal').style.display = 'flex';
-    else document.body.classList.add('spectator-mode');
-}
-document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
-document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
+window.onload = loadCardData;
 
 // --- デッキサーチ ---
 function openDeckInspection(type) {
@@ -92,7 +65,35 @@ function openArchive() {
 }
 function closeArchive() { document.getElementById('archive-modal').style.display = 'none'; }
 
-// --- ズーム詳細判定 ---
+// --- カードリスト・フィルタ (修正: 全表示の不具合解消) ---
+function filterLibrary(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        const text = btn.innerText;
+        const typeMap = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+        btn.classList.toggle('active', text === typeMap[type]);
+    });
+
+    const grid = document.getElementById('global-card-grid'); if (!grid) return;
+    grid.innerHTML = "";
+
+    let list = [];
+    if (type === 'all') {
+        list = [...OSHI_LIST, ...MASTER_CARDS];
+    } else if (type === 'oshi') {
+        list = OSHI_LIST;
+    } else {
+        list = MASTER_CARDS.filter(c => c.type === type);
+    }
+
+    list.forEach(card => {
+        const el = createCardElement(card, false); 
+        el.onclick = () => openZoom(card, el); 
+        grid.appendChild(el);
+    });
+}
+
+// --- ズーム機能 ---
 function canUseArt(costReq, attachedAyles) {
     if (!costReq || costReq.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -130,7 +131,7 @@ function openZoom(cardData, cardElement = null) {
     }).join('');
 
     let underHtml = stackUnder.length ? `<div class="zoom-under-section"><span class="section-title">進化前</span>${stackUnder.map(u => `<div class="ayle-list-item"><span>● ${u.cardData.bloom}</span><button class="btn-discard-ayle" onclick="discardFromZoom('${u.id}')">破棄</button></div>`).join('')}</div>` : "";
-    let equipHtml = stackEquip.length ? `<div class="zoom-equip-section"><span class="section-title">装備中</span>${stackEquip.map(e => `<div class="ayle-list-item"><span>● ${e.cardData.name}</span><button class="btn-discard-ayle" onclick="discardFromZoom('${e.id}')">破棄</button></div>`).join('')}</div>` : "";
+    let equipHtml = stackEquip.length ? `<div class="zoom-equip-section"><span class="section-title">装備中</span>${stackEquip.map(e => `<div class="ayle-list-item"><div><b>${e.cardData.name}</b><br><small>${e.cardData.text || ''}</small></div><button class="btn-discard-ayle" onclick="discardFromZoom('${e.id}')">破棄</button></div>`).join('')}</div>` : "";
     let ayleHtml = stackAyle.length ? `<div class="zoom-ayle-section"><span class="section-title">エール</span>${stackAyle.map(a => `<div class="ayle-list-item"><span>● ${a.cardData.name}</span><button class="btn-discard-ayle" onclick="discardFromZoom('${a.id}')">破棄</button></div>`).join('')}</div>` : "";
 
     let hpLife = isOshi ? `<div class="zoom-life">LIFE ${cardData.life || 0}</div>` : (isHolomen ? `<div class="zoom-hp">HP ${cardData.hp || 0}</div>` : "");
@@ -169,7 +170,7 @@ function repositionCards() {
 }
 window.onresize = repositionCards;
 
-// --- カード生成・操作 ---
+// --- カード生成 ---
 function createCardElement(data, withEvents = true) {
     const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.className = 'card';
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
@@ -243,32 +244,92 @@ function returnToHand(card) {
     socket.emit('flipCard', { id: card.id, isFaceUp: true }); socket.emit('moveCard', { id: card.id, isRotated: false, isFaceUp: true }); socket.emit('returnToHand', { id: card.id });
 }
 
-// --- 構築UI集計 ---
+// --- 構築UI・データ読み込み (修正: プログラム生成に変更) ---
+async function loadCardData() {
+    try {
+        const [h, s, a, o] = await Promise.all([
+            fetch('/data/holomen.json').then(r => r.json()),
+            fetch('/data/support.json').then(r => r.json()),
+            fetch('/data/ayle.json').then(r => r.json()),
+            fetch('/data/oshi_holomen.json').then(r => r.json())
+        ]);
+        MASTER_CARDS = [...h, ...s, ...a];
+        OSHI_LIST = o;
+        AYLE_MASTER = a;
+        updateLibrary(); renderDecks();
+    } catch (e) { console.error("Data Load Error:", e); }
+}
+
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
-    list.innerHTML = MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').concat(OSHI_LIST.filter(c => c.name.includes(f))).map(card => `
-        <div class="library-item"><span>${card.name}${card.bloom?'['+card.bloom+']':''}</span><button onclick='addToDeck(${JSON.stringify(card)})' class="btn-add">${card.type==='oshi'?'設定':'追加'}</button></div>
-    `).join('');
+    list.innerHTML = "";
+    const search = f.toLowerCase();
+    const all = [...OSHI_LIST, ...MASTER_CARDS.filter(c => c.type !== 'ayle')];
+    
+    all.filter(c => c.name.toLowerCase().includes(search)).forEach(card => {
+        const div = document.createElement('div');
+        div.className = "library-item";
+        const typeInfo = card.bloom || (card.type === 'oshi' ? "OSHI" : "");
+        div.innerHTML = `<span>${card.name}${typeInfo?' ['+typeInfo+']':''}</span>`;
+        const btn = document.createElement('button');
+        btn.className = "btn-add";
+        btn.innerText = card.type === 'oshi' ? '設定' : '追加';
+        btn.onclick = () => addToDeck(card);
+        div.appendChild(btn);
+        list.appendChild(div);
+    });
 }
-window.addToDeck = (card) => {
+
+function addToDeck(card) {
     if (card.type === 'oshi') selectedOshi = { ...card };
     else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card }); }
     else mainDeckList.push({ ...card });
     renderDecks();
-};
+}
+function removeFromDeck(key) {
+    const idx = mainDeckList.findIndex(c => `${c.name}_${c.bloom || c.category || ""}` === key);
+    if (idx !== -1) mainDeckList.splice(idx, 1);
+    renderDecks();
+}
+function removeAyle(name) {
+    const idx = cheerDeckList.findIndex(c => c.name === name);
+    if (idx !== -1) cheerDeckList.splice(idx, 1);
+    renderDecks();
+}
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
-    oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button onclick="selectedOshi=null;renderDecks()" class="btn-remove">X</button></div>` : "";
-    const gMain = mainDeckList.reduce((acc, c) => { const key = `${c.name}_${c.bloom||""}`; acc[key] = (acc[key] || { d: c, n: 0 }); acc[key].n++; return acc; }, {});
-    mSum.innerHTML = Object.keys(gMain).map(k => `<div class="deck-item"><span>${gMain[k].d.name} x${gMain[k].n}</span><button onclick="removeFromDeck('${k}')" class="btn-minus">-</button></div>`).join('');
-    cSum.innerHTML = AYLE_MASTER.map(c => { const n = cheerDeckList.filter(x => x.name === c.name).length; return `<div class="deck-item"><span>${c.name.charAt(0)}:${n}</span><button onclick="removeAyle('${c.name}')" class="btn-minus">-</button><button onclick='addToDeck(${JSON.stringify(c)})' class="btn-plus">+</button></div>`; }).join('');
+    oSum.innerHTML = "";
+    if (selectedOshi) {
+        const div = document.createElement('div'); div.className="deck-item"; div.innerHTML=`<span>${selectedOshi.name}</span><button class="btn-remove">X</button>`;
+        div.querySelector('button').onclick = () => { selectedOshi = null; renderDecks(); }; oSum.appendChild(div);
+    }
+    mSum.innerHTML = "";
+    const gMain = mainDeckList.reduce((acc, c) => { const key = `${c.name}_${c.bloom||c.category||""}`; acc[key] = (acc[key] || { d: c, n: 0 }); acc[key].n++; return acc; }, {});
+    Object.keys(gMain).forEach(key => {
+        const item = gMain[key], div = document.createElement('div'); div.className = "deck-item";
+        div.innerHTML = `<span>${item.d.name}(${item.d.bloom||'S'}) x${item.n}</span><button class="btn-minus">-</button>`;
+        div.querySelector('button').onclick = () => removeFromDeck(key); mSum.appendChild(div);
+    });
+    cSum.innerHTML = "";
+    AYLE_MASTER.forEach(c => {
+        const n = cheerDeckList.filter(x => x.name === c.name).length;
+        const div = document.createElement('div'); div.className = "deck-item";
+        div.innerHTML = `<span>${c.name.charAt(0)}:${n}</span><div class="deck-item-controls"><button class="btn-minus">-</button><button class="btn-plus">+</button></div>`;
+        div.querySelector('.btn-plus').onclick = () => addToDeck(c);
+        div.querySelector('.btn-minus').onclick = () => removeAyle(c.name);
+        cSum.appendChild(div);
+    });
     document.getElementById('mainBuildCount').innerText = mainDeckList.length;
     document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
-window.removeFromDeck = (key) => { const idx = mainDeckList.findIndex(c => `${c.name}_${c.bloom||""}` === key); if(idx!==-1) mainDeckList.splice(idx,1); renderDecks(); };
-window.removeAyle = (name) => { const idx = cheerDeckList.findIndex(c => c.name === name); if(idx!==-1) cheerDeckList.splice(idx,1); renderDecks(); };
+
+document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
+document.getElementById('startGameBtn').onclick = () => {
+    socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: selectedOshi });
+    showPage(''); 
+};
 
 // --- Socket受信 ---
 socket.on('gameStarted', (d) => { field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = ""; for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); repositionCards(); });
