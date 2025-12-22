@@ -13,39 +13,55 @@ const setupModal = document.getElementById('setup-modal');
 const zoomModal = document.getElementById('zoom-modal');
 const archiveModal = document.getElementById('archive-modal');
 const archiveGrid = document.getElementById('archive-card-grid');
+const deckModal = document.getElementById('deck-inspection-modal');
+const deckGrid = document.getElementById('deck-card-grid');
 
-// --- 画面遷移管理 ---
+// --- 画面遷移 ---
 function showPage(pageId) {
-    // すべてのフルページを非表示にする
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
-    
-    // 指定されたページを表示
     const target = document.getElementById(pageId);
-    if (target) {
-        target.style.display = 'flex';
-    }
-
-    // カードリストを開いた場合は再描画
-    if (pageId === 'card-list-page') {
-        filterLibrary('all');
-    }
+    if (target) target.style.display = 'flex';
+    if (pageId === 'card-list-page') filterLibrary('all');
 }
-
 window.onload = loadCardData;
 
-// --- フィルター機能 ---
-function filterLibrary(type) {
-    currentFilter = type;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.innerText === getTypeName(type));
-    });
-    renderGlobalCardList(type);
+// --- 山札確認機能 ---
+function openDeckInspection(type) {
+    if (myRole !== 'player') return;
+    socket.emit('inspectDeck', type);
 }
 
-function getTypeName(type) {
-    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
-    return map[type];
-}
+socket.on('deckInspectionResult', (data) => {
+    const { type, cards } = data;
+    deckGrid.innerHTML = "";
+    document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
+    
+    if (cards.length === 0) {
+        deckGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
+    } else {
+        cards.forEach(card => {
+            const container = document.createElement('div');
+            container.className = "archive-item";
+            const el = createCardElement(card, false);
+            el.classList.remove('face-down'); el.classList.add('face-up');
+            
+            const pickBtn = document.createElement('button');
+            pickBtn.className = "btn-recover";
+            pickBtn.innerText = "手札に加える";
+            pickBtn.onclick = () => {
+                socket.emit('pickCardFromDeck', { type, cardId: card.id });
+                closeDeckInspection();
+            };
+            
+            container.appendChild(el);
+            container.appendChild(pickBtn);
+            deckGrid.appendChild(container);
+        });
+    }
+    deckModal.style.display = 'flex';
+});
+
+function closeDeckInspection() { deckModal.style.display = 'none'; }
 
 // --- アーカイブ ---
 function openArchive() {
@@ -62,7 +78,7 @@ function openArchive() {
             if (myRole === 'player') {
                 const recoverBtn = document.createElement('button');
                 recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
-                recoverBtn.onclick = (e) => { e.stopPropagation(); returnArchiveToHand(card); };
+                recoverBtn.onclick = (e) => { e.stopPropagation(); returnToHand(card); closeArchive(); };
                 container.appendChild(el); container.appendChild(recoverBtn);
             } else { container.appendChild(el); }
             archiveGrid.appendChild(container);
@@ -70,11 +86,14 @@ function openArchive() {
     }
     archiveModal.style.display = 'flex';
 }
-function returnArchiveToHand(card) { originalNextSibling = null; returnToHand(card); closeArchive(); }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- カードリスト描画 ---
-function renderGlobalCardList(type = 'all') {
+// --- カードリスト・フィルタ ---
+function filterLibrary(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === getTypeName(type));
+    });
     const grid = document.getElementById('global-card-grid');
     grid.innerHTML = "";
     let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
@@ -84,20 +103,21 @@ function renderGlobalCardList(type = 'all') {
         grid.appendChild(el);
     });
 }
+function getTypeName(type) {
+    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+    return map[type];
+}
 
-// --- ズーム機能 ---
+// --- ズーム ---
 function openZoom(cardData) {
     if (!cardData) return;
     const container = document.querySelector('.zoom-container');
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
     const isSupport = cardData.type === 'support';
-
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let skillsHtml = '';
-    let batonHtml = '';
+    let skillsHtml = '', batonHtml = '';
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
-
     if (isSupport && cardData.category) topLabel = cardData.category.toUpperCase();
 
     if (isHolomen) {
@@ -107,44 +127,22 @@ function openZoom(cardData) {
             if (s.type === 'arts') {
                 const costs = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
                 headerContent = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}</div>${damageContent}`;
-            } else if (s.type === 'gift') {
-                headerContent = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
-            } else if (s.type === 'collab') {
-                headerContent = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
-            }
+            } else if (s.type === 'gift') headerContent = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
+            else if (s.type === 'collab') headerContent = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
             return `<div class="skill-item"><div class="skill-header">${headerContent}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
-
         const batonIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
-        if (cardData.baton > 0) {
-            batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${batonIcons}</div></div>`;
-        }
+        if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${batonIcons}</div></div>`;
     } else if (isSupport) {
         skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
     }
 
-    container.innerHTML = `
-        <div class="zoom-header">
-            <div>
-                <div class="zoom-bloom">${topLabel}</div>
-                <div class="zoom-name">${cardData.name}</div>
-            </div>
-            <div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div>
-        </div>
-        <div class="zoom-skills-list">${skillsHtml}</div>
-        <div class="zoom-tags">${tagsHtml}</div>
-        <div class="zoom-footer">${batonHtml}</div>
-    `;
+    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div><div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
     zoomModal.style.display = 'flex';
 }
+zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-zoomModal.onclick = (e) => {
-    if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) {
-        zoomModal.style.display = 'none';
-    }
-};
-
-// --- 再配置ロジック ---
+// --- 再配置 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
@@ -165,25 +163,24 @@ function repositionCards() {
 }
 window.addEventListener('resize', repositionCards);
 
-// --- データ読込 ---
+// --- データ/入室 ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
             fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
-        const hD = await h.json(), sD = await s.json();
-        AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
-        MASTER_CARDS = [...hD, ...sD, ...AYLE_MASTER];
+        MASTER_CARDS = [...await h.json(), ...await s.json(), ...await a.json()];
+        OSHI_LIST = await o.json();
+        AYLE_MASTER = MASTER_CARDS.filter(c => c.type === 'ayle');
         updateLibrary(); renderDecks();
-    } catch (e) { console.error("Data load failed, but continuing...", e); }
+    } catch (e) { console.error(e); }
 }
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
-    if (!rid) return alert("ルームIDを入力してください");
+    if (!rid) return alert("Required");
     myRole = role; socket.emit('joinRoom', { roomId: rid, role });
-    showPage(''); // 全ページ隠す
-    document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
+    showPage(''); document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
     if (role === 'player') setupModal.style.display = 'flex';
     else document.body.classList.add('spectator-mode');
 }
@@ -257,7 +254,10 @@ socket.on('init', (d) => {
     for (const id in d.fieldState) restoreCard(id, d.fieldState[id]);
     repositionCards();
 });
-socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
+socket.on('deckCount', (c) => { 
+    document.getElementById('mainCount').innerText = c.main; 
+    document.getElementById('cheerCount').innerText = c.cheer; 
+});
 socket.on('receiveCard', (d) => handDiv.appendChild(createCardElement(d)));
 socket.on('cardMoved', (d) => {
     let el = document.getElementById(d.id); if (!el) return restoreCard(d.id, d);
@@ -268,8 +268,26 @@ socket.on('cardMoved', (d) => {
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
 socket.on('cardFlipped', (d) => { const el = document.getElementById(d.id); if (el) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); } });
 
-document.getElementById('main-deck-zone').onpointerdown = () => { if(myRole==='player') socket.emit('drawMainCard'); };
-document.getElementById('cheer-deck-zone').onpointerdown = () => { if(myRole==='player') socket.emit('drawCheerCard'); };
+// デッキクリックの挙動
+let deckClickTimer = null;
+const setupDeckClick = (id, type) => {
+    const el = document.getElementById(id);
+    el.onpointerdown = (e) => {
+        deckClickTimer = setTimeout(() => { // 長押しで確認
+            openDeckInspection(type);
+            deckClickTimer = null;
+        }, 500);
+    };
+    el.onpointerup = () => {
+        if (deckClickTimer) { // 短押しでドロー
+            clearTimeout(deckClickTimer);
+            deckClickTimer = null;
+            if(myRole === 'player') socket.emit(type === 'main' ? 'drawMainCard' : 'drawCheerCard');
+        }
+    };
+};
+setupDeckClick('main-deck-zone', 'main');
+setupDeckClick('cheer-deck-zone', 'cheer');
 
 // --- 要素作成 ---
 function createCardElement(data, withEvents = true) {
@@ -298,8 +316,6 @@ function restoreCard(id, info) {
 function setupCardEvents(el) {
     el.addEventListener('dblclick', () => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
-        const noFlip = ['back1','back2','back3','back4','back5','center','collab'];
-        if (el.dataset.zoneId && noFlip.includes(el.dataset.zoneId)) return;
         socket.emit('flipCard', { id: el.id, isFaceUp: !el.classList.contains('face-up') });
     });
     el.onpointerdown = (e) => {
@@ -335,9 +351,8 @@ document.onpointerup = (e) => {
         isDragging = false; currentCard = null; potentialZoomTarget = null; return;
     }
     const hRect = handDiv.getBoundingClientRect();
-    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
-        returnToHand(currentCard);
-    } else {
+    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) returnToHand(currentCard);
+    else {
         const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
         const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
         zones.forEach(z => {
