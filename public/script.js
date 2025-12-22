@@ -16,7 +16,7 @@ const archiveGrid = document.getElementById('archive-card-grid');
 const deckModal = document.getElementById('deck-inspection-modal');
 const deckGrid = document.getElementById('deck-card-grid');
 
-// --- 画面遷移 ---
+// --- 画面遷移管理 ---
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
@@ -25,7 +25,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- デッキサーチ ---
+// --- デッキ内サーチ ---
 function openDeckInspection(type) {
     if (myRole !== 'player') return;
     socket.emit('inspectDeck', type);
@@ -69,7 +69,7 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ズーム & エール破棄 ---
+// --- ズーム & コスト判定 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -98,7 +98,7 @@ function openZoom(cardData, cardElement = null) {
         const rect = cardElement.getBoundingClientRect();
         attachedAylesEls = Array.from(document.querySelectorAll('.card')).filter(c => c.cardData.type === 'ayle').filter(c => {
             const r = c.getBoundingClientRect();
-            return Math.abs(r.left - rect.left) < 10 && Math.abs(r.top - rect.top) < 10; // 判定を広めに設定
+            return Math.abs(r.left - rect.left) < 10 && Math.abs(r.top - rect.top) < 10;
         });
     }
 
@@ -109,14 +109,21 @@ function openZoom(cardData, cardElement = null) {
 
     if (isHolomen) {
         skillsHtml = (cardData.skills || []).map(s => {
-            let h = '', d = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '', ready = "";
+            let typeLabel = `<div class="skill-type-label label-${s.type}">${s.type}</div>`;
+            let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
+            let costs = "";
+            let ready = "";
+
             if (s.type === 'arts') {
-                const costs = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
+                const iconHtml = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
+                costs = `<div class="cost-container">${iconHtml}</div>`;
                 if (canUseArt(s.cost, attachedAylesEls.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
-                h = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}${ready}</div>${d}`;
-            } else if (s.type === 'gift') h = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
-            else if (s.type === 'collab') h = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
-            return `<div class="skill-item"><div class="skill-header">${h}</div><div class="skill-text">${s.text || ''}</div></div>`;
+            }
+
+            return `<div class="skill-item">
+                        <div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div>${damage}</div>
+                        <div class="skill-text">${s.text || ''}</div>
+                    </div>`;
         }).join('');
 
         if (attachedAylesEls.length > 0) {
@@ -141,16 +148,10 @@ function openZoom(cardData, cardElement = null) {
     zoomModal.style.display = 'flex';
 }
 
-// 外部から呼べる破棄関数
 window.discardAyle = (cardId) => {
-    const el = document.getElementById(cardId);
-    if (!el) return;
-    const archiveZone = document.getElementById('archive');
-    const moveData = { id: cardId, zoneId: 'archive', zIndex: 10, ...el.cardData };
-    socket.emit('moveCard', moveData);
-    el.dataset.zoneId = 'archive';
-    repositionCards();
-    zoomModal.style.display = 'none'; // 状態更新のため閉じる
+    const el = document.getElementById(cardId); if (!el) return;
+    socket.emit('moveCard', { id: cardId, zoneId: 'archive', zIndex: 10, ...el.cardData });
+    el.dataset.zoneId = 'archive'; repositionCards(); zoomModal.style.display = 'none';
 };
 
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
