@@ -5,67 +5,112 @@ let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator', currentCard = null, isDragging = false;
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let originalNextSibling = null, potentialZoomTarget = null;
+let currentFilter = 'all';
 
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 const setupModal = document.getElementById('setup-modal');
 const zoomModal = document.getElementById('zoom-modal');
+const archiveModal = document.getElementById('archive-modal');
+const archiveGrid = document.getElementById('archive-card-grid');
 
-// --- 画面遷移 ---
+// --- 画面遷移管理 ---
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
     if (target) target.style.display = 'flex';
-    if (pageId === 'card-list-page') renderGlobalCardList();
+    if (pageId === 'card-list-page') filterLibrary('all');
 }
 window.onload = loadCardData;
 
+// --- フィルター機能 (カードリスト) ---
+function filterLibrary(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === getTypeName(type));
+    });
+    renderGlobalCardList(type);
+}
+
+function getTypeName(type) {
+    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+    return map[type];
+}
+
+// --- アーカイブ閲覧 & 復帰 ---
+function openArchive() {
+    archiveGrid.innerHTML = "";
+    const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
+    if (archiveCards.length === 0) {
+        archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>アーカイブは空です</p>";
+    } else {
+        archiveCards.forEach(card => {
+            const container = document.createElement('div');
+            container.className = "archive-item";
+            const el = createCardElement(card.cardData, false);
+            el.classList.remove('face-down'); el.classList.add('face-up');
+            if (myRole === 'player') {
+                const recoverBtn = document.createElement('button');
+                recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
+                recoverBtn.onclick = (e) => { e.stopPropagation(); returnArchiveToHand(card); };
+                container.appendChild(el); container.appendChild(recoverBtn);
+            } else { container.appendChild(el); }
+            archiveGrid.appendChild(container);
+        });
+    }
+    archiveModal.style.display = 'flex';
+}
+function returnArchiveToHand(card) { originalNextSibling = null; returnToHand(card); closeArchive(); }
+function closeArchive() { archiveModal.style.display = 'none'; }
+
 // --- カードリスト描画 ---
-function renderGlobalCardList() {
+function renderGlobalCardList(type = 'all') {
     const grid = document.getElementById('global-card-grid');
     grid.innerHTML = "";
-    MASTER_CARDS.forEach(card => {
+    let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
+    filtered.forEach(card => {
         const el = createCardElement(card, false);
         el.onclick = () => openZoom(card);
         grid.appendChild(el);
     });
 }
 
-// --- ズーム機能 (詳細表示) ---
+// --- ズーム機能 (詳細制限) ---
 function openZoom(cardData) {
     const container = document.querySelector('.zoom-container');
-    
-    // HTMLの中身を動的に生成
-    let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let batonHtml = Array(cardData.baton || 0).fill('<div class="baton-icon"></div>').join('');
-    let artsHtml = (cardData.arts || []).map(a => `
-        <div class="art-item">
-            <div class="art-name">${a.name}</div>
-            <div class="art-text">${a.text}</div>
-        </div>
-    `).join('');
-
-    // 推しホロメンの場合は一部表示を制限（バトンやHPがないため）
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
+    const isHolomen = cardData.type === 'holomen' && !isOshi;
+
+    let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
+    let batonHtml = '', artsHtml = '';
+
+    if (isHolomen) {
+        batonHtml = Array(cardData.baton || 0).fill('<div class="baton-icon"></div>').join('');
+        artsHtml = (cardData.arts || []).map(a => `
+            <div class="art-item">
+                <div class="art-name">${a.name}</div>
+                <div class="art-text">${a.text}</div>
+            </div>
+        `).join('');
+    }
 
     container.innerHTML = `
         <div class="zoom-header">
             <div>
-                <div class="zoom-bloom">${!isOshi ? (cardData.bloom || 'Debut') : 'OSHI'}</div>
+                <div class="zoom-bloom">${isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase())}</div>
                 <div class="zoom-name">${cardData.name}</div>
             </div>
-            <div class="zoom-hp">${!isOshi && cardData.hp ? 'HP ' + cardData.hp : ''}</div>
+            <div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div>
         </div>
         <div class="zoom-tags">${tagsHtml}</div>
         <div class="zoom-arts-list">${artsHtml}</div>
         <div class="zoom-footer">
             <div class="baton-container">
-                ${!isOshi ? '<span style="font-size:10px; margin-right:5px;">バトン:</span>' + batonHtml : ''}
+                ${isHolomen ? '<span style="font-size:10px; margin-right:5px;">バトン:</span>' + batonHtml : ''}
             </div>
             <div class="zoom-hint-bottom">タップで閉じる</div>
         </div>
     `;
-    
     zoomModal.style.display = 'flex';
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
@@ -91,16 +136,15 @@ function repositionCards() {
 }
 window.addEventListener('resize', repositionCards);
 
-// --- データ/入室 ---
+// --- データ読込 ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
-            fetch('/data/holomen.json'), fetch('/data/support.json'),
-            fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
+            fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
         const hD = await h.json(), sD = await s.json();
         AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
-        MASTER_CARDS = [...hD, ...sD, ...AYLE_MASTER, ...OSHI_LIST];
+        MASTER_CARDS = [...hD, ...sD, ...AYLE_MASTER];
         updateLibrary(); renderDecks();
     } catch (e) { console.error(e); }
 }
@@ -108,20 +152,18 @@ async function loadCardData() {
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
     if (!rid) return alert("Room ID required");
-    myRole = role;
-    socket.emit('joinRoom', { roomId: rid, role });
-    showPage(''); 
-    document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
+    myRole = role; socket.emit('joinRoom', { roomId: rid, role });
+    showPage(''); document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
     if (role === 'player') setupModal.style.display = 'flex';
     else document.body.classList.add('spectator-mode');
 }
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- デッキ構築 ---
+// --- デッキ構築UI ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); list.innerHTML = "";
-    MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').forEach(card => {
+    MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').concat(OSHI_LIST.filter(c => c.name.includes(f))).forEach(card => {
         const div = document.createElement('div'); div.className = "library-item";
         const isOshi = OSHI_LIST.some(o => o.name === card.name);
         div.innerHTML = `<span>${card.name}</span><button class="btn-add">${isOshi?'設定':'追加'}</button>`;
@@ -200,22 +242,23 @@ document.getElementById('cheer-deck-zone').onpointerdown = () => { if(myRole==='
 
 function createCardElement(data, withEvents = true) {
     const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.classList.add('card', 'face-up');
+    const isOshi = OSHI_LIST.some(o => o.name === data.name);
     
-    // ステータス表示 (ホロメンのみ)
-    if (data.type === 'holomen' && !OSHI_LIST.some(o => o.name === data.name)) {
+    if (data.type === 'holomen' && !isOshi) {
+        if (data.color) {
+            const colorIcon = document.createElement('div');
+            colorIcon.className = `card-color-icon color-${data.color}`;
+            el.appendChild(colorIcon);
+        }
         const hp = document.createElement('div'); hp.className = 'card-hp'; hp.innerText = data.hp || '';
         const bloom = document.createElement('div'); bloom.className = 'card-bloom'; bloom.innerText = (data.bloom || 'Debut').charAt(0);
         el.appendChild(hp); el.appendChild(bloom);
     }
-
     if (data.type === 'ayle' || data.name.includes('エール')) {
         const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
         for (let k in colors) if (data.name.includes(k)) { el.classList.add(`ayle-${colors[k]}`); break; }
     } else el.classList.add(`type-${data.type}`);
-    
-    // データ保存 (ズーム用)
     el.cardData = data;
-
     if (withEvents) setupCardEvents(el); return el;
 }
 function restoreCard(id, info) {
