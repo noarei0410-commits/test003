@@ -59,10 +59,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .side-column .zone:not(.life-zone) { height: 35%; }
 .deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); color: #00d2ff; cursor: pointer; }
 
-/* 手札・カード */
-#hand-container { width: 98vw; height: 110px; margin-top: 5px; z-index: 5000; }
-#hand { height: 100%; border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 10px; padding: 10px 15px; background: rgba(4, 23, 43, 0.9); overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
-
+/* カード外見 */
 .card { width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; scroll-snap-align: center; overflow: hidden; }
 #field .card { position: absolute; }
 
@@ -91,6 +88,19 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .zoom-hp { font-size: 16px; color: #e74c3c; font-weight: bold; }
 .zoom-bloom { font-size: 11px; color: #3498db; font-weight: bold; text-transform: uppercase; }
 
+/* セクション共通 */
+.zoom-ayle-section, .zoom-equip-section, .zoom-under-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
+.zoom-equip-section { background: #f9f0ff; border-color: #e4d0ff; }
+.zoom-under-section { background: #f0fff4; border-color: #d0ffe0; } /* 進化前用は緑系 */
+
+.section-title { font-size: 10px; font-weight: bold; color: #0056b3; display: block; margin-bottom: 4px; }
+.zoom-equip-section .section-title { color: #5b00b3; }
+.zoom-under-section .section-title { color: #157347; }
+
+.ayle-list-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 3px; }
+.btn-discard-ayle { background: #ff5e5e; color: white; border: none; font-size: 9px; padding: 3px 8px; border-radius: 4px; }
+
+/* スキル表示 */
 .zoom-skills-list { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .skill-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; }
 .skill-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: nowrap; }
@@ -106,16 +116,6 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .skill-damage { font-weight: bold; font-size: 14px; color: #333; margin-left: auto; }
 .skill-text { font-size: 10px; color: #444; line-height: 1.3; }
 
-/* ズーム内エール・装備セクション */
-.zoom-ayle-section, .zoom-equip-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
-.zoom-equip-section { background: #f9f0ff; border-color: #e4d0ff; }
-.section-title { font-size: 10px; font-weight: bold; color: #0056b3; display: block; margin-bottom: 4px; }
-.zoom-equip-section .section-title { color: #5b00b3; }
-
-.ayle-list-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 3px; }
-.equip-info { font-size: 9px; color: #666; margin-top: 1px; display: block; }
-.btn-discard-ayle { background: #ff5e5e; color: white; border: none; font-size: 9px; padding: 3px 8px; border-radius: 4px; }
-
 .zoom-tags { display: flex; gap: 4px; flex-wrap: wrap; padding-top: 5px; margin-top: 5px; }
 .tag-badge { background: #f0f2f5; color: #555; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
 
@@ -123,3 +123,5 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .baton-wrapper { display: flex; align-items: center; gap: 6px; }
 .baton-icon { width: 10px; height: 10px; background: #ddd; border-radius: 50%; border: 1px solid #999; }
 .zoom-hint-outside { color: #fff; font-size: 14px; opacity: 0.8; }
+
+body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.6; }
