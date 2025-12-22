@@ -9,27 +9,24 @@ let currentFilter = 'all';
 
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
-const hubPage = document.getElementById('hub-page');
-const setupModal = document.getElementById('setup-modal');
 const zoomModal = document.getElementById('zoom-modal');
-const archiveModal = document.getElementById('archive-modal');
 const archiveGrid = document.getElementById('archive-card-grid');
 const deckModal = document.getElementById('deck-inspection-modal');
 const deckGrid = document.getElementById('deck-card-grid');
 
 // --- 画面遷移管理 ---
 function showPage(pageId) {
-    // すべてのフルページ要素を非表示にする
-    document.querySelectorAll('.full-page').forEach(p => {
-        p.style.display = 'none';
-    });
+    // 全てのフルページ要素を非表示
+    const pages = document.querySelectorAll('.full-page');
+    pages.forEach(p => { p.style.display = 'none'; });
     
+    // 指定されたページを表示
     const target = document.getElementById(pageId);
     if (target) {
         target.style.display = 'flex';
     }
 
-    // カードリストを開いた場合はデータを再描画
+    // カードリストの場合はデータを反映
     if (pageId === 'card-list-page') {
         filterLibrary('all');
     }
@@ -76,29 +73,27 @@ function openArchive() {
             archiveGrid.appendChild(container);
         });
     }
-    archiveModal.style.display = 'flex';
+    document.getElementById('archive-modal').style.display = 'flex';
 }
-function closeArchive() { archiveModal.style.display = 'none'; }
+function closeArchive() { document.getElementById('archive-modal').style.display = 'none'; }
 
 // --- カードリスト・フィルタ ---
 function filterLibrary(type) {
     currentFilter = type;
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        const btnType = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
-        btn.classList.toggle('active', btnType === type);
+        const btnText = btn.innerText;
+        const typeMap = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+        btn.classList.toggle('active', btnText === typeMap[type]);
     });
-    const grid = document.getElementById('global-card-grid'); 
-    if (!grid) return;
+    const grid = document.getElementById('global-card-grid'); if (!grid) return;
     grid.innerHTML = "";
     let list = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
     list.forEach(card => {
-        const el = createCardElement(card, false); 
-        el.onclick = () => openZoom(card, el); 
-        grid.appendChild(el);
+        const el = createCardElement(card, false); el.onclick = () => openZoom(card, el); grid.appendChild(el);
     });
 }
 
-// --- ズーム機能 & コスト判定 ---
+// --- ズーム機能 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -135,7 +130,6 @@ function openZoom(cardData, cardElement = null) {
     let skillsHtml = '', ayleListHtml = '', equipListHtml = '', underListHtml = '', batonHtml = '';
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
-    
     let hpOrLifeHtml = '';
     if (isHolomen && cardData.hp) hpOrLifeHtml = `<div class="zoom-hp">HP ${cardData.hp}</div>`;
     else if (isOshi && cardData.life) hpOrLifeHtml = `<div class="zoom-life">LIFE ${cardData.life}</div>`;
@@ -147,7 +141,6 @@ function openZoom(cardData, cardElement = null) {
             let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
             let costs = (s.type === 'arts') ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">ホロパワー：-${s.cost || 0}</span>`;
             let ready = (s.type === 'arts' && canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
-
             return `<div class="skill-item"><div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div>${damage}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
 
@@ -170,7 +163,7 @@ function openZoom(cardData, cardElement = null) {
         if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
-    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div>${hpOrLifeHtml}</div><div class="zoom-skills-list">${skillsHtml}</div>${underListHtml} ${equipListHtml} ${ayleListHtml}<div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
+    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div>${hpOrLifeHtml}</div><div class="zoom-skills-list">${skillsHtml}</div>${underListHtml}${equipListHtml}${ayleListHtml}<div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
     zoomModal.style.display = 'flex';
 }
 
@@ -213,6 +206,7 @@ function repositionCards() {
 let currentDragEl = null;
 window.addEventListener('resize', repositionCards);
 
+// --- データ読み込み ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
@@ -223,14 +217,14 @@ async function loadCardData() {
         OSHI_LIST = await o.json();
         AYLE_MASTER = aD;
         updateLibrary(); renderDecks();
-    } catch (e) { console.warn("Data load failed, simulator will still function.", e); }
+    } catch (e) { console.warn("Init load skipped.", e); }
 }
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
     if (!rid) return alert("Required");
     myRole = role; socket.emit('joinRoom', { roomId: rid, role });
-    showPage(''); // 全モーダルを一旦隠す
+    showPage(''); // 全ページ隠す
     document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
     if (role === 'player') setupModal.style.display = 'flex';
     else document.body.classList.add('spectator-mode');
@@ -238,6 +232,7 @@ async function joinRoom(role) {
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
+// --- 構築・同期 ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
@@ -298,7 +293,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期/操作 ---
+// --- 同期 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -330,11 +325,9 @@ function setupDeckClick(id, type) {
     el.onpointerup = () => { if (deckClickTimer) { clearTimeout(deckClickTimer); deckClickTimer = null; if(myRole === 'player') socket.emit(type === 'main' ? 'drawMainCard' : 'drawCheerCard'); } };
 }
 
-function canBloom(sourceData, targetData) {
-    if (sourceData.type !== 'holomen' || targetData.type !== 'holomen') return false;
-    if (sourceData.name !== targetData.name) return false;
-    const s = sourceData.bloom, t = targetData.bloom;
-    return (t === 'Debut' && s === '1st') || (t === '1st' && (s === '2nd' || s === '1st'));
+function canBloom(s, t) {
+    if (s.type !== 'holomen' || t.type !== 'holomen' || s.name !== t.name) return false;
+    return (t.bloom === 'Debut' && s.bloom === '1st') || (t.bloom === '1st' && (s.bloom === '2nd' || s.bloom === '1st'));
 }
 
 function createCardElement(data, withEvents = true) {
@@ -358,8 +351,7 @@ function createCardElement(data, withEvents = true) {
 function restoreCard(id, info) {
     const el = createCardElement({ id, ...info });
     el.dataset.zoneId = info.zoneId || ""; el.dataset.percentX = info.percentX || ""; el.dataset.percentY = info.percentY || "";
-    el.style.zIndex = info.zIndex;
-    field.appendChild(el); repositionCards();
+    el.style.zIndex = info.zIndex; field.appendChild(el); repositionCards();
 }
 
 function setupCardEvents(el) {
@@ -389,16 +381,14 @@ document.onpointerup = (e) => {
     const hRect = handDiv.getBoundingClientRect();
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) returnToHand(currentDragEl);
     else {
-        const fRect = field.getBoundingClientRect();
-        let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
         const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
+        let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         if (targetCardEl && targetCardEl.parentElement === field) {
             const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
-            if ((currentDragEl.cardData.type === 'ayle' || isEquip) && targetCardEl.cardData.type === 'holomen') {
+            if ((currentDragEl.cardData.type === 'ayle' || isEquip) && (targetCardEl.cardData.type === 'holomen' || targetCardEl.cardData.type === 'oshi')) {
                 currentDragEl.style.left = targetCardEl.style.left; currentDragEl.style.top = targetCardEl.style.top;
-                currentDragEl.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; moveData.zIndex = currentDragEl.style.zIndex;
-                currentDragEl.dataset.zoneId = targetCardEl.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
+                currentDragEl.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; currentDragEl.dataset.zoneId = targetCardEl.dataset.zoneId || ""; moveData.zIndex = currentDragEl.style.zIndex; moveData.zoneId = currentDragEl.dataset.zoneId;
             } else if (canBloom(currentDragEl.cardData, targetCardEl.cardData)) {
                 currentDragEl.style.left = targetCardEl.style.left; currentDragEl.style.top = targetCardEl.style.top;
                 currentDragEl.dataset.zoneId = targetCardEl.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
@@ -421,8 +411,11 @@ function normalZoneSnap(e, moveData) {
         currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id;
         if (closest.id === 'life-zone') { currentDragEl.classList.add('rotated'); moveData.isRotated = true; }
         else { currentDragEl.classList.remove('rotated'); moveData.isRotated = false; }
+    } else { 
+        delete currentDragEl.dataset.zoneId; const pRect = field.getBoundingClientRect(); 
+        const pX = (parseFloat(currentDragEl.style.left) / pRect.width) * 100, pY = (parseFloat(currentDragEl.style.top) / pRect.height) * 100;
+        currentDragEl.dataset.percentX = pX; currentDragEl.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY;
     }
-    else { delete currentDragEl.dataset.zoneId; const pRect = field.getBoundingClientRect(); const pX = (parseFloat(currentDragEl.style.left) / pRect.width) * 100, pY = (parseFloat(currentDragEl.style.top) / pRect.height) * 100; currentDragEl.dataset.percentX = pX; currentDragEl.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
 }
 
 function returnToHand(card) {
