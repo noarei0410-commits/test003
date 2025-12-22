@@ -50,6 +50,16 @@
         </div>
     </div>
 
+    <div id="deck-inspection-modal" class="full-page" style="display: none;">
+        <div class="modal-content list-content">
+            <div class="modal-header">
+                <h2 id="inspection-title">Deck List</h2>
+                <button onclick="closeDeckInspection()" class="btn-close-gray">閉じる</button>
+            </div>
+            <div id="deck-card-grid" class="card-grid"></div>
+        </div>
+    </div>
+
     <div id="room-modal" class="full-page" style="display: none;">
         <div class="modal-content room-content">
             <h2>ルーム選択</h2>
@@ -95,7 +105,7 @@
         <div id="field">
             <div class="column side-column">
                 <div class="zone life-zone" id="life-zone"><span>ライフ</span></div>
-                <div class="zone deck-zone" id="cheer-deck-zone"><span>エール<br>デッキ</span></div>
+                <div class="zone deck-zone clickable-zone" id="cheer-deck-zone"><span>エール<br>デッキ</span></div>
             </div>
             <div class="column center-column">
                 <div class="stage-label-bar">ステージ</div>
@@ -119,7 +129,7 @@
             </div>
             <div class="column side-column">
                 <div class="zone" id="holopower"><span>ホロパワー</span></div>
-                <div class="zone deck-zone" id="main-deck-zone"><span>メイン<br>デッキ</span></div>
+                <div class="zone deck-zone clickable-zone" id="main-deck-zone"><span>メイン<br>デッキ</span></div>
                 <div class="zone clickable-zone" id="archive" onclick="openArchive()"><span>アーカイブ<br>(確認)</span></div>
             </div>
         </div>
