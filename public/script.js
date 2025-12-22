@@ -1,154 +1,363 @@
-* { box-sizing: border-box; }
+const socket = io();
 
-body {
-    margin: 0; overflow: hidden; background-color: #04172b;
-    font-family: 'Hiragino Kaku Gothic ProN', sans-serif; display: flex; flex-direction: column;
-    align-items: center; justify-content: flex-start; height: 100vh; color: white;
-    user-select: none; -webkit-user-select: none; touch-action: none;
+let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
+let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
+let myRole = 'spectator', currentCard = null, isDragging = false;
+let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
+let originalNextSibling = null, potentialZoomTarget = null;
+let currentFilter = 'all';
+
+const field = document.getElementById('field');
+const handDiv = document.getElementById('hand');
+const setupModal = document.getElementById('setup-modal');
+const zoomModal = document.getElementById('zoom-modal');
+const archiveModal = document.getElementById('archive-modal');
+const archiveGrid = document.getElementById('archive-card-grid');
+
+// --- 画面遷移管理 ---
+function showPage(pageId) {
+    // すべてのフルページを非表示にする
+    document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
+    
+    // 指定されたページを表示
+    const target = document.getElementById(pageId);
+    if (target) {
+        target.style.display = 'flex';
+    }
+
+    // カードリストを開いた場合は再描画
+    if (pageId === 'card-list-page') {
+        filterLibrary('all');
+    }
 }
 
-/* ページ制御 */
-.full-page { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10000; }
-#hub-page { background: radial-gradient(circle, #0a2d4d, #04172b); }
-.hub-container { text-align: center; width: 100%; max-width: 400px; padding: 20px; }
-.hub-title { color: #00d2ff; font-size: 32px; margin-bottom: 40px; letter-spacing: 2px; }
-.hub-menu { display: grid; gap: 20px; }
-.hub-btn { background: rgba(255,255,255,0.05); border: 2px solid #00d2ff; padding: 25px; border-radius: 15px; color: white; font-size: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+window.onload = loadCardData;
 
-/* モーダル共通 */
-.modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; padding: 15px; width: 98vw; height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
-.room-content { width: 320px !important; height: auto !important; gap: 15px; text-align: center; }
-
-/* フィルター・グリッド */
-.filter-bar { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
-.filter-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 6px 12px; font-size: 11px; white-space: nowrap; flex-shrink: 0; border-radius: 4px; }
-.filter-btn.active { background: #00d2ff; color: #04172b; border-color: #00d2ff; }
-.card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; overflow-y: auto; flex: 1; justify-content: flex-start; align-content: flex-start; }
-
-/* アーカイブ設定 */
-.archive-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.btn-recover { background: #2ecc71; color: white; font-size: 9px; padding: 4px 8px; width: 100%; border-radius: 4px; }
-
-/* デッキ構築レイアウト */
-.builder-layout { display: flex; flex: 1; gap: 10px; overflow: hidden; }
-.card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; overflow: hidden; order: 1; }
-.deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; order: 2; }
-#libraryList, .scroll-list { flex: 1; overflow-y: auto; }
-.mini-list { max-height: 60px; }
-.deck-section { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px; margin-bottom: 4px; }
-.section-header { font-size: 10px; color: #00d2ff; margin: 0 0 4px 0; border-bottom: 1px solid rgba(0,210,255,0.3); }
-
-/* ボタン類 */
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; transition: 0.1s; }
-.btn-add, .btn-plus, .btn-main { background: #00d2ff; color: #04172b; padding: 4px 10px; }
-.btn-minus, .btn-remove { background: #ff5e5e; color: white; padding: 4px 10px; }
-.btn-back, .btn-close-gray { background: #444; color: white; padding: 10px; width: 100%; margin-top: 5px; }
-#startGameBtn { padding: 12px; background: #00d2ff; width: 100%; font-size: 16px; margin-bottom: 5px; }
-
-/* フィールドUI */
-#ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
-#field-container { width: 98vw; height: 60vh; max-height: 550px; border: 3px double #f0ffff; border-radius: 12px; background: rgba(255,255,255,0.02); padding: 6px; margin-bottom: 4px; }
-#field { display: grid; grid-template-columns: 16% 1fr 16%; gap: 6px; height: 100%; position: relative; }
-.column { display: flex; flex-direction: column; gap: 6px; height: 100%; }
-.center-column { justify-content: flex-start; gap: 8px; }
-
-.zone { border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 7px; text-align: center; color: rgba(255,255,255,0.4); position: relative; width: 100%; height: 100%; }
-.clickable-zone { cursor: pointer; border-color: #00d2ff; color: #00d2ff; background: rgba(0, 210, 255, 0.05); }
-
-.stage-label-bar { width: 100%; text-align: center; border-bottom: 1px solid #f0ffff; font-size: 12px; color: #f0ffff; height: 20px; }
-.stage-top-row { display: flex; gap: 10px; width: 100%; height: 35%; justify-content: center; }
-.stage-top-row .zone { width: 22%; height: 100%; }
-.stage-bottom-row { width: 100%; height: 35%; display: flex; justify-content: center; }
-.back-position-container { width: 90%; height: 100%; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 10px; display: flex; gap: 5px; padding: 5px; position: relative; justify-content: center; }
-.back-slot { flex: 1; height: 100%; border: 1px solid rgba(240,255,255,0.1); background: transparent; }
-
-.turn-guide-box { width: 100%; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 4px; font-size: 8px; text-align: center; margin-top: auto; }
-
-/* 左右カラム */
-.life-zone { height: 60%; }
-.side-column .zone:not(.life-zone) { height: 35%; }
-.deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); color: #00d2ff; cursor: pointer; }
-
-/* 手札 */
-#hand-container { width: 98vw; height: 110px; margin-top: 5px; z-index: 5000; }
-#hand { height: 100%; border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 10px; padding: 10px 15px; background: rgba(4, 23, 43, 0.9); overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
-
-/* カード外見 */
-.card { 
-    width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px; 
-    display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); 
-    position: relative; flex-shrink: 0; z-index: 1000; touch-action: none; padding: 4px; 
-    box-sizing: border-box; scroll-snap-align: center; overflow: hidden;
+// --- フィルター機能 ---
+function filterLibrary(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === getTypeName(type));
+    });
+    renderGlobalCardList(type);
 }
-#field .card { position: absolute; }
 
-.card-hp { position: absolute; top: 12px; right: 4px; font-weight: bold; color: #e74c3c; font-size: 8px; }
-.card-bloom { position: absolute; top: 2px; left: 4px; font-weight: bold; color: #3498db; font-size: 7px; }
-.card-color-icon { position: absolute; top: 2px; right: 4px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
-
-/* 色・属性 */
-.color-red { background-color: #ff4500; }
-.color-blue { background-color: #1e90ff; }
-.color-green { background-color: #2ecc71; }
-.color-yellow { background-color: #ffff00; }
-.color-purple { background-color: #da70d6; }
-.color-white { background-color: #ffffff; border-color: #ccc; }
-.color-any { background-color: #ddd; border: 1px dashed #666; }
-
-/* カードタイプ枠色 */
-.type-holomen { border: 2px solid #00d2ff; }
-.type-support { border: 2px solid #2ecc71; }
-.category-staff { border: 2px solid #95a5a6 !important; } /* スタッフカード専用グレー枠 */
-
-.face-down { background: #16213e !important; color: transparent !important; border: 1.5px solid white !important; }
-.ayle-white { border: 3px solid #ffffff !important; }
-.ayle-green { border: 3px solid #00ff7f !important; }
-.ayle-red   { border: 3px solid #ff4500 !important; }
-.ayle-blue  { border: 3px solid #1e90ff !important; }
-.ayle-yellow { border: 3px solid #ffff00 !important; }
-.ayle-purple { border: 3px solid #da70d6 !important; }
-
-/* --- 拡大表示（ズーム） --- */
-#zoom-modal {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.9); z-index: 50000;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    cursor: pointer; gap: 15px;
+function getTypeName(type) {
+    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+    return map[type];
 }
-.zoom-container {
-    background: #fff; color: #000; width: 300px; height: auto; 
-    max-height: 80vh; border-radius: 15px; padding: 15px;
-    display: flex; flex-direction: column; gap: 10px;
-    position: relative; overflow-y: auto; cursor: default;
+
+// --- アーカイブ ---
+function openArchive() {
+    archiveGrid.innerHTML = "";
+    const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
+    if (archiveCards.length === 0) {
+        archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    } else {
+        archiveCards.forEach(card => {
+            const container = document.createElement('div');
+            container.className = "archive-item";
+            const el = createCardElement(card.cardData, false);
+            el.classList.remove('face-down'); el.classList.add('face-up');
+            if (myRole === 'player') {
+                const recoverBtn = document.createElement('button');
+                recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
+                recoverBtn.onclick = (e) => { e.stopPropagation(); returnArchiveToHand(card); };
+                container.appendChild(el); container.appendChild(recoverBtn);
+            } else { container.appendChild(el); }
+            archiveGrid.appendChild(container);
+        });
+    }
+    archiveModal.style.display = 'flex';
 }
-.zoom-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 5px; flex-shrink: 0; }
-.zoom-name { font-size: 18px; font-weight: bold; }
-.zoom-hp { font-size: 16px; color: #e74c3c; font-weight: bold; }
-.zoom-bloom { font-size: 11px; color: #3498db; font-weight: bold; text-transform: uppercase; }
+function returnArchiveToHand(card) { originalNextSibling = null; returnToHand(card); closeArchive(); }
+function closeArchive() { archiveModal.style.display = 'none'; }
 
-/* ハッシュタグ・スキル */
-.zoom-tags { display: flex; gap: 4px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid #eee; margin-top: auto; }
-.tag-badge { background: #f0f2f5; color: #555; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
-.zoom-skills-list { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; padding-right: 5px; min-height: 100px; }
-.skill-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; }
-.skill-header { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; position: relative; flex-wrap: wrap; }
-.skill-type-label { font-size: 8px; padding: 1px 4px; border-radius: 3px; color: #fff; font-weight: bold; text-transform: uppercase; }
-.label-arts { background: #e74c3c; }
-.label-gift { background: #f1c40f; }
-.label-collab { background: #9b59b6; }
-.skill-name { font-weight: bold; font-size: 13px; flex: 1; }
-.skill-damage { font-weight: bold; font-size: 14px; color: #333; margin-left: auto; }
-.skill-text { font-size: 10px; color: #444; line-height: 1.3; }
-.cost-container { display: flex; gap: 2px; align-items: center; }
-.cost-icon { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
+// --- カードリスト描画 ---
+function renderGlobalCardList(type = 'all') {
+    const grid = document.getElementById('global-card-grid');
+    grid.innerHTML = "";
+    let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
+    filtered.forEach(card => {
+        const el = createCardElement(card, false);
+        el.onclick = () => openZoom(card);
+        grid.appendChild(el);
+    });
+}
 
-/* バトン・ヒント */
-.zoom-footer { display: flex; align-items: center; flex-shrink: 0; }
-.baton-wrapper { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-.baton-label { font-size: 10px; font-weight: bold; color: #555; }
-.baton-icons-container { display: flex; align-items: center; gap: 3px; }
-.baton-icon { width: 12px; height: 12px; background: #ddd; border-radius: 50%; border: 1px solid #999; }
-.zoom-hint-outside { color: #fff; font-size: 14px; text-align: center; margin: 0; opacity: 0.8; }
+// --- ズーム機能 ---
+function openZoom(cardData) {
+    if (!cardData) return;
+    const container = document.querySelector('.zoom-container');
+    const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
+    const isHolomen = cardData.type === 'holomen' && !isOshi;
+    const isSupport = cardData.type === 'support';
 
-body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.6; }
+    let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
+    let skillsHtml = '';
+    let batonHtml = '';
+    let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
+
+    if (isSupport && cardData.category) topLabel = cardData.category.toUpperCase();
+
+    if (isHolomen) {
+        skillsHtml = (cardData.skills || []).map(s => {
+            let headerContent = '';
+            let damageContent = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
+            if (s.type === 'arts') {
+                const costs = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
+                headerContent = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}</div>${damageContent}`;
+            } else if (s.type === 'gift') {
+                headerContent = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
+            } else if (s.type === 'collab') {
+                headerContent = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
+            }
+            return `<div class="skill-item"><div class="skill-header">${headerContent}</div><div class="skill-text">${s.text || ''}</div></div>`;
+        }).join('');
+
+        const batonIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
+        if (cardData.baton > 0) {
+            batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${batonIcons}</div></div>`;
+        }
+    } else if (isSupport) {
+        skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
+    }
+
+    container.innerHTML = `
+        <div class="zoom-header">
+            <div>
+                <div class="zoom-bloom">${topLabel}</div>
+                <div class="zoom-name">${cardData.name}</div>
+            </div>
+            <div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div>
+        </div>
+        <div class="zoom-skills-list">${skillsHtml}</div>
+        <div class="zoom-tags">${tagsHtml}</div>
+        <div class="zoom-footer">${batonHtml}</div>
+    `;
+    zoomModal.style.display = 'flex';
+}
+
+zoomModal.onclick = (e) => {
+    if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) {
+        zoomModal.style.display = 'none';
+    }
+};
+
+// --- 再配置ロジック ---
+function repositionCards() {
+    const fRect = field.getBoundingClientRect();
+    const cardW = 52, cardH = 74;
+    document.querySelectorAll('.card').forEach(card => {
+        if (card.parentElement !== field || card === currentCard) return; 
+        if (card.dataset.zoneId) {
+            const zone = document.getElementById(card.dataset.zoneId);
+            if (zone) {
+                const zr = zone.getBoundingClientRect();
+                card.style.left = (zr.left - fRect.left) + (zr.width - cardW) / 2 + 'px';
+                card.style.top = (zr.top - fRect.top) + (zr.height - cardH) / 2 + 'px';
+            }
+        } else if (card.dataset.percentX) {
+            card.style.left = (card.dataset.percentX / 100) * fRect.width + 'px';
+            card.style.top = (card.dataset.percentY / 100) * fRect.height + 'px';
+        }
+    });
+}
+window.addEventListener('resize', repositionCards);
+
+// --- データ読込 ---
+async function loadCardData() {
+    try {
+        const [h, s, a, o] = await Promise.all([
+            fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
+        ]);
+        const hD = await h.json(), sD = await s.json();
+        AYLE_MASTER = await a.json(); OSHI_LIST = await o.json();
+        MASTER_CARDS = [...hD, ...sD, ...AYLE_MASTER];
+        updateLibrary(); renderDecks();
+    } catch (e) { console.error("Data load failed, but continuing...", e); }
+}
+
+async function joinRoom(role) {
+    const rid = document.getElementById('roomIdInput').value;
+    if (!rid) return alert("ルームIDを入力してください");
+    myRole = role; socket.emit('joinRoom', { roomId: rid, role });
+    showPage(''); // 全ページ隠す
+    document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
+    if (role === 'player') setupModal.style.display = 'flex';
+    else document.body.classList.add('spectator-mode');
+}
+document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
+document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
+
+// --- 構築UI ---
+function updateLibrary(f = "") {
+    const list = document.getElementById('libraryList'); if(!list) return;
+    list.innerHTML = "";
+    MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').concat(OSHI_LIST.filter(c => c.name.includes(f))).forEach(card => {
+        const div = document.createElement('div'); div.className = "library-item";
+        const isOshi = OSHI_LIST.some(o => o.name === card.name);
+        div.innerHTML = `<span>${card.name}</span><button class="btn-add">${isOshi?'設定':'追加'}</button>`;
+        div.querySelector('button').onclick = () => addToDeck(card);
+        list.appendChild(div);
+    });
+}
+function addToDeck(card) {
+    if (OSHI_LIST.some(o => o.name === card.name)) selectedOshi = { ...card };
+    else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card }); }
+    else mainDeckList.push({ ...card });
+    renderDecks();
+}
+function removeFromDeck(name, type) {
+    const list = (type === 'ayle') ? cheerDeckList : mainDeckList;
+    const idx = list.findIndex(c => c.name === name);
+    if (idx !== -1) list.splice(idx, 1);
+    renderDecks();
+}
+function renderDecks() {
+    const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
+    if (!oSum) return;
+    oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">X</button></div>` : "";
+    if (selectedOshi) oSum.querySelector('button').onclick = () => { selectedOshi = null; renderDecks(); };
+    mSum.innerHTML = "";
+    const gMain = mainDeckList.reduce((acc, c) => { acc[c.name] = (acc[c.name] || { d: c, n: 0 }); acc[c.name].n++; return acc; }, {});
+    Object.keys(gMain).forEach(n => {
+        const item = gMain[n], div = document.createElement('div');
+        div.className = "deck-item"; div.innerHTML = `<span>${n} x${item.n}</span><button class="btn-minus">-</button>`;
+        div.querySelector('button').onclick = () => removeFromDeck(n, 'main');
+        mSum.appendChild(div);
+    });
+    cSum.innerHTML = "";
+    AYLE_MASTER.forEach(card => {
+        const count = cheerDeckList.filter(c => c.name === card.name).length;
+        const div = document.createElement('div'); div.className = "deck-item";
+        div.innerHTML = `<span>${card.name.charAt(0)}:${count}</span><div class="deck-item-controls"><button class="btn-plus">+</button><button class="btn-minus">-</button></div>`;
+        div.querySelector('.btn-plus').onclick = () => addToDeck(card);
+        div.querySelector('.btn-minus').onclick = () => removeFromDeck(card.name, 'ayle');
+        cSum.appendChild(div);
+    });
+    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
+    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
+    document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
+}
+document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
+document.getElementById('startGameBtn').onclick = () => {
+    socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: { name: selectedOshi.name } });
+    setupModal.style.display = "none";
+};
+
+// --- 同期/操作 ---
+socket.on('gameStarted', (data) => {
+    field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
+    for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
+    repositionCards();
+});
+socket.on('init', (d) => {
+    field.querySelectorAll('.card').forEach(c => c.remove());
+    for (const id in d.fieldState) restoreCard(id, d.fieldState[id]);
+    repositionCards();
+});
+socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
+socket.on('receiveCard', (d) => handDiv.appendChild(createCardElement(d)));
+socket.on('cardMoved', (d) => {
+    let el = document.getElementById(d.id); if (!el) return restoreCard(d.id, d);
+    el.dataset.zoneId = d.zoneId || ""; el.dataset.percentX = d.percentX || ""; el.dataset.percentY = d.percentY || "";
+    el.style.zIndex = d.zIndex; if (el.parentElement !== field) field.appendChild(el);
+    repositionCards();
+});
+socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
+socket.on('cardFlipped', (d) => { const el = document.getElementById(d.id); if (el) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); } });
+
+document.getElementById('main-deck-zone').onpointerdown = () => { if(myRole==='player') socket.emit('drawMainCard'); };
+document.getElementById('cheer-deck-zone').onpointerdown = () => { if(myRole==='player') socket.emit('drawCheerCard'); };
+
+// --- 要素作成 ---
+function createCardElement(data, withEvents = true) {
+    const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.classList.add('card', 'face-up');
+    const isOshi = OSHI_LIST.some(o => o.name === data.name);
+    if (data.type === 'holomen' && !isOshi) {
+        if (data.color) { const ci = document.createElement('div'); ci.className = `card-color-icon color-${data.color}`; el.appendChild(ci); }
+        const hp = document.createElement('div'); hp.className = 'card-hp'; hp.innerText = data.hp || '';
+        const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = (data.bloom || 'Debut').charAt(0);
+        el.appendChild(hp); el.appendChild(bl);
+    }
+    if (data.type === 'ayle' || data.name.includes('エール')) {
+        const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
+        for (let k in colors) if (data.name.includes(k)) { el.classList.add(`ayle-${colors[k]}`); break; }
+    } else { el.classList.add(`type-${data.type}`); if (data.category) el.classList.add(`category-${data.category.toLowerCase()}`); }
+    el.cardData = data; if (withEvents) setupCardEvents(el); return el;
+}
+function restoreCard(id, info) {
+    const el = createCardElement({ id, ...info });
+    el.dataset.zoneId = info.zoneId || ""; el.dataset.percentX = info.percentX || ""; el.dataset.percentY = info.percentY || "";
+    el.style.position = 'absolute'; el.style.zIndex = info.zIndex;
+    el.classList.toggle('face-up', info.isFaceUp !== false); el.classList.toggle('face-down', info.isFaceUp === false);
+    field.appendChild(el);
+}
+
+function setupCardEvents(el) {
+    el.addEventListener('dblclick', () => {
+        if (myRole === 'spectator' || el.parentElement === handDiv) return;
+        const noFlip = ['back1','back2','back3','back4','back5','center','collab'];
+        if (el.dataset.zoneId && noFlip.includes(el.dataset.zoneId)) return;
+        socket.emit('flipCard', { id: el.id, isFaceUp: !el.classList.contains('face-up') });
+    });
+    el.onpointerdown = (e) => {
+        startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
+        if (el.parentElement === handDiv) originalNextSibling = el.nextElementSibling;
+        if (myRole === 'spectator') return;
+        isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
+        const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
+        offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
+        maxZIndex++; el.style.zIndex = maxZIndex;
+        if (el.parentElement !== field) {
+            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px';
+            field.appendChild(el);
+        }
+        e.stopPropagation();
+    };
+}
+
+document.onpointermove = (e) => {
+    if (!isDragging || !currentCard) return;
+    const fRect = field.getBoundingClientRect();
+    currentCard.style.left = (e.clientX - fRect.left - offsetX) + 'px';
+    currentCard.style.top = (e.clientY - fRect.top - offsetY) + 'px';
+};
+
+document.onpointerup = (e) => {
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    if (potentialZoomTarget && dist < 20) {
+        if (!potentialZoomTarget.classList.contains('face-down')) openZoom(potentialZoomTarget.cardData);
+    }
+    if (myRole === 'spectator' || !isDragging || !currentCard) {
+        if (!isDragging && potentialZoomTarget && potentialZoomTarget.parentElement === field && !potentialZoomTarget.dataset.zoneId && !potentialZoomTarget.dataset.percentX) returnToHand(potentialZoomTarget);
+        isDragging = false; currentCard = null; potentialZoomTarget = null; return;
+    }
+    const hRect = handDiv.getBoundingClientRect();
+    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
+        returnToHand(currentCard);
+    } else {
+        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
+        const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+        zones.forEach(z => {
+            const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+            const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
+            if (d < minDist) { minDist = d; closest = z; }
+        });
+        const fRect = field.getBoundingClientRect();
+        let moveData = { id: currentCard.id, ...currentCard.cardData, zIndex: currentCard.style.zIndex };
+        if (closest) { currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX; moveData.zoneId = closest.id; }
+        else { delete currentCard.dataset.zoneId; const pX = (parseFloat(currentCard.style.left) / fRect.width) * 100, pY = (parseFloat(currentCard.style.top) / fRect.height) * 100; currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
+        socket.emit('moveCard', moveData); repositionCards();
+    }
+    isDragging = false; currentCard = null; potentialZoomTarget = null;
+};
+
+function returnToHand(card) {
+    card.style.position = 'relative'; card.style.left = ''; card.style.top = ''; card.style.zIndex = '';
+    delete card.dataset.zoneId; delete card.dataset.percentX;
+    if (originalNextSibling && originalNextSibling.parentElement === handDiv) handDiv.insertBefore(card, originalNextSibling);
+    else handDiv.appendChild(card);
+    socket.emit('returnToHand', { id: card.id });
+}
