@@ -9,6 +9,7 @@ let currentFilter = 'all';
 
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
+const hubPage = document.getElementById('hub-page');
 const setupModal = document.getElementById('setup-modal');
 const zoomModal = document.getElementById('zoom-modal');
 const archiveModal = document.getElementById('archive-modal');
@@ -18,10 +19,20 @@ const deckGrid = document.getElementById('deck-card-grid');
 
 // --- 画面遷移管理 ---
 function showPage(pageId) {
-    document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
+    // すべてのフルページ要素を非表示にする
+    document.querySelectorAll('.full-page').forEach(p => {
+        p.style.display = 'none';
+    });
+    
     const target = document.getElementById(pageId);
-    if (target) target.style.display = 'flex';
-    if (pageId === 'card-list-page') filterLibrary('all');
+    if (target) {
+        target.style.display = 'flex';
+    }
+
+    // カードリストを開いた場合はデータを再描画
+    if (pageId === 'card-list-page') {
+        filterLibrary('all');
+    }
 }
 window.onload = loadCardData;
 
@@ -52,7 +63,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -69,17 +80,21 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ライブラリ・フィルタ ---
+// --- カードリスト・フィルタ ---
 function filterLibrary(type) {
     currentFilter = type;
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${type}'`));
+        const btnType = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+        btn.classList.toggle('active', btnType === type);
     });
-    const grid = document.getElementById('global-card-grid'); if (!grid) return;
+    const grid = document.getElementById('global-card-grid'); 
+    if (!grid) return;
     grid.innerHTML = "";
     let list = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
     list.forEach(card => {
-        const el = createCardElement(card, false); el.onclick = () => openZoom(card, el); grid.appendChild(el);
+        const el = createCardElement(card, false); 
+        el.onclick = () => openZoom(card, el); 
+        grid.appendChild(el);
     });
 }
 
@@ -166,11 +181,10 @@ window.discardFromZoom = (cardId) => {
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 再配置ロジック (ライフを横向き・縦並びにする) ---
+// --- 再配置ロジック ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const zoneCards = {};
-
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== field || card === currentDragEl) return; 
         const zoneId = card.dataset.zoneId;
@@ -180,10 +194,8 @@ function repositionCards() {
                 const zr = zone.getBoundingClientRect();
                 const cr = card.getBoundingClientRect();
                 if (!zoneCards[zoneId]) zoneCards[zoneId] = 0;
-                
                 if (zoneId === 'life-zone') {
-                    // 修正: 向きは横向き（isRotatedによりCSSで回転）、並びは上から下へ縦並び
-                    const offset = zoneCards[zoneId] * 20; // 並びの間隔
+                    const offset = zoneCards[zoneId] * 20;
                     card.style.left = (zr.left - fRect.left) + (zr.width - cr.width) / 2 + 'px';
                     card.style.top = (zr.top - fRect.top) + 5 + offset + 'px';
                 } else {
@@ -203,18 +215,23 @@ window.addEventListener('resize', repositionCards);
 
 async function loadCardData() {
     try {
-        const [h, s, a, o] = await Promise.all([fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')]);
-        MASTER_CARDS = [...await h.json(), ...await s.json(), ...await a.json()];
-        OSHI_LIST = await o.json(); AYLE_MASTER = MASTER_CARDS.filter(c => c.type === 'ayle');
+        const [h, s, a, o] = await Promise.all([
+            fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
+        ]);
+        const hD = await h.json(), sD = await s.json(), aD = await a.json();
+        MASTER_CARDS = [...hD, ...sD, ...aD];
+        OSHI_LIST = await o.json();
+        AYLE_MASTER = aD;
         updateLibrary(); renderDecks();
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn("Data load failed, simulator will still function.", e); }
 }
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
     if (!rid) return alert("Required");
     myRole = role; socket.emit('joinRoom', { roomId: rid, role });
-    showPage(''); document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
+    showPage(''); // 全モーダルを一旦隠す
+    document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
     if (role === 'player') setupModal.style.display = 'flex';
     else document.body.classList.add('spectator-mode');
 }
@@ -275,7 +292,7 @@ function renderDecks() {
     document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
-
+document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
 document.getElementById('startGameBtn').onclick = () => {
     socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: selectedOshi });
     setupModal.style.display = "none";
@@ -402,7 +419,6 @@ function normalZoneSnap(e, moveData) {
     });
     if (closest) { 
         currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id;
-        // ライフゾーンに入れた時のみ横向きフラグを立てる
         if (closest.id === 'life-zone') { currentDragEl.classList.add('rotated'); moveData.isRotated = true; }
         else { currentDragEl.classList.remove('rotated'); moveData.isRotated = false; }
     }
