@@ -1,7 +1,20 @@
 [
-    { "name": "マイク", "type": "support", "subType": "アイテム" },
-    { "name": "ホロライブパス", "type": "support", "subType": "ツール" },
-    { "name": "ファンレター", "type": "support", "subType": "イベント" },
-    { "name": "あん肝", "type": "support", "subType": "マスコット" },
-    { "name": "開拓者", "type": "support", "subType": "ファン" }
+  {
+    "name": "ハイタッチ",
+    "type": "support",
+    "category": "EVENT",
+    "text": "自分の山札を2枚引く。このカードを使った後、アーカイブに置く。"
+  },
+  {
+    "name": "身代わり不動明王",
+    "type": "support",
+    "category": "TOOL",
+    "text": "このカードを付けているホロメンがダメージを受ける際、代わりにこのカードをアーカイブに置くことで、そのダメージを無効化する。"
+  },
+  {
+    "name": "マネちゃん",
+    "type": "support",
+    "category": "STAFF",
+    "text": "自分のメインステップに1回使える。自分の手札を1枚アーカイブに置く。その後、自分の山札を3枚引く。"
+  }
 ]
