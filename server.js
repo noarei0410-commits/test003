@@ -12,6 +12,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
 
+// シャッフル用共通関数
+const shuffleArray = (array) => {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+};
+
 io.on('connection', (socket) => {
     socket.on('joinRoom', ({ roomId, role }) => {
         socket.join(roomId);
@@ -31,19 +39,15 @@ io.on('connection', (socket) => {
         rooms[roomId].fieldState = {}; 
         rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4() }));
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
-        const shuffle = (array) => {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        };
-        shuffle(rooms[roomId].mainDeck); shuffle(rooms[roomId].cheerDeck);
+        
+        shuffleArray(rooms[roomId].mainDeck);
+        shuffleArray(rooms[roomId].cheerDeck);
+
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = { id: oshiId, name: data.oshi.name, type: 'holomen', zoneId: 'oshi', zIndex: 100, isFaceUp: true };
         io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
     });
 
-    // デッキの中身を確認する要求
     socket.on('inspectDeck', (type) => {
         const roomId = socket.roomId;
         if (!rooms[roomId]) return;
@@ -51,7 +55,6 @@ io.on('connection', (socket) => {
         socket.emit('deckInspectionResult', { type, cards });
     });
 
-    // デッキから特定のカードを抜き出す
     socket.on('pickCardFromDeck', ({ type, cardId }) => {
         const roomId = socket.roomId;
         if (!rooms[roomId] || socket.role !== 'player') return;
@@ -59,6 +62,8 @@ io.on('connection', (socket) => {
         const cardIdx = deck.findIndex(c => c.id === cardId);
         if (cardIdx !== -1) {
             const card = deck.splice(cardIdx, 1)[0];
+            // カードを抜いた後にシャッフル
+            shuffleArray(deck);
             socket.emit('receiveCard', card);
             io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
@@ -71,6 +76,7 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
+
     socket.on('drawCheerCard', () => {
         const roomId = socket.roomId;
         if (rooms[roomId] && rooms[roomId].cheerDeck.length > 0) {
@@ -78,6 +84,7 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
+
     socket.on('moveCard', (data) => {
         const roomId = socket.roomId;
         if (rooms[roomId]) {
@@ -85,10 +92,12 @@ io.on('connection', (socket) => {
             socket.to(roomId).emit('cardMoved', data);
         }
     });
+
     socket.on('returnToHand', (data) => {
         const roomId = socket.roomId;
         if (rooms[roomId]) { delete rooms[roomId].fieldState[data.id]; socket.to(roomId).emit('cardRemoved', { id: data.id }); }
     });
+
     socket.on('flipCard', (data) => {
         const roomId = socket.roomId;
         if (rooms[roomId] && rooms[roomId].fieldState[data.id]) {
@@ -96,6 +105,7 @@ io.on('connection', (socket) => {
             socket.to(roomId).emit('cardFlipped', data);
         }
     });
+
     socket.on('disconnect', () => {
         const roomId = socket.roomId;
         if (rooms[roomId]) rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
