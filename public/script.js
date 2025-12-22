@@ -16,7 +16,7 @@ const archiveGrid = document.getElementById('archive-card-grid');
 const deckModal = document.getElementById('deck-inspection-modal');
 const deckGrid = document.getElementById('deck-card-grid');
 
-// --- 画面遷移管理 ---
+// --- 画面遷移 ---
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
@@ -25,7 +25,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- デッキ内サーチ ---
+// --- デッキサーチ ---
 function openDeckInspection(type) {
     if (myRole !== 'player') return;
     socket.emit('inspectDeck', type);
@@ -77,14 +77,9 @@ function canUseArt(costRequired, attachedAyles) {
         for (let k in colors) if (c.name.includes(k)) { acc[colors[k]] = (acc[colors[k]] || 0) + 1; break; }
         return acc;
     }, {});
-    let specificCosts = costRequired.filter(c => c !== 'any');
-    let anyCount = costRequired.filter(c => c === 'any').length;
-    for (let color of specificCosts) {
-        if (available[color] && available[color] > 0) available[color]--;
-        else return false;
-    }
-    let totalLeft = Object.values(available).reduce((a, b) => a + b, 0);
-    return totalLeft >= anyCount;
+    let specificCosts = costRequired.filter(c => c !== 'any'), anyCount = costRequired.filter(c => c === 'any').length;
+    for (let color of specificCosts) { if (available[color] && available[color] > 0) available[color]--; else return false; }
+    return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
 function openZoom(cardData, cardElement = null) {
@@ -93,56 +88,55 @@ function openZoom(cardData, cardElement = null) {
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
     
-    let attachedAylesEls = [];
+    let attachedAyles = [], attachedEquips = [];
     if (isHolomen && cardElement) {
         const rect = cardElement.getBoundingClientRect();
-        attachedAylesEls = Array.from(document.querySelectorAll('.card')).filter(c => c.cardData.type === 'ayle').filter(c => {
+        const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const r = c.getBoundingClientRect();
             return Math.abs(r.left - rect.left) < 10 && Math.abs(r.top - rect.top) < 10;
         });
+        attachedAyles = stack.filter(c => c.cardData.type === 'ayle');
+        attachedEquips = stack.filter(c => c.cardData.type === 'support' && ['tool', 'mascot', 'fan'].includes((c.cardData.category || '').toLowerCase()));
     }
 
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let skillsHtml = '', ayleListHtml = '', batonHtml = '';
+    let skillsHtml = '', ayleListHtml = '', equipListHtml = '', batonHtml = '';
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
 
     if (isHolomen) {
         skillsHtml = (cardData.skills || []).map(s => {
-            let typeLabel = `<div class="skill-type-label label-${s.type}">${s.type}</div>`;
-            let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
-            let costs = "", ready = "";
+            let h = '', d = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '', ready = "";
             if (s.type === 'arts') {
                 const iconHtml = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
-                costs = `<div class="cost-container">${iconHtml}</div>`;
-                if (canUseArt(s.cost, attachedAylesEls.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
-            }
-            return `<div class="skill-item">
-                        <div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div>${damage}</div>
-                        <div class="skill-text">${s.text || ''}</div>
-                    </div>`;
+                if (canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
+                h = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${iconHtml}</div><div class="skill-name">${s.name}${ready}</div>${d}`;
+            } else { h = `<div class="skill-type-label label-${s.type}">${s.type}</div><div class="skill-name">${s.name}</div>`; }
+            return `<div class="skill-item"><div class="skill-header">${h}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
 
-        if (attachedAylesEls.length > 0) {
-            ayleListHtml = `<div class="zoom-ayle-section"><span class="ayle-section-title">付いているエール</span>`;
-            attachedAylesEls.forEach(ayleEl => {
-                ayleListHtml += `<div class="ayle-list-item"><span>● ${ayleEl.cardData.name}</span><button class="btn-discard-ayle" onclick="discardAyle('${ayleEl.id}')">破棄</button></div>`;
-            });
+        if (attachedAyles.length > 0) {
+            ayleListHtml = `<div class="zoom-ayle-section"><span class="section-title">付いているエール</span>`;
+            attachedAyles.forEach(a => { ayleListHtml += `<div class="ayle-list-item"><span>● ${a.cardData.name}</span><button class="btn-discard-ayle" onclick="discardAyle('${a.id}')">破棄</button></div>`; });
             ayleListHtml += `</div>`;
         }
-        
-        // 修正箇所: バトンタッチアイコンを一列に並べるための構造
-        const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
-        if (cardData.baton > 0) {
-            batonHtml = `
-                <div class="baton-wrapper">
-                    <span class="baton-label">バトンタッチ:</span>
-                    <div class="baton-icons-container">${bIcons}</div>
+
+        if (attachedEquips.length > 0) {
+            equipListHtml = `<div class="zoom-equip-section"><span class="section-title">装備中のカード</span>`;
+            attachedEquips.forEach(e => {
+                equipListHtml += `<div class="ayle-list-item">
+                    <div><b>${e.cardData.name}</b> [${e.cardData.category}]<br><span class="equip-info">${e.cardData.text || ''}</span></div>
+                    <button class="btn-discard-ayle" onclick="discardAyle('${e.id}')">破棄</button>
                 </div>`;
+            });
+            equipListHtml += `</div>`;
         }
+
+        const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
+        if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
-    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div>${ayleListHtml}<div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
+    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div>${equipListHtml}${ayleListHtml}<div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
     zoomModal.style.display = 'flex';
 }
 
@@ -153,7 +147,7 @@ window.discardAyle = (cardId) => {
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 配置・同期 ---
+// --- 配置・初期化 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
@@ -294,9 +288,7 @@ function canBloom(sourceData, targetData) {
     if (sourceData.type !== 'holomen' || targetData.type !== 'holomen') return false;
     if (sourceData.name !== targetData.name) return false;
     const s = sourceData.bloom, t = targetData.bloom;
-    if (t === 'Debut' && s === '1st') return true;
-    if (t === '1st' && (s === '2nd' || s === '1st')) return true;
-    return false;
+    return (t === 'Debut' && s === '1st') || (t === '1st' && (s === '2nd' || s === '1st'));
 }
 
 function createCardElement(data, withEvents = true) {
@@ -332,9 +324,7 @@ function setupCardEvents(el) {
         const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) {
-            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el);
-        }
+        if (el.parentElement !== field) { el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); }
         e.stopPropagation();
     };
 }
@@ -362,7 +352,9 @@ document.onpointerup = (e) => {
         const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentCard);
 
         if (targetCardEl && targetCardEl.parentElement === field) {
-            if (currentCard.cardData.type === 'ayle' && targetCardEl.cardData.type === 'holomen') {
+            const isEquip = ['tool', 'mascot', 'fan'].includes((currentCard.cardData.category || '').toLowerCase());
+            // エール or ツール等 をホロメンに重ねる判定
+            if ((currentCard.cardData.type === 'ayle' || isEquip) && targetCardEl.cardData.type === 'holomen') {
                 currentCard.style.left = targetCardEl.style.left; currentCard.style.top = targetCardEl.style.top;
                 currentCard.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; moveData.zIndex = currentCard.style.zIndex;
                 if (targetCardEl.dataset.zoneId) currentCard.dataset.zoneId = targetCardEl.dataset.zoneId;
