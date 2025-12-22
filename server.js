@@ -43,14 +43,12 @@ io.on('connection', (socket) => {
         shuffleArray(rooms[roomId].mainDeck);
         shuffleArray(rooms[roomId].cheerDeck);
 
-        // 1. 推しホロメンの配置
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = { 
             id: oshiId, name: data.oshi.name, type: 'holomen', 
             zoneId: 'oshi', zIndex: 100, isFaceUp: true, ...data.oshi 
         };
 
-        // 2. ライフの自動配置 (エールデッキから裏向き・横向きでセット)
         const lifeCount = data.oshi.life || 0;
         for (let i = 0; i < lifeCount; i++) {
             if (rooms[roomId].cheerDeck.length > 0) {
@@ -59,7 +57,7 @@ io.on('connection', (socket) => {
                     ...lifeCard,
                     zoneId: 'life-zone',
                     isFaceUp: false,
-                    isRotated: true, // 横向きフラグ
+                    isRotated: true, // ライフは横向き（回転）
                     zIndex: 10 + i
                 };
             }
