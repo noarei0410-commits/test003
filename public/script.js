@@ -16,17 +16,19 @@ const deckGrid = document.getElementById('deck-card-grid');
 
 // --- 画面遷移管理 ---
 function showPage(pageId) {
-    // 全てのフルページ要素を非表示
+    // 全てのフルページ要素を一度隠す
     const pages = document.querySelectorAll('.full-page');
-    pages.forEach(p => { p.style.display = 'none'; });
+    pages.forEach(p => {
+        p.style.display = 'none';
+    });
     
-    // 指定されたページを表示
+    // ターゲットの画面を表示
     const target = document.getElementById(pageId);
     if (target) {
         target.style.display = 'flex';
     }
 
-    // カードリストの場合はデータを反映
+    // カードリストを開いた際は初期表示を「すべて」にする
     if (pageId === 'card-list-page') {
         filterLibrary('all');
     }
@@ -93,7 +95,7 @@ function filterLibrary(type) {
     });
 }
 
-// --- ズーム機能 ---
+// --- ズーム & コスト判定 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -138,10 +140,9 @@ function openZoom(cardData, cardElement = null) {
         skillsHtml = (cardData.skills || []).map(s => {
             let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
             let typeLabel = `<div class="skill-type-label label-${s.type}">${labelTxt}</div>`;
-            let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
             let costs = (s.type === 'arts') ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">ホロパワー：-${s.cost || 0}</span>`;
             let ready = (s.type === 'arts' && canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
-            return `<div class="skill-item"><div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div>${damage}</div><div class="skill-text">${s.text || ''}</div></div>`;
+            return `<div class="skill-item"><div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div></div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
 
         if (attachedUnderBlooms.length > 0) {
@@ -174,7 +175,7 @@ window.discardFromZoom = (cardId) => {
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 再配置ロジック ---
+// --- 配置・初期化 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const zoneCards = {};
@@ -206,7 +207,6 @@ function repositionCards() {
 let currentDragEl = null;
 window.addEventListener('resize', repositionCards);
 
-// --- データ読み込み ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
@@ -217,14 +217,14 @@ async function loadCardData() {
         OSHI_LIST = await o.json();
         AYLE_MASTER = aD;
         updateLibrary(); renderDecks();
-    } catch (e) { console.warn("Init load skipped.", e); }
+    } catch (e) { console.warn("Init Load skipped.", e); }
 }
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
     if (!rid) return alert("Required");
     myRole = role; socket.emit('joinRoom', { roomId: rid, role });
-    showPage(''); // 全ページ隠す
+    showPage(''); 
     document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
     if (role === 'player') setupModal.style.display = 'flex';
     else document.body.classList.add('spectator-mode');
@@ -232,7 +232,6 @@ async function joinRoom(role) {
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- 構築・同期 ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
@@ -293,7 +292,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期 ---
+// --- 同期/操作 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -381,9 +380,10 @@ document.onpointerup = (e) => {
     const hRect = handDiv.getBoundingClientRect();
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) returnToHand(currentDragEl);
     else {
+        const fRect = field.getBoundingClientRect();
+        let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
         const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
-        let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         if (targetCardEl && targetCardEl.parentElement === field) {
             const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
             if ((currentDragEl.cardData.type === 'ayle' || isEquip) && (targetCardEl.cardData.type === 'holomen' || targetCardEl.cardData.type === 'oshi')) {
