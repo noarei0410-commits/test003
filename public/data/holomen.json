@@ -4,11 +4,22 @@
     "type": "holomen",
     "hp": 180,
     "bloom": "Debut",
+    "color": "blue",
     "tags": ["#ホロライブ", "#0期生"],
     "baton": 1,
-    "arts": [
-      { "name": "そらともハグ", "text": "相手に30ダメージ。" },
-      { "name": "きみのための歌", "text": "自分のHPを20回復する。" }
+    "skills": [
+      {
+        "type": "gift",
+        "name": "そらとも",
+        "text": "自分のメインフェイズに1回使える。自分の山札を上から3枚見て、その中から「ときのそら」1枚を公開して手札に加えてもよい。"
+      },
+      {
+        "type": "arts",
+        "name": "そらともハグ",
+        "cost": ["blue", "any"],
+        "damage": "30+",
+        "text": "追加で無色エールが1つ付いているなら、+20ダメージ。"
+      }
     ]
   },
   {
@@ -16,10 +27,40 @@
     "type": "holomen",
     "hp": 170,
     "bloom": "1st",
-    "tags": ["#ホロライブ", "#0期生", "#バーチャルシンガー"],
+    "color": "red",
+    "tags": ["#ホロライブ", "#0期生"],
     "baton": 1,
-    "arts": [
-      { "name": "いのち", "text": "相手の特殊状態を解除する。" }
+    "skills": [
+      {
+        "type": "collab",
+        "name": "名もなき君へ",
+        "text": "このホロメンがコラボ席にいる時、自分のセンターホロメンの攻撃力に+10する。"
+      },
+      {
+        "type": "arts",
+        "name": "いのち",
+        "cost": ["red", "red", "any"],
+        "damage": 80,
+        "text": "相手の特殊状態をすべて解除する。"
+      }
+    ]
+  },
+  {
+    "name": "サンプル（Spot）",
+    "type": "holomen",
+    "hp": 140,
+    "bloom": "Spot",
+    "color": "white",
+    "tags": ["#ホロライブ", "#Spot"],
+    "baton": 0,
+    "skills": [
+      {
+        "type": "arts",
+        "name": "全力パフォーマンス",
+        "cost": ["white", "any"],
+        "damage": 50,
+        "text": "この攻撃を使った後、このホロメンをアーカイブに送る。"
+      }
     ]
   }
 ]
