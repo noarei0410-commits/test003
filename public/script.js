@@ -25,7 +25,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- デッキ内カード取得 ---
+// --- デッキ内サーチ ---
 function openDeckInspection(type) {
     if (myRole !== 'player') return;
     socket.emit('inspectDeck', type);
@@ -56,7 +56,8 @@ function openArchive() {
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
-            const el = createCardElement(card.cardData, false); el.classList.remove('face-down'); el.classList.add('face-up');
+            const el = createCardElement(card.cardData, false);
+            el.classList.remove('face-down'); el.classList.add('face-up');
             if (myRole === 'player') {
                 const recoverBtn = document.createElement('button'); recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
                 recoverBtn.onclick = (e) => { e.stopPropagation(); returnToHand(card); closeArchive(); };
@@ -72,28 +73,16 @@ function closeArchive() { archiveModal.style.display = 'none'; }
 // --- ズーム & コスト判定機能 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
-    
-    // 現在付いているエールの色をカウント
     let available = attachedAyles.reduce((acc, c) => {
         const color = getCheerColorFromName(c.name);
-        acc[color] = (acc[color] || 0) + 1;
-        return acc;
+        acc[color] = (acc[color] || 0) + 1; return acc;
     }, {});
-
-    // 必要コストを「指定色」と「無色(any)」に分ける
     let specificCosts = costRequired.filter(c => c !== 'any');
     let anyCount = costRequired.filter(c => c === 'any').length;
-
-    // 指定色のチェック
     for (let color of specificCosts) {
-        if (available[color] && available[color] > 0) {
-            available[color]--;
-        } else {
-            return false; // 指定色が足りない
-        }
+        if (available[color] && available[color] > 0) available[color]--;
+        else return false;
     }
-
-    // 無色コストのチェック（残りのどれでも良い）
     let remainingTotal = Object.values(available).reduce((sum, val) => sum + val, 0);
     return remainingTotal >= anyCount;
 }
@@ -110,48 +99,88 @@ function openZoom(cardData, cardElement = null) {
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
 
-    // ズーム対象のホロメンに付いているエールを特定
-    let attachedAyles = [];
+    // 現在このホロメン（およびその下のカード）と同じ位置にあるカードをすべて特定
+    let attachedAylesEls = [];
     if (isHolomen && cardElement) {
         const rect = cardElement.getBoundingClientRect();
-        attachedAyles = Array.from(document.querySelectorAll('.card'))
-            .filter(c => c !== cardElement && c.cardData.type === 'ayle')
+        attachedAylesEls = Array.from(document.querySelectorAll('.card'))
+            .filter(c => c.cardData.type === 'ayle')
             .filter(c => {
                 const r = c.getBoundingClientRect();
+                // 誤差5px以内で重なっていれば「同じ束」とみなす（Bloom共有）
                 return Math.abs(r.left - rect.left) < 5 && Math.abs(r.top - rect.top) < 5;
-            })
-            .map(c => c.cardData);
+            });
     }
 
+    let attachedAylesData = attachedAylesEls.map(c => c.cardData);
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let skillsHtml = '', batonHtml = '';
+    let skillsHtml = '', ayleListHtml = '', batonHtml = '';
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
 
     if (isHolomen) {
+        // スキルリスト
         skillsHtml = (cardData.skills || []).map(s => {
-            let headerContent = '';
-            let damageContent = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
-            let readyBadge = "";
-
+            let header = '', damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '', ready = "";
             if (s.type === 'arts') {
                 const costs = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
-                if (canUseArt(s.cost, attachedAyles)) readyBadge = `<span class="ready-badge">READY</span>`;
-                headerContent = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}${readyBadge}</div>${damageContent}`;
-            } else if (s.type === 'gift') headerContent = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
-            else if (s.type === 'collab') headerContent = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
-            
-            return `<div class="skill-item"><div class="skill-header">${headerContent}</div><div class="skill-text">${s.text || ''}</div></div>`;
+                if (canUseArt(s.cost, attachedAylesData)) ready = `<span class="ready-badge">READY</span>`;
+                header = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}${ready}</div>${damage}`;
+            } else if (s.type === 'gift') header = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
+            else if (s.type === 'collab') header = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
+            return `<div class="skill-item"><div class="skill-header">${header}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
+
+        // 付いているエールの一覧（アーカイブ送信用）
+        if (attachedAylesEls.length > 0) {
+            ayleListHtml = `<div class="zoom-ayle-section"><span class="ayle-section-title">付いているエール</span>`;
+            attachedAylesEls.forEach(ayleEl => {
+                ayleListHtml += `
+                    <div class="ayle-list-item">
+                        <span>● ${ayleEl.cardData.name}</span>
+                        <button class="btn-to-archive" onclick="sendToArchiveFromZoom('${ayleEl.id}')">アーカイブへ</button>
+                    </div>`;
+            });
+            ayleListHtml += `</div>`;
+        }
 
         const batonIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
         if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${batonIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
-    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div><div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
+    container.innerHTML = `
+        <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div>
+        <div class="zoom-skills-list">${skillsHtml}</div>
+        ${ayleListHtml}
+        <div class="zoom-tags">${tagsHtml}</div>
+        <div class="zoom-footer">${batonHtml}</div>
+    `;
     zoomModal.style.display = 'flex';
 }
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
+
+// ズーム画面内からアーカイブへ送る
+window.sendToArchiveFromZoom = (cardId) => {
+    const el = document.getElementById(cardId);
+    if (!el) return;
+    const fRect = field.getBoundingClientRect();
+    const targetZone = document.getElementById('archive');
+    const zr = targetZone.getBoundingClientRect();
+    
+    const moveData = {
+        id: cardId,
+        zoneId: 'archive',
+        percentX: "", 
+        percentY: "",
+        zIndex: 100,
+        ...el.cardData
+    };
+    
+    socket.emit('moveCard', moveData);
+    el.dataset.zoneId = 'archive';
+    repositionCards();
+    zoomModal.style.display = 'none'; // 状態が変わるため一度閉じる
+};
 
 // --- 共通ロジック ---
 function repositionCards() {
@@ -256,7 +285,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期/操作 ---
+// --- 同期 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -332,9 +361,7 @@ function setupCardEvents(el) {
         const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) {
-            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el);
-        }
+        if (el.parentElement !== field) { el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); }
         e.stopPropagation();
     };
 }
@@ -362,27 +389,17 @@ document.onpointerup = (e) => {
         const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentCard);
 
         if (targetCardEl && targetCardEl.parentElement === field) {
-            // エールをホロメンに重ねる判定
             if (currentCard.cardData.type === 'ayle' && targetCardEl.cardData.type === 'holomen') {
-                currentCard.style.left = targetCardEl.style.left;
-                currentCard.style.top = targetCardEl.style.top;
-                currentCard.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; // 下に置く
-                moveData.zIndex = currentCard.style.zIndex;
+                currentCard.style.left = targetCardEl.style.left; currentCard.style.top = targetCardEl.style.top;
+                currentCard.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; moveData.zIndex = currentCard.style.zIndex;
                 if (targetCardEl.dataset.zoneId) currentCard.dataset.zoneId = targetCardEl.dataset.zoneId;
                 moveData.zoneId = targetCardEl.dataset.zoneId || "";
-            } 
-            // Bloom判定
-            else if (canBloom(currentCard.cardData, targetCardEl.cardData)) {
-                currentCard.style.left = targetCardEl.style.left;
-                currentCard.style.top = targetCardEl.style.top;
+            } else if (canBloom(currentCard.cardData, targetCardEl.cardData)) {
+                currentCard.style.left = targetCardEl.style.left; currentCard.style.top = targetCardEl.style.top;
                 if (targetCardEl.dataset.zoneId) currentCard.dataset.zoneId = targetCardEl.dataset.zoneId;
                 moveData.zoneId = targetCardEl.dataset.zoneId || "";
-            } else {
-                normalZoneSnap(e, moveData);
-            }
-        } else {
-            normalZoneSnap(e, moveData);
-        }
+            } else normalZoneSnap(e, moveData);
+        } else normalZoneSnap(e, moveData);
         socket.emit('moveCard', moveData); repositionCards();
     }
     isDragging = false; currentCard = null; potentialZoomTarget = null;
@@ -396,9 +413,8 @@ function normalZoneSnap(e, moveData) {
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
-    const fRect = field.getBoundingClientRect();
     if (closest) { currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX; moveData.zoneId = closest.id; }
-    else { delete currentCard.dataset.zoneId; const pX = (parseFloat(currentCard.style.left) / fRect.width) * 100, pY = (parseFloat(currentCard.style.top) / fRect.height) * 100; currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
+    else { delete currentCard.dataset.zoneId; const pRect = field.getBoundingClientRect(); const pX = (parseFloat(currentCard.style.left) / pRect.width) * 100, pY = (parseFloat(currentCard.style.top) / pRect.height) * 100; currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
 }
 
 function returnToHand(card) {
