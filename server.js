@@ -62,7 +62,6 @@ io.on('connection', (socket) => {
         const cardIdx = deck.findIndex(c => c.id === cardId);
         if (cardIdx !== -1) {
             const card = deck.splice(cardIdx, 1)[0];
-            // カードを抜いた後にシャッフル
             shuffleArray(deck);
             socket.emit('receiveCard', card);
             io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
@@ -113,4 +112,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
