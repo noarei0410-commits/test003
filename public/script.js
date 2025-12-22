@@ -79,10 +79,17 @@ function openZoom(cardData) {
     const container = document.querySelector('.zoom-container');
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
+    const isSupport = cardData.type === 'support';
 
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
     let skillsHtml = '';
     let batonHtml = '';
+    let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
+
+    // サポートカードならカテゴリーを表示
+    if (isSupport && cardData.category) {
+        topLabel = cardData.category;
+    }
 
     if (isHolomen) {
         skillsHtml = (cardData.skills || []).map(s => {
@@ -103,12 +110,15 @@ function openZoom(cardData) {
         if (cardData.baton > 0) {
             batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${batonIcons}</div></div>`;
         }
+    } else if (isSupport) {
+        // サポート・スタッフカードの効果テキストを表示
+        skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
     }
 
     container.innerHTML = `
         <div class="zoom-header">
             <div>
-                <div class="zoom-bloom">${isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase())}</div>
+                <div class="zoom-bloom">${topLabel}</div>
                 <div class="zoom-name">${cardData.name}</div>
             </div>
             <div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div>
@@ -120,7 +130,6 @@ function openZoom(cardData) {
     zoomModal.style.display = 'flex';
 }
 
-// ズームを閉じる処理（背景タップ時のみ）
 zoomModal.onclick = (e) => {
     if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) {
         zoomModal.style.display = 'none';
@@ -270,9 +279,13 @@ function createCardElement(data, withEvents = true) {
     if (data.type === 'ayle' || data.name.includes('エール')) {
         const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
         for (let k in colors) if (data.name.includes(k)) { el.classList.add(`ayle-${colors[k]}`); break; }
-    } else el.classList.add(`type-${data.type}`);
+    } else {
+        el.classList.add(`type-${data.type}`);
+        // スタッフカード等のカテゴリーがあればクラス追加
+        if (data.category) el.classList.add(`category-${data.category}`);
+    }
     
-    el.cardData = data; // データを要素に紐付け
+    el.cardData = data; 
     if (withEvents) setupCardEvents(el); return el;
 }
 function restoreCard(id, info) {
@@ -283,7 +296,7 @@ function restoreCard(id, info) {
     field.appendChild(el);
 }
 
-// --- ドラッグ&クリック判定 ---
+// --- ドラッグ&クリック ---
 function setupCardEvents(el) {
     el.addEventListener('dblclick', () => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
@@ -316,7 +329,6 @@ document.onpointermove = (e) => {
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    // クリック判定: 移動距離が20px未満なら拡大表示
     if (potentialZoomTarget && dist < 20) {
         if (!potentialZoomTarget.classList.contains('face-down')) {
             openZoom(potentialZoomTarget.cardData);
