@@ -16,7 +16,7 @@ const archiveGrid = document.getElementById('archive-card-grid');
 const deckModal = document.getElementById('deck-inspection-modal');
 const deckGrid = document.getElementById('deck-card-grid');
 
-// --- 画面遷移管理 ---
+// --- 画面遷移 ---
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
@@ -25,7 +25,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- デッキ内サーチ ---
+// --- デッキサーチ ---
 function openDeckInspection(type) {
     if (myRole !== 'player') return;
     socket.emit('inspectDeck', type);
@@ -52,12 +52,11 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
-            const el = createCardElement(card.cardData, false);
-            el.classList.remove('face-down'); el.classList.add('face-up');
+            const el = createCardElement(card.cardData, false); el.classList.remove('face-down'); el.classList.add('face-up');
             if (myRole === 'player') {
                 const recoverBtn = document.createElement('button'); recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
                 recoverBtn.onclick = (e) => { e.stopPropagation(); returnToHand(card); closeArchive(); };
@@ -70,12 +69,28 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ズーム & コスト判定機能 ---
+// --- ライブラリ ---
+function filterLibrary(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.innerText === getTypeName(type)));
+    const grid = document.getElementById('global-card-grid'); grid.innerHTML = "";
+    let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
+    filtered.forEach(card => {
+        const el = createCardElement(card, false); el.onclick = () => openZoom(card); grid.appendChild(el);
+    });
+}
+function getTypeName(type) {
+    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+    return map[type];
+}
+
+// --- ズーム & コスト判定 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
-        const color = getCheerColorFromName(c.name);
-        acc[color] = (acc[color] || 0) + 1; return acc;
+        const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
+        for (let k in colors) if (c.name.includes(k)) { acc[colors[k]] = (acc[colors[k]] || 0) + 1; break; }
+        return acc;
     }, {});
     let specificCosts = costRequired.filter(c => c !== 'any');
     let anyCount = costRequired.filter(c => c === 'any').length;
@@ -83,14 +98,8 @@ function canUseArt(costRequired, attachedAyles) {
         if (available[color] && available[color] > 0) available[color]--;
         else return false;
     }
-    let remainingTotal = Object.values(available).reduce((sum, val) => sum + val, 0);
-    return remainingTotal >= anyCount;
-}
-
-function getCheerColorFromName(name) {
-    const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
-    for (let k in colors) if (name.includes(k)) return colors[k];
-    return 'any';
+    let totalLeft = Object.values(available).reduce((a, b) => a + b, 0);
+    return totalLeft >= anyCount;
 }
 
 function openZoom(cardData, cardElement = null) {
@@ -98,89 +107,40 @@ function openZoom(cardData, cardElement = null) {
     const container = document.querySelector('.zoom-container');
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
-
-    // 現在このホロメン（およびその下のカード）と同じ位置にあるカードをすべて特定
-    let attachedAylesEls = [];
+    
+    let attachedAyles = [];
     if (isHolomen && cardElement) {
         const rect = cardElement.getBoundingClientRect();
-        attachedAylesEls = Array.from(document.querySelectorAll('.card'))
-            .filter(c => c.cardData.type === 'ayle')
-            .filter(c => {
-                const r = c.getBoundingClientRect();
-                // 誤差5px以内で重なっていれば「同じ束」とみなす（Bloom共有）
-                return Math.abs(r.left - rect.left) < 5 && Math.abs(r.top - rect.top) < 5;
-            });
+        attachedAyles = Array.from(document.querySelectorAll('.card')).filter(c => c.cardData.type === 'ayle').filter(c => {
+            const r = c.getBoundingClientRect();
+            return Math.abs(r.left - rect.left) < 5 && Math.abs(r.top - rect.top) < 5;
+        }).map(c => c.cardData);
     }
 
-    let attachedAylesData = attachedAylesEls.map(c => c.cardData);
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let skillsHtml = '', ayleListHtml = '', batonHtml = '';
+    let skillsHtml = '', batonHtml = '';
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
 
     if (isHolomen) {
-        // スキルリスト
         skillsHtml = (cardData.skills || []).map(s => {
-            let header = '', damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '', ready = "";
+            let h = '', d = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '', ready = "";
             if (s.type === 'arts') {
                 const costs = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
-                if (canUseArt(s.cost, attachedAylesData)) ready = `<span class="ready-badge">READY</span>`;
-                header = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}${ready}</div>${damage}`;
-            } else if (s.type === 'gift') header = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
-            else if (s.type === 'collab') header = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
-            return `<div class="skill-item"><div class="skill-header">${header}</div><div class="skill-text">${s.text || ''}</div></div>`;
+                if (canUseArt(s.cost, attachedAyles)) ready = `<span class="ready-badge">READY</span>`;
+                h = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}${ready}</div>${d}`;
+            } else if (s.type === 'gift') h = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
+            else if (s.type === 'collab') h = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
+            return `<div class="skill-item"><div class="skill-header">${h}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
-
-        // 付いているエールの一覧（アーカイブ送信用）
-        if (attachedAylesEls.length > 0) {
-            ayleListHtml = `<div class="zoom-ayle-section"><span class="ayle-section-title">付いているエール</span>`;
-            attachedAylesEls.forEach(ayleEl => {
-                ayleListHtml += `
-                    <div class="ayle-list-item">
-                        <span>● ${ayleEl.cardData.name}</span>
-                        <button class="btn-to-archive" onclick="sendToArchiveFromZoom('${ayleEl.id}')">アーカイブへ</button>
-                    </div>`;
-            });
-            ayleListHtml += `</div>`;
-        }
-
-        const batonIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
-        if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${batonIcons}</div></div>`;
+        const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
+        if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
-    container.innerHTML = `
-        <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div>
-        <div class="zoom-skills-list">${skillsHtml}</div>
-        ${ayleListHtml}
-        <div class="zoom-tags">${tagsHtml}</div>
-        <div class="zoom-footer">${batonHtml}</div>
-    `;
+    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div><div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
     zoomModal.style.display = 'flex';
 }
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
-
-// ズーム画面内からアーカイブへ送る
-window.sendToArchiveFromZoom = (cardId) => {
-    const el = document.getElementById(cardId);
-    if (!el) return;
-    const fRect = field.getBoundingClientRect();
-    const targetZone = document.getElementById('archive');
-    const zr = targetZone.getBoundingClientRect();
-    
-    const moveData = {
-        id: cardId,
-        zoneId: 'archive',
-        percentX: "", 
-        percentY: "",
-        zIndex: 100,
-        ...el.cardData
-    };
-    
-    socket.emit('moveCard', moveData);
-    el.dataset.zoneId = 'archive';
-    repositionCards();
-    zoomModal.style.display = 'none'; // 状態が変わるため一度閉じる
-};
 
 // --- 共通ロジック ---
 function repositionCards() {
@@ -251,6 +211,7 @@ function removeAyleFromDeck(name) {
     if (idx !== -1) cheerDeckList.splice(idx, 1);
     renderDecks();
 }
+
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
@@ -361,7 +322,9 @@ function setupCardEvents(el) {
         const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) { el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); }
+        if (el.parentElement !== field) {
+            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el);
+        }
         e.stopPropagation();
     };
 }
