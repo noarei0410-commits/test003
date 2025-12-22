@@ -23,7 +23,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- フィルター機能 (カードリスト) ---
+// --- フィルター機能 ---
 function filterLibrary(type) {
     currentFilter = type;
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -31,22 +31,20 @@ function filterLibrary(type) {
     });
     renderGlobalCardList(type);
 }
-
 function getTypeName(type) {
     const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
     return map[type];
 }
 
-// --- アーカイブ閲覧 & 復帰 ---
+// --- アーカイブ ---
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
     if (archiveCards.length === 0) {
-        archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>アーカイブは空です</p>";
+        archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     } else {
         archiveCards.forEach(card => {
-            const container = document.createElement('div');
-            container.className = "archive-item";
+            const container = document.createElement('div'); container.className = "archive-item";
             const el = createCardElement(card.cardData, false);
             el.classList.remove('face-down'); el.classList.add('face-up');
             if (myRole === 'player') {
@@ -75,23 +73,40 @@ function renderGlobalCardList(type = 'all') {
     });
 }
 
-// --- ズーム機能 (詳細制限) ---
+// --- ズーム機能 (詳細表示) ---
 function openZoom(cardData) {
     const container = document.querySelector('.zoom-container');
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
 
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let batonHtml = '', artsHtml = '';
+    let skillsHtml = '';
+    let batonHtml = '';
 
     if (isHolomen) {
+        // スキルリストの生成 (最大2つ)
+        skillsHtml = (cardData.skills || []).map(s => {
+            let headerContent = '';
+            let damageContent = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
+            
+            if (s.type === 'arts') {
+                const costs = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
+                headerContent = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}</div>${damageContent}`;
+            } else if (s.type === 'gift') {
+                headerContent = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
+            } else if (s.type === 'collab') {
+                headerContent = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
+            }
+
+            return `
+                <div class="skill-item">
+                    <div class="skill-header">${headerContent}</div>
+                    <div class="skill-text">${s.text || ''}</div>
+                </div>
+            `;
+        }).join('');
+
         batonHtml = Array(cardData.baton || 0).fill('<div class="baton-icon"></div>').join('');
-        artsHtml = (cardData.arts || []).map(a => `
-            <div class="art-item">
-                <div class="art-name">${a.name}</div>
-                <div class="art-text">${a.text}</div>
-            </div>
-        `).join('');
     }
 
     container.innerHTML = `
@@ -103,10 +118,10 @@ function openZoom(cardData) {
             <div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div>
         </div>
         <div class="zoom-tags">${tagsHtml}</div>
-        <div class="zoom-arts-list">${artsHtml}</div>
+        <div class="zoom-skills-list">${skillsHtml}</div>
         <div class="zoom-footer">
             <div class="baton-container">
-                ${isHolomen ? '<span style="font-size:10px; margin-right:5px;">バトン:</span>' + batonHtml : ''}
+                ${isHolomen ? '<span style="font-size:9px; margin-right:3px;">バトン:</span>' + batonHtml : ''}
             </div>
             <div class="zoom-hint-bottom">タップで閉じる</div>
         </div>
@@ -115,7 +130,7 @@ function openZoom(cardData) {
 }
 zoomModal.onclick = () => zoomModal.style.display = 'none';
 
-// --- 再配置ロジック ---
+// --- 再配置 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
@@ -136,7 +151,7 @@ function repositionCards() {
 }
 window.addEventListener('resize', repositionCards);
 
-// --- データ読込 ---
+// --- データ/入室 ---
 async function loadCardData() {
     try {
         const [h, s, a, o] = await Promise.all([
@@ -151,7 +166,7 @@ async function loadCardData() {
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
-    if (!rid) return alert("Room ID required");
+    if (!rid) return alert("Required");
     myRole = role; socket.emit('joinRoom', { roomId: rid, role });
     showPage(''); document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
     if (role === 'player') setupModal.style.display = 'flex';
@@ -160,7 +175,7 @@ async function joinRoom(role) {
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- デッキ構築UI ---
+// --- 構築UI ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').concat(OSHI_LIST.filter(c => c.name.includes(f))).forEach(card => {
@@ -215,7 +230,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期/操作 ---
+// --- 同期 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -240,6 +255,7 @@ socket.on('cardFlipped', (d) => { const el = document.getElementById(d.id); if (
 document.getElementById('main-deck-zone').onpointerdown = () => { if(myRole==='player') socket.emit('drawMainCard'); };
 document.getElementById('cheer-deck-zone').onpointerdown = () => { if(myRole==='player') socket.emit('drawCheerCard'); };
 
+// --- 要素作成 ---
 function createCardElement(data, withEvents = true) {
     const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.classList.add('card', 'face-up');
     const isOshi = OSHI_LIST.some(o => o.name === data.name);
