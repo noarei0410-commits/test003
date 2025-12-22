@@ -35,14 +35,40 @@ io.on('connection', (socket) => {
     socket.on('setGame', (data) => {
         const roomId = socket.roomId;
         if (!rooms[roomId] || socket.role !== 'player') return;
+        
         rooms[roomId].fieldState = {}; 
         rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4() }));
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
+        
         shuffleArray(rooms[roomId].mainDeck);
         shuffleArray(rooms[roomId].cheerDeck);
+
+        // 1. 推しホロメンの配置
         const oshiId = uuidv4();
-        rooms[roomId].fieldState[oshiId] = { id: oshiId, name: data.oshi.name, type: 'holomen', zoneId: 'oshi', zIndex: 100, isFaceUp: true };
-        io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
+        rooms[roomId].fieldState[oshiId] = { 
+            id: oshiId, name: data.oshi.name, type: 'holomen', 
+            zoneId: 'oshi', zIndex: 100, isFaceUp: true, ...data.oshi 
+        };
+
+        // 2. ライフの自動配置 (エールデッキから裏向き・横向きでセット)
+        const lifeCount = data.oshi.life || 0;
+        for (let i = 0; i < lifeCount; i++) {
+            if (rooms[roomId].cheerDeck.length > 0) {
+                const lifeCard = rooms[roomId].cheerDeck.pop();
+                rooms[roomId].fieldState[lifeCard.id] = {
+                    ...lifeCard,
+                    zoneId: 'life-zone',
+                    isFaceUp: false,
+                    isRotated: true, // 横向きフラグ
+                    zIndex: 10 + i
+                };
+            }
+        }
+
+        io.to(roomId).emit('gameStarted', { 
+            fieldState: rooms[roomId].fieldState, 
+            deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } 
+        });
     });
 
     socket.on('inspectDeck', (type) => {
@@ -109,4 +135,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
