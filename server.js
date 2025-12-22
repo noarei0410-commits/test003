@@ -28,19 +28,31 @@ io.on('connection', (socket) => {
     socket.on('setGame', (data) => {
         const roomId = socket.roomId;
         if (!rooms[roomId] || socket.role !== 'player') return;
+
         rooms[roomId].fieldState = {}; 
-        rooms[roomId].mainDeck = data.main.map(card => ({ id: uuidv4(), name: card.name, type: card.type }));
-        rooms[roomId].cheerDeck = data.cheer.map(card => ({ id: uuidv4(), name: card.name, type: 'ayle' }));
+        // データを丸ごとコピーして保持するように修正
+        rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4() }));
+        rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
+        
         const shuffle = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
             }
         };
-        shuffle(rooms[roomId].mainDeck); shuffle(rooms[roomId].cheerDeck);
+        shuffle(rooms[roomId].mainDeck);
+        shuffle(rooms[roomId].cheerDeck);
+
         const oshiId = uuidv4();
-        rooms[roomId].fieldState[oshiId] = { id: oshiId, name: data.oshi.name, type: 'holomen', zoneId: 'oshi', zIndex: 100, isFaceUp: true };
-        io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
+        rooms[roomId].fieldState[oshiId] = {
+            id: oshiId, name: data.oshi.name, type: 'holomen',
+            zoneId: 'oshi', zIndex: 100, isFaceUp: true
+        };
+
+        io.to(roomId).emit('gameStarted', { 
+            fieldState: rooms[roomId].fieldState, 
+            deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } 
+        });
     });
 
     socket.on('drawMainCard', () => {
@@ -82,4 +94,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
