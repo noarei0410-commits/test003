@@ -34,7 +34,7 @@ socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
-    if (cards.length === 0) deckGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
+    if (cards.length === 0) deckGrid.innerHTML = "<p style='text-align:center; color:#aaa;'>空です</p>";
     else {
         cards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -52,7 +52,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -69,7 +69,22 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ズーム & コスト判定 ---
+// --- ライブラリ ---
+function filterLibrary(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.innerText === getTypeName(type)));
+    const grid = document.getElementById('global-card-grid'); grid.innerHTML = "";
+    let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
+    filtered.forEach(card => {
+        const el = createCardElement(card, false); el.onclick = () => openZoom(card); grid.appendChild(el);
+    });
+}
+function getTypeName(type) {
+    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+    return map[type];
+}
+
+// --- ズーム & コスト判定 & エール破棄 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -111,15 +126,12 @@ function openZoom(cardData, cardElement = null) {
         skillsHtml = (cardData.skills || []).map(s => {
             let typeLabel = `<div class="skill-type-label label-${s.type}">${s.type}</div>`;
             let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
-            let costs = "";
-            let ready = "";
-
+            let costs = "", ready = "";
             if (s.type === 'arts') {
                 const iconHtml = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
                 costs = `<div class="cost-container">${iconHtml}</div>`;
                 if (canUseArt(s.cost, attachedAylesEls.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
             }
-
             return `<div class="skill-item">
                         <div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div>${damage}</div>
                         <div class="skill-text">${s.text || ''}</div>
@@ -133,18 +145,11 @@ function openZoom(cardData, cardElement = null) {
             });
             ayleListHtml += `</div>`;
         }
-
         const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
         if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
-    container.innerHTML = `
-        <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div>
-        <div class="zoom-skills-list">${skillsHtml}</div>
-        ${ayleListHtml}
-        <div class="zoom-tags">${tagsHtml}</div>
-        <div class="zoom-footer">${batonHtml}</div>
-    `;
+    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div>${ayleListHtml}<div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
     zoomModal.style.display = 'flex';
 }
 
@@ -153,10 +158,9 @@ window.discardAyle = (cardId) => {
     socket.emit('moveCard', { id: cardId, zoneId: 'archive', zIndex: 10, ...el.cardData });
     el.dataset.zoneId = 'archive'; repositionCards(); zoomModal.style.display = 'none';
 };
-
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 配置・初期化 ---
+// --- 配置・同期 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
@@ -197,6 +201,7 @@ async function joinRoom(role) {
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
+// --- 構築UI ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
@@ -225,7 +230,6 @@ function removeAyleFromDeck(name) {
     if (idx !== -1) cheerDeckList.splice(idx, 1);
     renderDecks();
 }
-
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
