@@ -34,7 +34,7 @@ socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
-    if (cards.length === 0) deckGrid.innerHTML = "<p style='text-align:center; color:#aaa;'>空です</p>";
+    if (cards.length === 0) deckGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
     else {
         cards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -52,7 +52,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -68,6 +68,39 @@ function openArchive() {
     archiveModal.style.display = 'flex';
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
+
+// --- ライブラリ・フィルタ (修正済み) ---
+function filterLibrary(type) {
+    currentFilter = type;
+    // ボタンのスタイル更新
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${type}'`));
+    });
+
+    const grid = document.getElementById('global-card-grid');
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    let list = [];
+    if (type === 'oshi') {
+        list = OSHI_LIST;
+    } else if (type === 'all') {
+        list = MASTER_CARDS;
+    } else {
+        list = MASTER_CARDS.filter(c => c.type === type);
+    }
+
+    list.forEach(card => {
+        const el = createCardElement(card, false);
+        el.onclick = () => openZoom(card, el);
+        grid.appendChild(el);
+    });
+}
+
+function getTypeName(type) {
+    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
+    return map[type];
+}
 
 // --- ズーム機能 & スタックスキャン ---
 function canUseArt(costRequired, attachedAyles) {
@@ -90,17 +123,14 @@ function openZoom(cardData, cardElement = null) {
     
     let attachedAyles = [], attachedEquips = [], attachedUnderBlooms = [];
     
-    if (isHolomen && cardElement) {
+    if (isHolomen && cardElement && cardElement.parentElement === field) {
         const rect = cardElement.getBoundingClientRect();
-        // 自分以外の重なっているカードをすべて取得
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const r = c.getBoundingClientRect();
             return Math.abs(r.left - rect.left) < 10 && Math.abs(r.top - rect.top) < 10;
         });
-
         attachedAyles = stack.filter(c => c.cardData.type === 'ayle');
         attachedEquips = stack.filter(c => c.cardData.type === 'support' && ['tool', 'mascot', 'fan'].includes((c.cardData.category || '').toLowerCase()));
-        // 進化前ホロメン（名前が同じホロメン）
         attachedUnderBlooms = stack.filter(c => c.cardData.type === 'holomen' && c.cardData.name === cardData.name);
     }
 
@@ -120,33 +150,21 @@ function openZoom(cardData, cardElement = null) {
             return `<div class="skill-item"><div class="skill-header">${h}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
 
-        // 進化前カードのリスト
         if (attachedUnderBlooms.length > 0) {
             underListHtml = `<div class="zoom-under-section"><span class="section-title">進化前のカード</span>`;
-            attachedUnderBlooms.forEach(u => {
-                underListHtml += `<div class="ayle-list-item"><span>● ${u.cardData.name} [${u.cardData.bloom}]</span><button class="btn-discard-ayle" onclick="discardFromZoom('${u.id}')">破棄</button></div>`;
-            });
+            attachedUnderBlooms.forEach(u => { underListHtml += `<div class="ayle-list-item"><span>● ${u.cardData.name} [${u.cardData.bloom}]</span><button class="btn-discard-ayle" onclick="discardFromZoom('${u.id}')">破棄</button></div>`; });
             underListHtml += `</div>`;
         }
-
-        // 装備カードのリスト
         if (attachedEquips.length > 0) {
             equipListHtml = `<div class="zoom-equip-section"><span class="section-title">装備中のカード</span>`;
-            attachedEquips.forEach(e => {
-                equipListHtml += `<div class="ayle-list-item"><div><b>${e.cardData.name}</b><br><small>${e.cardData.text || ''}</small></div><button class="btn-discard-ayle" onclick="discardFromZoom('${e.id}')">破棄</button></div>`;
-            });
+            attachedEquips.forEach(e => { equipListHtml += `<div class="ayle-list-item"><div><b>${e.cardData.name}</b><br><small>${e.cardData.text || ''}</small></div><button class="btn-discard-ayle" onclick="discardFromZoom('${e.id}')">破棄</button></div>`; });
             equipListHtml += `</div>`;
         }
-
-        // エールのリスト
         if (attachedAyles.length > 0) {
             ayleListHtml = `<div class="zoom-ayle-section"><span class="section-title">付いているエール</span>`;
-            attachedAyles.forEach(a => {
-                ayleListHtml += `<div class="ayle-list-item"><span>● ${a.cardData.name}</span><button class="btn-discard-ayle" onclick="discardFromZoom('${a.id}')">破棄</button></div>`;
-            });
+            attachedAyles.forEach(a => { ayleListHtml += `<div class="ayle-list-item"><span>● ${a.cardData.name}</span><button class="btn-discard-ayle" onclick="discardFromZoom('${a.id}')">破棄</button></div>`; });
             ayleListHtml += `</div>`;
         }
-
         const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
         if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
@@ -154,9 +172,7 @@ function openZoom(cardData, cardElement = null) {
     container.innerHTML = `
         <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div>
         <div class="zoom-skills-list">${skillsHtml}</div>
-        ${underListHtml}
-        ${equipListHtml}
-        ${ayleListHtml}
+        ${underListHtml} ${equipListHtml} ${ayleListHtml}
         <div class="zoom-tags">${tagsHtml}</div>
         <div class="zoom-footer">${batonHtml}</div>
     `;
@@ -170,36 +186,24 @@ window.discardFromZoom = (cardId) => {
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 以降、基本ロジック維持 ---
-function repositionCards() {
-    const fRect = field.getBoundingClientRect();
-    const cardW = 52, cardH = 74;
-    document.querySelectorAll('.card').forEach(card => {
-        if (card.parentElement !== field || card === currentCard) return; 
-        if (card.dataset.zoneId) {
-            const zone = document.getElementById(card.dataset.zoneId);
-            if (zone) {
-                const zr = zone.getBoundingClientRect();
-                card.style.left = (zr.left - fRect.left) + (zr.width - cardW) / 2 + 'px';
-                card.style.top = (zr.top - fRect.top) + (zr.height - cardH) / 2 + 'px';
-            }
-        } else if (card.dataset.percentX) {
-            card.style.left = (card.dataset.percentX / 100) * fRect.width + 'px';
-            card.style.top = (card.dataset.percentY / 100) * fRect.height + 'px';
-        }
-    });
-}
-window.addEventListener('resize', repositionCards);
-
+// --- データ読み込み ---
 async function loadCardData() {
     try {
-        const [h, s, a, o] = await Promise.all([fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')]);
-        MASTER_CARDS = [...await h.json(), ...await s.json(), ...await a.json()];
-        OSHI_LIST = await o.json(); AYLE_MASTER = MASTER_CARDS.filter(c => c.type === 'ayle');
+        const [h, s, a, o] = await Promise.all([
+            fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
+        ]);
+        const hD = await h.json();
+        const sD = await s.json();
+        const aD = await a.json();
+        MASTER_CARDS = [...hD, ...sD, ...aD];
+        OSHI_LIST = await o.json();
+        AYLE_MASTER = aD;
         updateLibrary(); renderDecks();
-    } catch (e) { console.error(e); }
+        if (document.getElementById('card-list-page').style.display !== 'none') filterLibrary('all');
+    } catch (e) { console.error("Data Load Error:", e); }
 }
 
+// --- 共通ロジック ---
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
     if (!rid) return alert("Required");
@@ -365,7 +369,6 @@ document.onpointerup = (e) => {
         let moveData = { id: currentCard.id, ...currentCard.cardData, zIndex: currentCard.style.zIndex };
         const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
         const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentCard);
-
         if (targetCardEl && targetCardEl.parentElement === field) {
             const isEquip = ['tool', 'mascot', 'fan'].includes((currentCard.cardData.category || '').toLowerCase());
             if ((currentCard.cardData.type === 'ayle' || isEquip) && targetCardEl.cardData.type === 'holomen') {
@@ -394,6 +397,25 @@ function normalZoneSnap(e, moveData) {
     });
     if (closest) { currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX; moveData.zoneId = closest.id; }
     else { delete currentCard.dataset.zoneId; const pRect = field.getBoundingClientRect(); const pX = (parseFloat(currentCard.style.left) / pRect.width) * 100, pY = (parseFloat(currentCard.style.top) / pRect.height) * 100; currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
+}
+
+function repositionCards() {
+    const fRect = field.getBoundingClientRect();
+    const cardW = 52, cardH = 74;
+    document.querySelectorAll('.card').forEach(card => {
+        if (card.parentElement !== field || card === currentCard) return; 
+        if (card.dataset.zoneId) {
+            const zone = document.getElementById(card.dataset.zoneId);
+            if (zone) {
+                const zr = zone.getBoundingClientRect();
+                card.style.left = (zr.left - fRect.left) + (zr.width - cardW) / 2 + 'px';
+                card.style.top = (zr.top - fRect.top) + (zr.height - cardH) / 2 + 'px';
+            }
+        } else if (card.dataset.percentX) {
+            card.style.left = (card.dataset.percentX / 100) * fRect.width + 'px';
+            card.style.top = (card.dataset.percentY / 100) * fRect.height + 'px';
+        }
+    });
 }
 
 function returnToHand(card) {
