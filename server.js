@@ -45,7 +45,7 @@ io.on('connection', (socket) => {
 
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = { 
-            id: oshiId, name: data.oshi.name, type: 'holomen', 
+            id: oshiId, name: data.oshi.name, type: 'oshi', 
             zoneId: 'oshi', zIndex: 100, isFaceUp: true, ...data.oshi 
         };
 
@@ -57,16 +57,12 @@ io.on('connection', (socket) => {
                     ...lifeCard,
                     zoneId: 'life-zone',
                     isFaceUp: false,
-                    isRotated: true, // ライフは横向き（回転）
+                    isRotated: true,
                     zIndex: 10 + i
                 };
             }
         }
-
-        io.to(roomId).emit('gameStarted', { 
-            fieldState: rooms[roomId].fieldState, 
-            deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } 
-        });
+        io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
     });
 
     socket.on('inspectDeck', (type) => {
