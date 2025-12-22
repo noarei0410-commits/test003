@@ -34,7 +34,7 @@ socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
-    if (cards.length === 0) deckGrid.innerHTML = "<p style='text-align:center; color:#aaa;'>空です</p>";
+    if (cards.length === 0) deckGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
     else {
         cards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -52,7 +52,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -99,11 +99,11 @@ function canUseArt(costRequired, attachedAyles) {
 function openZoom(cardData, cardElement = null) {
     if (!cardData) return;
     const container = document.querySelector('.zoom-container');
-    const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
-    const isHolomen = cardData.type === 'holomen' && !isOshi;
+    const isOshi = (cardData.type === 'oshi');
+    const isHolomen = (cardData.type === 'holomen');
     
     let attachedAyles = [], attachedEquips = [], attachedUnderBlooms = [];
-    if (isHolomen && cardElement && cardElement.parentElement === field) {
+    if (!isOshi && cardElement && cardElement.parentElement === field) {
         const rect = cardElement.getBoundingClientRect();
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const r = c.getBoundingClientRect();
@@ -120,6 +120,7 @@ function openZoom(cardData, cardElement = null) {
     // ヘッダー情報
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
+    
     let hpOrLifeHtml = '';
     if (isHolomen && cardData.hp) hpOrLifeHtml = `<div class="zoom-hp">HP ${cardData.hp}</div>`;
     else if (isOshi && cardData.life) hpOrLifeHtml = `<div class="zoom-life">LIFE ${cardData.life}</div>`;
@@ -127,7 +128,8 @@ function openZoom(cardData, cardElement = null) {
     // スキル生成
     if (isHolomen || isOshi) {
         skillsHtml = (cardData.skills || []).map(s => {
-            let typeLabel = `<div class="skill-type-label label-${s.type}">${s.type.replace('_', ' ')}</div>`;
+            let typeLabelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
+            let typeLabel = `<div class="skill-type-label label-${s.type}">${typeLabelTxt}</div>`;
             let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
             let costs = "";
             let ready = "";
@@ -137,7 +139,6 @@ function openZoom(cardData, cardElement = null) {
                 costs = `<div class="cost-container">${iconHtml}</div>`;
                 if (canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
             } else if (s.type === 'oshi' || s.type === 'sp_oshi') {
-                // 修正箇所: ホロパワーの表示形式を変更
                 costs = `<span class="skill-cost-hp">ホロパワー：-${s.cost || 0}</span>`;
             }
 
@@ -233,7 +234,7 @@ function updateLibrary(f = "") {
     list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').concat(OSHI_LIST.filter(c => c.name.includes(f))).forEach(card => {
         const div = document.createElement('div'); div.className = "library-item";
-        const isOshi = OSHI_LIST.some(o => o.name === card.name);
+        const isOshi = (card.type === 'oshi');
         const typeInfo = card.bloom || card.category || (isOshi ? "OSHI" : "");
         div.innerHTML = `<span>${card.name}${typeInfo?' ['+typeInfo+']':''}</span><button class="btn-add">${isOshi?'設定':'追加'}</button>`;
         div.querySelector('button').onclick = () => addToDeck(card);
@@ -241,7 +242,7 @@ function updateLibrary(f = "") {
     });
 }
 function addToDeck(card) {
-    if (OSHI_LIST.some(o => o.name === card.name)) selectedOshi = { ...card };
+    if (card.type === 'oshi') selectedOshi = { ...card };
     else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card }); }
     else mainDeckList.push({ ...card });
     renderDecks();
@@ -330,13 +331,19 @@ function canBloom(sourceData, targetData) {
 
 function createCardElement(data, withEvents = true) {
     const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.classList.add('card', 'face-up');
-    const isOshi = OSHI_LIST.some(o => o.name === data.name);
-    if (data.type === 'holomen' && !isOshi) {
+    const isOshi = (data.type === 'oshi');
+    
+    // ホロメン or 推しホロメンに属性アイコンを表示
+    if (data.type === 'holomen' || data.type === 'oshi') {
         if (data.color) { const ci = document.createElement('div'); ci.className = `card-color-icon color-${data.color}`; el.appendChild(ci); }
-        const hp = document.createElement('div'); hp.className = 'card-hp'; hp.innerText = data.hp || '';
-        const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = (data.bloom || 'Debut').charAt(0);
-        el.appendChild(hp); el.appendChild(bl);
+        
+        if (data.type === 'holomen') {
+            const hp = document.createElement('div'); hp.className = 'card-hp'; hp.innerText = data.hp || '';
+            const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = (data.bloom || 'Debut').charAt(0);
+            el.appendChild(hp); el.appendChild(bl);
+        }
     }
+
     if (data.type === 'ayle' || data.name.includes('エール')) {
         const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
         for (let k in colors) if (data.name.includes(k)) { el.classList.add(`ayle-${colors[k]}`); break; }
