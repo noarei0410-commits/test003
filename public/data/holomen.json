@@ -1,5 +1,25 @@
 [
-    { "name": "ときのそら (Debut)", "type": "holomen" },
-    { "name": "ときのそら (Bloom)", "type": "holomen" },
-    { "name": "AZKi (Debut)", "type": "holomen" }
+  {
+    "name": "ときのそら",
+    "type": "holomen",
+    "hp": 180,
+    "bloom": "Debut",
+    "tags": ["#ホロライブ", "#0期生"],
+    "baton": 1,
+    "arts": [
+      { "name": "そらともハグ", "text": "相手に30ダメージ。" },
+      { "name": "きみのための歌", "text": "自分のHPを20回復する。" }
+    ]
+  },
+  {
+    "name": "AZKi",
+    "type": "holomen",
+    "hp": 170,
+    "bloom": "1st",
+    "tags": ["#ホロライブ", "#0期生", "#バーチャルシンガー"],
+    "baton": 1,
+    "arts": [
+      { "name": "いのち", "text": "相手の特殊状態を解除する。" }
+    ]
+  }
 ]
