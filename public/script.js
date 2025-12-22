@@ -34,7 +34,7 @@ socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
-    if (cards.length === 0) deckGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
+    if (cards.length === 0) deckGrid.innerHTML = "<p style='text-align:center; color:#aaa;'>空です</p>";
     else {
         cards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -52,7 +52,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -83,7 +83,7 @@ function filterLibrary(type) {
     });
 }
 
-// --- ズーム機能 & コスト判定 ---
+// --- ズーム機能 & スタックスキャン ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -137,7 +137,8 @@ function openZoom(cardData, cardElement = null) {
                 costs = `<div class="cost-container">${iconHtml}</div>`;
                 if (canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
             } else if (s.type === 'oshi' || s.type === 'sp_oshi') {
-                costs = `<span class="skill-cost-hp">(-${s.cost || 0})</span>`;
+                // 修正箇所: ホロパワーの表示形式を変更
+                costs = `<span class="skill-cost-hp">ホロパワー：-${s.cost || 0}</span>`;
             }
 
             return `<div class="skill-item">
@@ -146,7 +147,6 @@ function openZoom(cardData, cardElement = null) {
                     </div>`;
         }).join('');
 
-        // スタック情報のリスト
         if (attachedUnderBlooms.length > 0) {
             underListHtml = `<div class="zoom-under-section"><span class="section-title">進化前のカード</span>`;
             attachedUnderBlooms.forEach(u => { underListHtml += `<div class="ayle-list-item"><span>● ${u.cardData.name} [${u.cardData.bloom}]</span><button class="btn-discard-ayle" onclick="discardFromZoom('${u.id}')">破棄</button></div>`; });
