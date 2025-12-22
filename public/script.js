@@ -25,7 +25,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- デッキサーチ ---
+// --- デッキ内サーチ ---
 function openDeckInspection(type) {
     if (myRole !== 'player') return;
     socket.emit('inspectDeck', type);
@@ -69,37 +69,18 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ライブラリ・フィルタ (修正済み) ---
+// --- ライブラリ・フィルタ ---
 function filterLibrary(type) {
     currentFilter = type;
-    // ボタンのスタイル更新
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${type}'`));
     });
-
-    const grid = document.getElementById('global-card-grid');
-    if (!grid) return;
+    const grid = document.getElementById('global-card-grid'); if (!grid) return;
     grid.innerHTML = "";
-
-    let list = [];
-    if (type === 'oshi') {
-        list = OSHI_LIST;
-    } else if (type === 'all') {
-        list = MASTER_CARDS;
-    } else {
-        list = MASTER_CARDS.filter(c => c.type === type);
-    }
-
+    let list = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
     list.forEach(card => {
-        const el = createCardElement(card, false);
-        el.onclick = () => openZoom(card, el);
-        grid.appendChild(el);
+        const el = createCardElement(card, false); el.onclick = () => openZoom(card, el); grid.appendChild(el);
     });
-}
-
-function getTypeName(type) {
-    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
-    return map[type];
 }
 
 // --- ズーム機能 & スタックスキャン ---
@@ -122,7 +103,6 @@ function openZoom(cardData, cardElement = null) {
     const isHolomen = cardData.type === 'holomen' && !isOshi;
     
     let attachedAyles = [], attachedEquips = [], attachedUnderBlooms = [];
-    
     if (isHolomen && cardElement && cardElement.parentElement === field) {
         const rect = cardElement.getBoundingClientRect();
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
@@ -186,24 +166,39 @@ window.discardFromZoom = (cardId) => {
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
+// --- 再配置 (座標ズレ修正版) ---
+function repositionCards() {
+    const fRect = field.getBoundingClientRect();
+    document.querySelectorAll('.card').forEach(card => {
+        if (card.parentElement !== field || card === currentDragEl) return; 
+        if (card.dataset.zoneId) {
+            const zone = document.getElementById(card.dataset.zoneId);
+            if (zone) {
+                const zr = zone.getBoundingClientRect();
+                const cr = card.getBoundingClientRect();
+                // フィールド内の相対位置を正確に中央へ
+                card.style.left = (zr.left - fRect.left) + (zr.width - cr.width) / 2 + 'px';
+                card.style.top = (zr.top - fRect.top) + (zr.height - cr.height) / 2 + 'px';
+            }
+        } else if (card.dataset.percentX) {
+            card.style.left = (card.dataset.percentX / 100) * fRect.width + 'px';
+            card.style.top = (card.dataset.percentY / 100) * fRect.height + 'px';
+        }
+    });
+}
+let currentDragEl = null;
+window.addEventListener('resize', repositionCards);
+
 // --- データ読み込み ---
 async function loadCardData() {
     try {
-        const [h, s, a, o] = await Promise.all([
-            fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
-        ]);
-        const hD = await h.json();
-        const sD = await s.json();
-        const aD = await a.json();
-        MASTER_CARDS = [...hD, ...sD, ...aD];
-        OSHI_LIST = await o.json();
-        AYLE_MASTER = aD;
+        const [h, s, a, o] = await Promise.all([fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')]);
+        MASTER_CARDS = [...await h.json(), ...await s.json(), ...await a.json()];
+        OSHI_LIST = await o.json(); AYLE_MASTER = MASTER_CARDS.filter(c => c.type === 'ayle');
         updateLibrary(); renderDecks();
-        if (document.getElementById('card-list-page').style.display !== 'none') filterLibrary('all');
-    } catch (e) { console.error("Data Load Error:", e); }
+    } catch (e) { console.error(e); }
 }
 
-// --- 共通ロジック ---
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
     if (!rid) return alert("Required");
@@ -344,78 +339,61 @@ function setupCardEvents(el) {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (el.parentElement === handDiv) originalNextSibling = el.nextElementSibling;
         if (myRole === 'spectator') return;
-        isDragging = true; currentCard = el; el.setPointerCapture(e.pointerId);
+        isDragging = true; currentDragEl = el; el.setPointerCapture(e.pointerId);
         const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) { el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); }
+        if (el.parentElement !== field) {
+            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el);
+        }
         e.stopPropagation();
     };
 }
 
-document.onpointermove = (e) => { if (!isDragging || !currentCard) return; const fRect = field.getBoundingClientRect(); currentCard.style.left = (e.clientX - fRect.left - offsetX) + 'px'; currentCard.style.top = (e.clientY - fRect.top - offsetY) + 'px'; };
+document.onpointermove = (e) => { if (!isDragging || !currentDragEl) return; const fRect = field.getBoundingClientRect(); currentDragEl.style.left = (e.clientX - fRect.left - offsetX) + 'px'; currentDragEl.style.top = (e.clientY - fRect.top - offsetY) + 'px'; };
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (potentialZoomTarget && dist < 20) { if (!potentialZoomTarget.classList.contains('face-down')) openZoom(potentialZoomTarget.cardData, potentialZoomTarget); }
-    if (myRole === 'spectator' || !isDragging || !currentCard) {
+    if (myRole === 'spectator' || !isDragging || !currentDragEl) {
         if (!isDragging && potentialZoomTarget && potentialZoomTarget.parentElement === field && !potentialZoomTarget.dataset.zoneId && !potentialZoomTarget.dataset.percentX) returnToHand(potentialZoomTarget);
-        isDragging = false; currentCard = null; potentialZoomTarget = null; return;
+        isDragging = false; currentDragEl = null; potentialZoomTarget = null; return;
     }
     const hRect = handDiv.getBoundingClientRect();
-    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) returnToHand(currentCard);
+    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) returnToHand(currentDragEl);
     else {
         const fRect = field.getBoundingClientRect();
-        let moveData = { id: currentCard.id, ...currentCard.cardData, zIndex: currentCard.style.zIndex };
+        let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
-        const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentCard);
+        const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
         if (targetCardEl && targetCardEl.parentElement === field) {
-            const isEquip = ['tool', 'mascot', 'fan'].includes((currentCard.cardData.category || '').toLowerCase());
-            if ((currentCard.cardData.type === 'ayle' || isEquip) && targetCardEl.cardData.type === 'holomen') {
-                currentCard.style.left = targetCardEl.style.left; currentCard.style.top = targetCardEl.style.top;
-                currentCard.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; moveData.zIndex = currentCard.style.zIndex;
-                if (targetCardEl.dataset.zoneId) currentCard.dataset.zoneId = targetCardEl.dataset.zoneId;
+            const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
+            if ((currentDragEl.cardData.type === 'ayle' || isEquip) && targetCardEl.cardData.type === 'holomen') {
+                currentDragEl.style.left = targetCardEl.style.left; currentDragEl.style.top = targetCardEl.style.top;
+                currentDragEl.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; moveData.zIndex = currentDragEl.style.zIndex;
+                if (targetCardEl.dataset.zoneId) currentDragEl.dataset.zoneId = targetCardEl.dataset.zoneId;
                 moveData.zoneId = targetCardEl.dataset.zoneId || "";
-            } else if (canBloom(currentCard.cardData, targetCardEl.cardData)) {
-                currentCard.style.left = targetCardEl.style.left; currentCard.style.top = targetCardEl.style.top;
-                if (targetCardEl.dataset.zoneId) currentCard.dataset.zoneId = targetCardEl.dataset.zoneId;
+            } else if (canBloom(currentDragEl.cardData, targetCardEl.cardData)) {
+                currentDragEl.style.left = targetCardEl.style.left; currentDragEl.style.top = targetCardEl.style.top;
+                if (targetCardEl.dataset.zoneId) currentDragEl.dataset.zoneId = targetCardEl.dataset.zoneId;
                 moveData.zoneId = targetCardEl.dataset.zoneId || "";
             } else normalZoneSnap(e, moveData);
         } else normalZoneSnap(e, moveData);
         socket.emit('moveCard', moveData); repositionCards();
     }
-    isDragging = false; currentCard = null; potentialZoomTarget = null;
+    isDragging = false; currentDragEl = null; potentialZoomTarget = null;
 };
 
 function normalZoneSnap(e, moveData) {
     const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
-    const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+    const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
     zones.forEach(z => {
         const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
-    if (closest) { currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX; moveData.zoneId = closest.id; }
-    else { delete currentCard.dataset.zoneId; const pRect = field.getBoundingClientRect(); const pX = (parseFloat(currentCard.style.left) / pRect.width) * 100, pY = (parseFloat(currentCard.style.top) / pRect.height) * 100; currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
-}
-
-function repositionCards() {
-    const fRect = field.getBoundingClientRect();
-    const cardW = 52, cardH = 74;
-    document.querySelectorAll('.card').forEach(card => {
-        if (card.parentElement !== field || card === currentCard) return; 
-        if (card.dataset.zoneId) {
-            const zone = document.getElementById(card.dataset.zoneId);
-            if (zone) {
-                const zr = zone.getBoundingClientRect();
-                card.style.left = (zr.left - fRect.left) + (zr.width - cardW) / 2 + 'px';
-                card.style.top = (zr.top - fRect.top) + (zr.height - cardH) / 2 + 'px';
-            }
-        } else if (card.dataset.percentX) {
-            card.style.left = (card.dataset.percentX / 100) * fRect.width + 'px';
-            card.style.top = (card.dataset.percentY / 100) * fRect.height + 'px';
-        }
-    });
+    if (closest) { currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id; }
+    else { delete currentDragEl.dataset.zoneId; const pRect = field.getBoundingClientRect(); const pX = (parseFloat(currentDragEl.style.left) / pRect.width) * 100, pY = (parseFloat(currentDragEl.style.top) / pRect.height) * 100; currentDragEl.dataset.percentX = pX; currentDragEl.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
 }
 
 function returnToHand(card) {
