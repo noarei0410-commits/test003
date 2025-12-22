@@ -34,7 +34,7 @@ socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
-    if (cards.length === 0) deckGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
+    if (cards.length === 0) deckGrid.innerHTML = "<p style='text-align:center; color:#aaa;'>空です</p>";
     else {
         cards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -52,7 +52,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -83,7 +83,7 @@ function filterLibrary(type) {
     });
 }
 
-// --- ズーム機能 ---
+// --- ズーム機能 & コスト判定 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -98,8 +98,7 @@ function canUseArt(costRequired, attachedAyles) {
 
 function openZoom(cardData, cardElement = null) {
     if (!cardData) return;
-    // ライフカード（裏向き）はズームを制限
-    if (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone') return;
+    if (cardElement && cardElement.classList.contains('face-down')) return;
 
     const container = document.querySelector('.zoom-container');
     const isOshi = (cardData.type === 'oshi');
@@ -119,7 +118,6 @@ function openZoom(cardData, cardElement = null) {
 
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
     let skillsHtml = '', ayleListHtml = '', equipListHtml = '', underListHtml = '', batonHtml = '';
-    
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
     
@@ -132,16 +130,8 @@ function openZoom(cardData, cardElement = null) {
             let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
             let typeLabel = `<div class="skill-type-label label-${s.type}">${labelTxt}</div>`;
             let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
-            let costs = "";
-            let ready = "";
-
-            if (s.type === 'arts') {
-                const iconHtml = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
-                costs = `<div class="cost-container">${iconHtml}</div>`;
-                if (canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
-            } else if (s.type === 'oshi' || s.type === 'sp_oshi') {
-                costs = `<span class="skill-cost-hp">ホロパワー：-${s.cost || 0}</span>`;
-            }
+            let costs = (s.type === 'arts') ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">ホロパワー：-${s.cost || 0}</span>`;
+            let ready = (s.type === 'arts' && canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
 
             return `<div class="skill-item"><div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div>${damage}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
@@ -176,10 +166,10 @@ window.discardFromZoom = (cardId) => {
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 再配置ロジック (ライフの横並び対応) ---
+// --- 再配置ロジック (ライフを横向き・縦並びにする) ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
-    const zoneCards = {}; // 各ゾーン内のカードをカウント
+    const zoneCards = {};
 
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== field || card === currentDragEl) return; 
@@ -189,16 +179,14 @@ function repositionCards() {
             if (zone) {
                 const zr = zone.getBoundingClientRect();
                 const cr = card.getBoundingClientRect();
-                
                 if (!zoneCards[zoneId]) zoneCards[zoneId] = 0;
                 
-                // ライフゾーンの場合、横向きに並べる
                 if (zoneId === 'life-zone') {
-                    const offset = zoneCards[zoneId] * 12; // 12pxずつずらす
-                    card.style.left = (zr.left - fRect.left) + 5 + offset + 'px';
-                    card.style.top = (zr.top - fRect.top) + (zr.height - cr.height) / 2 + 'px';
+                    // 修正: 向きは横向き（isRotatedによりCSSで回転）、並びは上から下へ縦並び
+                    const offset = zoneCards[zoneId] * 20; // 並びの間隔
+                    card.style.left = (zr.left - fRect.left) + (zr.width - cr.width) / 2 + 'px';
+                    card.style.top = (zr.top - fRect.top) + 5 + offset + 'px';
                 } else {
-                    // 通常のゾーンは中央に重ねる
                     card.style.left = (zr.left - fRect.left) + (zr.width - cr.width) / 2 + 'px';
                     card.style.top = (zr.top - fRect.top) + (zr.height - cr.height) / 2 + 'px';
                 }
@@ -210,6 +198,7 @@ function repositionCards() {
         }
     });
 }
+let currentDragEl = null;
 window.addEventListener('resize', repositionCards);
 
 async function loadCardData() {
@@ -237,8 +226,7 @@ function updateLibrary(f = "") {
     list.innerHTML = "";
     MASTER_CARDS.filter(c => c.name.includes(f) && c.type !== 'ayle').concat(OSHI_LIST.filter(c => c.name.includes(f))).forEach(card => {
         const div = document.createElement('div'); div.className = "library-item";
-        const isOshi = (card.type === 'oshi');
-        div.innerHTML = `<span>${card.name}${card.bloom?' ['+card.bloom+']':''}</span><button class="btn-add">${isOshi?'設定':'追加'}</button>`;
+        div.innerHTML = `<span>${card.name}${card.bloom?' ['+card.bloom+']':''}</span><button class="btn-add">${card.type==='oshi'?'設定':'追加'}</button>`;
         div.querySelector('button').onclick = () => addToDeck(card);
         list.appendChild(div);
     });
@@ -288,7 +276,6 @@ function renderDecks() {
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
 
-document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
 document.getElementById('startGameBtn').onclick = () => {
     socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: selectedOshi });
     setupModal.style.display = "none";
@@ -334,9 +321,9 @@ function canBloom(sourceData, targetData) {
 }
 
 function createCardElement(data, withEvents = true) {
-    const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.classList.add('card', 'face-up');
+    const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.classList.add('card');
+    el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
-    const isOshi = (data.type === 'oshi');
     if (data.type === 'holomen' || data.type === 'oshi') {
         if (data.color) { const ci = document.createElement('div'); ci.className = `card-color-icon color-${data.color}`; el.appendChild(ci); }
         if (data.type === 'holomen') {
@@ -355,7 +342,6 @@ function restoreCard(id, info) {
     const el = createCardElement({ id, ...info });
     el.dataset.zoneId = info.zoneId || ""; el.dataset.percentX = info.percentX || ""; el.dataset.percentY = info.percentY || "";
     el.style.zIndex = info.zIndex;
-    el.classList.toggle('face-up', info.isFaceUp !== false); el.classList.toggle('face-down', info.isFaceUp === false);
     field.appendChild(el); repositionCards();
 }
 
@@ -414,14 +400,22 @@ function normalZoneSnap(e, moveData) {
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
-    if (closest) { currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id; if (closest.id === 'life-zone') { currentDragEl.classList.add('rotated'); moveData.isRotated = true; } else { currentDragEl.classList.remove('rotated'); moveData.isRotated = false; } }
+    if (closest) { 
+        currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id;
+        // ライフゾーンに入れた時のみ横向きフラグを立てる
+        if (closest.id === 'life-zone') { currentDragEl.classList.add('rotated'); moveData.isRotated = true; }
+        else { currentDragEl.classList.remove('rotated'); moveData.isRotated = false; }
+    }
     else { delete currentDragEl.dataset.zoneId; const pRect = field.getBoundingClientRect(); const pX = (parseFloat(currentDragEl.style.left) / pRect.width) * 100, pY = (parseFloat(currentDragEl.style.top) / pRect.height) * 100; currentDragEl.dataset.percentX = pX; currentDragEl.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
 }
 
 function returnToHand(card) {
-    card.style.position = 'relative'; card.style.left = ''; card.style.top = ''; card.style.zIndex = ''; card.classList.remove('rotated');
+    card.style.position = 'relative'; card.style.left = ''; card.style.top = ''; card.style.zIndex = ''; 
+    card.classList.remove('rotated', 'face-down'); card.classList.add('face-up');
     delete card.dataset.zoneId; delete card.dataset.percentX;
     if (originalNextSibling && originalNextSibling.parentElement === handDiv) handDiv.insertBefore(card, originalNextSibling);
     else handDiv.appendChild(card);
+    socket.emit('flipCard', { id: card.id, isFaceUp: true });
+    socket.emit('moveCard', { id: card.id, isRotated: false, isFaceUp: true });
     socket.emit('returnToHand', { id: card.id });
 }
