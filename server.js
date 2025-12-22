@@ -43,6 +43,27 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
     });
 
+    // デッキの中身を確認する要求
+    socket.on('inspectDeck', (type) => {
+        const roomId = socket.roomId;
+        if (!rooms[roomId]) return;
+        const cards = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
+        socket.emit('deckInspectionResult', { type, cards });
+    });
+
+    // デッキから特定のカードを抜き出す
+    socket.on('pickCardFromDeck', ({ type, cardId }) => {
+        const roomId = socket.roomId;
+        if (!rooms[roomId] || socket.role !== 'player') return;
+        let deck = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
+        const cardIdx = deck.findIndex(c => c.id === cardId);
+        if (cardIdx !== -1) {
+            const card = deck.splice(cardIdx, 1)[0];
+            socket.emit('receiveCard', card);
+            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
+        }
+    });
+
     socket.on('drawMainCard', () => {
         const roomId = socket.roomId;
         if (rooms[roomId] && rooms[roomId].mainDeck.length > 0) {
