@@ -68,13 +68,14 @@ function renderGlobalCardList(type = 'all') {
     let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
     filtered.forEach(card => {
         const el = createCardElement(card, false);
-        el.onclick = () => openZoom(card.cardData);
+        el.onclick = () => openZoom(card);
         grid.appendChild(el);
     });
 }
 
 // --- ズーム機能 (詳細表示) ---
 function openZoom(cardData) {
+    if (!cardData) return;
     const container = document.querySelector('.zoom-container');
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
@@ -84,7 +85,6 @@ function openZoom(cardData) {
     let batonHtml = '';
 
     if (isHolomen) {
-        // スキルリスト
         skillsHtml = (cardData.skills || []).map(s => {
             let headerContent = '';
             let damageContent = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
@@ -96,23 +96,12 @@ function openZoom(cardData) {
             } else if (s.type === 'collab') {
                 headerContent = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
             }
-            return `
-                <div class="skill-item">
-                    <div class="skill-header">${headerContent}</div>
-                    <div class="skill-text">${s.text || ''}</div>
-                </div>
-            `;
+            return `<div class="skill-item"><div class="skill-header">${headerContent}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
 
-        // バトンタッチ
-        const batonIcons = Array(cardData.baton || 0).fill('<div class="baton-icon"></div>').join('');
+        const batonIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
         if (cardData.baton > 0) {
-            batonHtml = `
-                <div class="baton-wrapper">
-                    <span class="baton-label">バトンタッチ:</span>
-                    <div class="baton-icons-container">${batonIcons}</div>
-                </div>
-            `;
+            batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${batonIcons}</div></div>`;
         }
     }
 
@@ -124,18 +113,21 @@ function openZoom(cardData) {
             </div>
             <div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div>
         </div>
-        
         <div class="zoom-skills-list">${skillsHtml}</div>
         <div class="zoom-tags">${tagsHtml}</div>
         <div class="zoom-footer">${batonHtml}</div>
     `;
     zoomModal.style.display = 'flex';
 }
+
+// ズームを閉じる処理（背景タップ時のみ）
 zoomModal.onclick = (e) => {
-    if (e.target === zoomModal) zoomModal.style.display = 'none';
+    if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) {
+        zoomModal.style.display = 'none';
+    }
 };
 
-// --- 再配置 ---
+// --- 再配置ロジック ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
@@ -279,7 +271,8 @@ function createCardElement(data, withEvents = true) {
         const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
         for (let k in colors) if (data.name.includes(k)) { el.classList.add(`ayle-${colors[k]}`); break; }
     } else el.classList.add(`type-${data.type}`);
-    el.cardData = data;
+    
+    el.cardData = data; // データを要素に紐付け
     if (withEvents) setupCardEvents(el); return el;
 }
 function restoreCard(id, info) {
@@ -290,6 +283,7 @@ function restoreCard(id, info) {
     field.appendChild(el);
 }
 
+// --- ドラッグ&クリック判定 ---
 function setupCardEvents(el) {
     el.addEventListener('dblclick', () => {
         if (myRole === 'spectator' || el.parentElement === handDiv) return;
@@ -322,21 +316,25 @@ document.onpointermove = (e) => {
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (potentialZoomTarget && dist < 12 && !potentialZoomTarget.classList.contains('face-down')) {
-        // カードリストからの呼び出しに対応するため、cardDataを渡すように統一
-        openZoom(potentialZoomTarget.cardData);
+    // クリック判定: 移動距離が20px未満なら拡大表示
+    if (potentialZoomTarget && dist < 20) {
+        if (!potentialZoomTarget.classList.contains('face-down')) {
+            openZoom(potentialZoomTarget.cardData);
+        }
     }
+    
     if (myRole === 'spectator' || !isDragging || !currentCard) {
         if (!isDragging && potentialZoomTarget && potentialZoomTarget.parentElement === field && !potentialZoomTarget.dataset.zoneId && !potentialZoomTarget.dataset.percentX) {
             returnToHand(potentialZoomTarget);
         }
-        isDragging = false; currentCard = null; return;
+        isDragging = false; currentCard = null; potentialZoomTarget = null; return;
     }
+
     const hRect = handDiv.getBoundingClientRect();
     if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
         returnToHand(currentCard);
     } else {
-        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 38;
+        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
         const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
         zones.forEach(z => {
             const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
@@ -356,7 +354,7 @@ document.onpointerup = (e) => {
         }
         socket.emit('moveCard', moveData); repositionCards();
     }
-    isDragging = false; currentCard = null;
+    isDragging = false; currentCard = null; potentialZoomTarget = null;
 };
 
 function returnToHand(card) {
