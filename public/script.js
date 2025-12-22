@@ -16,7 +16,7 @@ const archiveGrid = document.getElementById('archive-card-grid');
 const deckModal = document.getElementById('deck-inspection-modal');
 const deckGrid = document.getElementById('deck-card-grid');
 
-// --- 画面遷移 ---
+// --- 画面遷移管理 ---
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
@@ -69,7 +69,7 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ズーム & コスト判定 ---
+// --- ズーム機能 & スタックスキャン ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -88,19 +88,24 @@ function openZoom(cardData, cardElement = null) {
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
     
-    let attachedAyles = [], attachedEquips = [];
+    let attachedAyles = [], attachedEquips = [], attachedUnderBlooms = [];
+    
     if (isHolomen && cardElement) {
         const rect = cardElement.getBoundingClientRect();
+        // 自分以外の重なっているカードをすべて取得
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const r = c.getBoundingClientRect();
             return Math.abs(r.left - rect.left) < 10 && Math.abs(r.top - rect.top) < 10;
         });
+
         attachedAyles = stack.filter(c => c.cardData.type === 'ayle');
         attachedEquips = stack.filter(c => c.cardData.type === 'support' && ['tool', 'mascot', 'fan'].includes((c.cardData.category || '').toLowerCase()));
+        // 進化前ホロメン（名前が同じホロメン）
+        attachedUnderBlooms = stack.filter(c => c.cardData.type === 'holomen' && c.cardData.name === cardData.name);
     }
 
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let skillsHtml = '', ayleListHtml = '', equipListHtml = '', batonHtml = '';
+    let skillsHtml = '', ayleListHtml = '', equipListHtml = '', underListHtml = '', batonHtml = '';
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
 
@@ -115,39 +120,57 @@ function openZoom(cardData, cardElement = null) {
             return `<div class="skill-item"><div class="skill-header">${h}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
 
-        if (attachedAyles.length > 0) {
-            ayleListHtml = `<div class="zoom-ayle-section"><span class="section-title">付いているエール</span>`;
-            attachedAyles.forEach(a => { ayleListHtml += `<div class="ayle-list-item"><span>● ${a.cardData.name}</span><button class="btn-discard-ayle" onclick="discardAyle('${a.id}')">破棄</button></div>`; });
-            ayleListHtml += `</div>`;
+        // 進化前カードのリスト
+        if (attachedUnderBlooms.length > 0) {
+            underListHtml = `<div class="zoom-under-section"><span class="section-title">進化前のカード</span>`;
+            attachedUnderBlooms.forEach(u => {
+                underListHtml += `<div class="ayle-list-item"><span>● ${u.cardData.name} [${u.cardData.bloom}]</span><button class="btn-discard-ayle" onclick="discardFromZoom('${u.id}')">破棄</button></div>`;
+            });
+            underListHtml += `</div>`;
         }
 
+        // 装備カードのリスト
         if (attachedEquips.length > 0) {
             equipListHtml = `<div class="zoom-equip-section"><span class="section-title">装備中のカード</span>`;
             attachedEquips.forEach(e => {
-                equipListHtml += `<div class="ayle-list-item">
-                    <div><b>${e.cardData.name}</b> [${e.cardData.category}]<br><span class="equip-info">${e.cardData.text || ''}</span></div>
-                    <button class="btn-discard-ayle" onclick="discardAyle('${e.id}')">破棄</button>
-                </div>`;
+                equipListHtml += `<div class="ayle-list-item"><div><b>${e.cardData.name}</b><br><small>${e.cardData.text || ''}</small></div><button class="btn-discard-ayle" onclick="discardFromZoom('${e.id}')">破棄</button></div>`;
             });
             equipListHtml += `</div>`;
+        }
+
+        // エールのリスト
+        if (attachedAyles.length > 0) {
+            ayleListHtml = `<div class="zoom-ayle-section"><span class="section-title">付いているエール</span>`;
+            attachedAyles.forEach(a => {
+                ayleListHtml += `<div class="ayle-list-item"><span>● ${a.cardData.name}</span><button class="btn-discard-ayle" onclick="discardFromZoom('${a.id}')">破棄</button></div>`;
+            });
+            ayleListHtml += `</div>`;
         }
 
         const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
         if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
-    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div>${equipListHtml}${ayleListHtml}<div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
+    container.innerHTML = `
+        <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div>
+        <div class="zoom-skills-list">${skillsHtml}</div>
+        ${underListHtml}
+        ${equipListHtml}
+        ${ayleListHtml}
+        <div class="zoom-tags">${tagsHtml}</div>
+        <div class="zoom-footer">${batonHtml}</div>
+    `;
     zoomModal.style.display = 'flex';
 }
 
-window.discardAyle = (cardId) => {
+window.discardFromZoom = (cardId) => {
     const el = document.getElementById(cardId); if (!el) return;
     socket.emit('moveCard', { id: cardId, zoneId: 'archive', zIndex: 10, ...el.cardData });
     el.dataset.zoneId = 'archive'; repositionCards(); zoomModal.style.display = 'none';
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 配置・初期化 ---
+// --- 以降、基本ロジック維持 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
@@ -261,10 +284,7 @@ socket.on('init', (d) => {
     for (const id in d.fieldState) restoreCard(id, d.fieldState[id]);
     repositionCards();
 });
-socket.on('deckCount', (c) => { 
-    document.getElementById('mainCount').innerText = c.main; 
-    document.getElementById('cheerCount').innerText = c.cheer; 
-});
+socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
 socket.on('receiveCard', (d) => handDiv.appendChild(createCardElement(d)));
 socket.on('cardMoved', (d) => {
     let el = document.getElementById(d.id); if (!el) return restoreCard(d.id, d);
@@ -329,12 +349,7 @@ function setupCardEvents(el) {
     };
 }
 
-document.onpointermove = (e) => {
-    if (!isDragging || !currentCard) return;
-    const fRect = field.getBoundingClientRect();
-    currentCard.style.left = (e.clientX - fRect.left - offsetX) + 'px';
-    currentCard.style.top = (e.clientY - fRect.top - offsetY) + 'px';
-};
+document.onpointermove = (e) => { if (!isDragging || !currentCard) return; const fRect = field.getBoundingClientRect(); currentCard.style.left = (e.clientX - fRect.left - offsetX) + 'px'; currentCard.style.top = (e.clientY - fRect.top - offsetY) + 'px'; };
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
@@ -353,7 +368,6 @@ document.onpointerup = (e) => {
 
         if (targetCardEl && targetCardEl.parentElement === field) {
             const isEquip = ['tool', 'mascot', 'fan'].includes((currentCard.cardData.category || '').toLowerCase());
-            // エール or ツール等 をホロメンに重ねる判定
             if ((currentCard.cardData.type === 'ayle' || isEquip) && targetCardEl.cardData.type === 'holomen') {
                 currentCard.style.left = targetCardEl.style.left; currentCard.style.top = targetCardEl.style.top;
                 currentCard.style.zIndex = parseInt(targetCardEl.style.zIndex) - 1; moveData.zIndex = currentCard.style.zIndex;
