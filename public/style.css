@@ -15,7 +15,7 @@ body {
 .hub-menu { display: grid; gap: 20px; }
 .hub-btn { background: rgba(255,255,255,0.05); border: 2px solid #00d2ff; padding: 25px; border-radius: 15px; color: white; font-size: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
-/* 構築画面レイアウト */
+/* モーダル */
 .modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; padding: 15px; width: 98vw; height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
 .builder-layout { display: flex; flex: 1; gap: 10px; overflow: hidden; }
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px; overflow: hidden; }
@@ -38,7 +38,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .btn-back, .btn-close-gray { background: #444; color: white; padding: 10px; width: 100%; margin-top: 5px; }
 #startGameBtn { padding: 12px; background: #00d2ff; width: 100%; font-size: 16px; margin-bottom: 5px; }
 
-/* 対戦フィールドUI */
+/* フィールドUI */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
 #field-container { width: 98vw; height: 60vh; max-height: 550px; border: 3px double #f0ffff; border-radius: 12px; background: rgba(255,255,255,0.02); padding: 6px; margin-bottom: 4px; }
 #field { display: grid; grid-template-columns: 16% 1fr 16%; gap: 6px; height: 100%; position: relative; }
@@ -50,9 +50,8 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 
 .stage-label-bar { width: 100%; text-align: center; border-bottom: 1px solid #f0ffff; font-size: 12px; color: #f0ffff; height: 20px; }
 .stage-top-row { display: flex; gap: 10px; width: 100%; height: 35%; justify-content: center; }
-.stage-top-row .zone { width: 22%; height: 100%; }
 .stage-bottom-row { width: 100%; height: 35%; display: flex; justify-content: center; }
-.back-position-container { width: 90%; height: 100%; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 10px; display: flex; gap: 5px; padding: 5px; position: relative; justify-content: center; }
+.back-position-container { width: 90%; height: 100%; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 10px; display: flex; gap: 5px; padding: 5px; justify-content: center; }
 .back-slot { flex: 1; height: 100%; border: 1px solid rgba(240,255,255,0.1); background: transparent; }
 .turn-guide-box { width: 100%; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 4px; font-size: 8px; text-align: center; margin-top: auto; }
 
@@ -86,7 +85,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 
 /* 拡大（ズーム） */
 #zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 50000; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; gap: 10px; }
-.zoom-container { background: #fff; color: #000; width: 300px; max-height: 85vh; border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow-y: auto; cursor: default; }
+.zoom-container { background: #fff; color: #000; width: 310px; max-height: 85vh; border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow-y: auto; cursor: default; }
 .zoom-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 5px; flex-shrink: 0; }
 .zoom-name { font-size: 18px; font-weight: bold; }
 .zoom-hp { font-size: 16px; color: #e74c3c; font-weight: bold; }
@@ -107,22 +106,20 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; t
 .skill-damage { font-weight: bold; font-size: 14px; color: #333; margin-left: auto; }
 .skill-text { font-size: 10px; color: #444; line-height: 1.3; }
 
-/* エール破棄・バトンタッチ (横並び設定) */
-.zoom-ayle-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; }
-.ayle-section-title { font-size: 10px; font-weight: bold; color: #0056b3; display: block; margin-bottom: 4px; }
+/* ズーム内エール・装備セクション */
+.zoom-ayle-section, .zoom-equip-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
+.zoom-equip-section { background: #f9f0ff; border-color: #e4d0ff; }
+.section-title { font-size: 10px; font-weight: bold; color: #0056b3; display: block; margin-bottom: 4px; }
+.zoom-equip-section .section-title { color: #5b00b3; }
+
 .ayle-list-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 3px; }
+.equip-info { font-size: 9px; color: #666; margin-top: 1px; display: block; }
 .btn-discard-ayle { background: #ff5e5e; color: white; border: none; font-size: 9px; padding: 3px 8px; border-radius: 4px; }
 
 .zoom-tags { display: flex; gap: 4px; flex-wrap: wrap; padding-top: 5px; margin-top: 5px; }
 .tag-badge { background: #f0f2f5; color: #555; padding: 2px 6px; border-radius: 4px; font-size: 9px; }
 
 .zoom-footer { display: flex; align-items: center; border-top: 1px solid #eee; padding-top: 8px; margin-top: auto; }
-/* 修正箇所: バトンタッチの中身を強制的に横並びにする */
-.baton-wrapper { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
-.baton-label { font-size: 11px; font-weight: bold; color: #555; white-space: nowrap; }
-.baton-icons-container { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-.baton-icon { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #999; background-color: #ddd; flex-shrink: 0; }
-
+.baton-wrapper { display: flex; align-items: center; gap: 6px; }
+.baton-icon { width: 10px; height: 10px; background: #ddd; border-radius: 50%; border: 1px solid #999; }
 .zoom-hint-outside { color: #fff; font-size: 14px; opacity: 0.8; }
-
-body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.6; }
