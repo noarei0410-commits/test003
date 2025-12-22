@@ -25,7 +25,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- デッキ内サーチ ---
+// --- デッキサーチ ---
 function openDeckInspection(type) {
     if (myRole !== 'player') return;
     socket.emit('inspectDeck', type);
@@ -83,7 +83,7 @@ function filterLibrary(type) {
     });
 }
 
-// --- ズーム機能 & スタックスキャン ---
+// --- ズーム機能 & コスト判定 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -116,20 +116,37 @@ function openZoom(cardData, cardElement = null) {
 
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
     let skillsHtml = '', ayleListHtml = '', equipListHtml = '', underListHtml = '', batonHtml = '';
+    
+    // ヘッダー情報
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
+    let hpOrLifeHtml = '';
+    if (isHolomen && cardData.hp) hpOrLifeHtml = `<div class="zoom-hp">HP ${cardData.hp}</div>`;
+    else if (isOshi && cardData.life) hpOrLifeHtml = `<div class="zoom-life">LIFE ${cardData.life}</div>`;
 
-    if (isHolomen) {
+    // スキル生成
+    if (isHolomen || isOshi) {
         skillsHtml = (cardData.skills || []).map(s => {
-            let h = '', d = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '', ready = "";
+            let typeLabel = `<div class="skill-type-label label-${s.type}">${s.type.replace('_', ' ')}</div>`;
+            let damage = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '';
+            let costs = "";
+            let ready = "";
+
             if (s.type === 'arts') {
                 const iconHtml = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
+                costs = `<div class="cost-container">${iconHtml}</div>`;
                 if (canUseArt(s.cost, attachedAyles.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
-                h = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${iconHtml}</div><div class="skill-name">${s.name}${ready}</div>${d}`;
-            } else { h = `<div class="skill-type-label label-${s.type}">${s.type}</div><div class="skill-name">${s.name}</div>`; }
-            return `<div class="skill-item"><div class="skill-header">${h}</div><div class="skill-text">${s.text || ''}</div></div>`;
+            } else if (s.type === 'oshi' || s.type === 'sp_oshi') {
+                costs = `<span class="skill-cost-hp">(-${s.cost || 0})</span>`;
+            }
+
+            return `<div class="skill-item">
+                        <div class="skill-header">${typeLabel}${costs}<div class="skill-name">${s.name}${ready}</div>${damage}</div>
+                        <div class="skill-text">${s.text || ''}</div>
+                    </div>`;
         }).join('');
 
+        // スタック情報のリスト
         if (attachedUnderBlooms.length > 0) {
             underListHtml = `<div class="zoom-under-section"><span class="section-title">進化前のカード</span>`;
             attachedUnderBlooms.forEach(u => { underListHtml += `<div class="ayle-list-item"><span>● ${u.cardData.name} [${u.cardData.bloom}]</span><button class="btn-discard-ayle" onclick="discardFromZoom('${u.id}')">破棄</button></div>`; });
@@ -145,12 +162,13 @@ function openZoom(cardData, cardElement = null) {
             attachedAyles.forEach(a => { ayleListHtml += `<div class="ayle-list-item"><span>● ${a.cardData.name}</span><button class="btn-discard-ayle" onclick="discardFromZoom('${a.id}')">破棄</button></div>`; });
             ayleListHtml += `</div>`;
         }
+        
         const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
         if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
     container.innerHTML = `
-        <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div>
+        <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div>${hpOrLifeHtml}</div>
         <div class="zoom-skills-list">${skillsHtml}</div>
         ${underListHtml} ${equipListHtml} ${ayleListHtml}
         <div class="zoom-tags">${tagsHtml}</div>
@@ -166,7 +184,7 @@ window.discardFromZoom = (cardId) => {
 };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 再配置 (座標ズレ修正版) ---
+// --- 配置・初期化 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     document.querySelectorAll('.card').forEach(card => {
@@ -176,7 +194,6 @@ function repositionCards() {
             if (zone) {
                 const zr = zone.getBoundingClientRect();
                 const cr = card.getBoundingClientRect();
-                // フィールド内の相対位置を正確に中央へ
                 card.style.left = (zr.left - fRect.left) + (zr.width - cr.width) / 2 + 'px';
                 card.style.top = (zr.top - fRect.top) + (zr.height - cr.height) / 2 + 'px';
             }
@@ -189,10 +206,11 @@ function repositionCards() {
 let currentDragEl = null;
 window.addEventListener('resize', repositionCards);
 
-// --- データ読み込み ---
 async function loadCardData() {
     try {
-        const [h, s, a, o] = await Promise.all([fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')]);
+        const [h, s, a, o] = await Promise.all([
+            fetch('/data/holomen.json'), fetch('/data/support.json'), fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
+        ]);
         MASTER_CARDS = [...await h.json(), ...await s.json(), ...await a.json()];
         OSHI_LIST = await o.json(); AYLE_MASTER = MASTER_CARDS.filter(c => c.type === 'ayle');
         updateLibrary(); renderDecks();
@@ -343,9 +361,7 @@ function setupCardEvents(el) {
         const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) {
-            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el);
-        }
+        if (el.parentElement !== field) { el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); }
         e.stopPropagation();
     };
 }
