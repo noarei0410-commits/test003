@@ -52,7 +52,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
     archiveGrid.innerHTML = "";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
+    if (archiveCards.length === 0) archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     else {
         archiveCards.forEach(card => {
             const container = document.createElement('div'); container.className = "archive-item";
@@ -69,22 +69,7 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ライブラリ ---
-function filterLibrary(type) {
-    currentFilter = type;
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.innerText === getTypeName(type)));
-    const grid = document.getElementById('global-card-grid'); grid.innerHTML = "";
-    let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
-    filtered.forEach(card => {
-        const el = createCardElement(card, false); el.onclick = () => openZoom(card); grid.appendChild(el);
-    });
-}
-function getTypeName(type) {
-    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
-    return map[type];
-}
-
-// --- ズーム & コスト判定 ---
+// --- ズーム & エール破棄 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -108,17 +93,17 @@ function openZoom(cardData, cardElement = null) {
     const isOshi = OSHI_LIST.some(o => o.name === cardData.name);
     const isHolomen = cardData.type === 'holomen' && !isOshi;
     
-    let attachedAyles = [];
+    let attachedAylesEls = [];
     if (isHolomen && cardElement) {
         const rect = cardElement.getBoundingClientRect();
-        attachedAyles = Array.from(document.querySelectorAll('.card')).filter(c => c.cardData.type === 'ayle').filter(c => {
+        attachedAylesEls = Array.from(document.querySelectorAll('.card')).filter(c => c.cardData.type === 'ayle').filter(c => {
             const r = c.getBoundingClientRect();
-            return Math.abs(r.left - rect.left) < 5 && Math.abs(r.top - rect.top) < 5;
-        }).map(c => c.cardData);
+            return Math.abs(r.left - rect.left) < 10 && Math.abs(r.top - rect.top) < 10; // 判定を広めに設定
+        });
     }
 
     let tagsHtml = (cardData.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
-    let skillsHtml = '', batonHtml = '';
+    let skillsHtml = '', ayleListHtml = '', batonHtml = '';
     let topLabel = isHolomen ? (cardData.bloom || 'Debut') : (isOshi ? 'OSHI' : cardData.type.toUpperCase());
     if (cardData.type === 'support' && cardData.category) topLabel = cardData.category.toUpperCase();
 
@@ -127,22 +112,50 @@ function openZoom(cardData, cardElement = null) {
             let h = '', d = s.damage ? `<span class="skill-damage">${s.damage}</span>` : '', ready = "";
             if (s.type === 'arts') {
                 const costs = (s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('');
-                if (canUseArt(s.cost, attachedAyles)) ready = `<span class="ready-badge">READY</span>`;
+                if (canUseArt(s.cost, attachedAylesEls.map(e => e.cardData))) ready = `<span class="ready-badge">READY</span>`;
                 h = `<div class="skill-type-label label-arts">Arts</div><div class="cost-container">${costs}</div><div class="skill-name">${s.name}${ready}</div>${d}`;
             } else if (s.type === 'gift') h = `<div class="skill-type-label label-gift">Gift</div><div class="skill-name">${s.name}</div>`;
             else if (s.type === 'collab') h = `<div class="skill-type-label label-collab">Collab</div><div class="skill-name">${s.name}</div>`;
             return `<div class="skill-item"><div class="skill-header">${h}</div><div class="skill-text">${s.text || ''}</div></div>`;
         }).join('');
+
+        if (attachedAylesEls.length > 0) {
+            ayleListHtml = `<div class="zoom-ayle-section"><span class="ayle-section-title">付いているエール</span>`;
+            attachedAylesEls.forEach(ayleEl => {
+                ayleListHtml += `<div class="ayle-list-item"><span>● ${ayleEl.cardData.name}</span><button class="btn-discard-ayle" onclick="discardAyle('${ayleEl.id}')">破棄</button></div>`;
+            });
+            ayleListHtml += `</div>`;
+        }
+
         const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
         if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
-    container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div><div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
+    container.innerHTML = `
+        <div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div>
+        <div class="zoom-skills-list">${skillsHtml}</div>
+        ${ayleListHtml}
+        <div class="zoom-tags">${tagsHtml}</div>
+        <div class="zoom-footer">${batonHtml}</div>
+    `;
     zoomModal.style.display = 'flex';
 }
+
+// 外部から呼べる破棄関数
+window.discardAyle = (cardId) => {
+    const el = document.getElementById(cardId);
+    if (!el) return;
+    const archiveZone = document.getElementById('archive');
+    const moveData = { id: cardId, zoneId: 'archive', zIndex: 10, ...el.cardData };
+    socket.emit('moveCard', moveData);
+    el.dataset.zoneId = 'archive';
+    repositionCards();
+    zoomModal.style.display = 'none'; // 状態更新のため閉じる
+};
+
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.classList.contains('zoom-hint-outside')) zoomModal.style.display = 'none'; };
 
-// --- 共通ロジック ---
+// --- 配置・初期化 ---
 function repositionCards() {
     const fRect = field.getBoundingClientRect();
     const cardW = 52, cardH = 74;
