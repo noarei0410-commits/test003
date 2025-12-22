@@ -12,7 +12,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
 
-// シャッフル用共通関数
 const shuffleArray = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -39,10 +38,8 @@ io.on('connection', (socket) => {
         rooms[roomId].fieldState = {}; 
         rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4() }));
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
-        
         shuffleArray(rooms[roomId].mainDeck);
         shuffleArray(rooms[roomId].cheerDeck);
-
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = { id: oshiId, name: data.oshi.name, type: 'holomen', zoneId: 'oshi', zIndex: 100, isFaceUp: true };
         io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
