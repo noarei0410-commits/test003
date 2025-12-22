@@ -16,7 +16,7 @@ const archiveGrid = document.getElementById('archive-card-grid');
 const deckModal = document.getElementById('deck-inspection-modal');
 const deckGrid = document.getElementById('deck-card-grid');
 
-// --- 画面遷移 ---
+// --- 画面遷移管理 ---
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
@@ -25,7 +25,7 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- 山札確認 ---
+// --- 山札確認機能 ---
 function openDeckInspection(type) {
     if (myRole !== 'player') return;
     socket.emit('inspectDeck', type);
@@ -35,7 +35,6 @@ socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
-    
     if (cards.length === 0) {
         deckGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa;'>空です</p>";
     } else {
@@ -44,7 +43,6 @@ socket.on('deckInspectionResult', (data) => {
             container.className = "archive-item";
             const el = createCardElement(card, false);
             el.classList.remove('face-down'); el.classList.add('face-up');
-            
             const pickBtn = document.createElement('button');
             pickBtn.className = "btn-recover";
             pickBtn.innerText = "手札に加える";
@@ -52,8 +50,7 @@ socket.on('deckInspectionResult', (data) => {
                 socket.emit('pickCardFromDeck', { type, cardId: card.id });
                 closeDeckInspection();
             };
-            container.appendChild(el);
-            container.appendChild(pickBtn);
+            container.appendChild(el); container.appendChild(pickBtn);
             deckGrid.appendChild(container);
         });
     }
@@ -69,8 +66,7 @@ function openArchive() {
         archiveGrid.innerHTML = "<p style='width:100%; text-align:center; color:#aaa; font-size:12px;'>空です</p>";
     } else {
         archiveCards.forEach(card => {
-            const container = document.createElement('div');
-            container.className = "archive-item";
+            const container = document.createElement('div'); container.className = "archive-item";
             const el = createCardElement(card.cardData, false);
             el.classList.remove('face-down'); el.classList.add('face-up');
             if (myRole === 'player') {
@@ -217,7 +213,6 @@ function renderDecks() {
     if (!oSum) return;
     oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button class="btn-remove">X</button></div>` : "";
     if (selectedOshi) oSum.querySelector('button').onclick = () => { selectedOshi = null; renderDecks(); };
-
     mSum.innerHTML = "";
     const gMain = mainDeckList.reduce((acc, c) => { 
         const key = `${c.name}_${c.bloom || c.category || ""}`;
@@ -231,13 +226,10 @@ function renderDecks() {
         div.querySelector('button').onclick = () => removeFromDeck(key);
         mSum.appendChild(div);
     });
-
     cSum.innerHTML = "";
     AYLE_MASTER.forEach(card => {
         const count = cheerDeckList.filter(c => c.name === card.name).length;
-        const div = document.createElement('div');
-        div.className = "deck-item";
-        // --- 修正箇所: ＋/－の位置を「－/＋」に反転 ---
+        const div = document.createElement('div'); div.className = "deck-item";
         div.innerHTML = `<span>${card.name.charAt(0)}:${count}</span><div class="deck-item-controls"><button class="btn-minus">-</button><button class="btn-plus">+</button></div>`;
         div.querySelector('.btn-plus').onclick = () => addToDeck(card);
         div.querySelector('.btn-minus').onclick = () => removeAyleFromDeck(card.name);
@@ -253,7 +245,7 @@ document.getElementById('startGameBtn').onclick = () => {
     setupModal.style.display = "none";
 };
 
-// --- 同期 ---
+// --- 同期/操作 ---
 socket.on('gameStarted', (data) => {
     field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = "";
     for (const id in data.fieldState) restoreCard(id, data.fieldState[id]);
@@ -287,6 +279,24 @@ const setupDeckClick = (id, type) => {
 setupDeckClick('main-deck-zone', 'main');
 setupDeckClick('cheer-deck-zone', 'cheer');
 
+// --- ブルーム条件チェック関数 ---
+function canBloom(sourceData, targetData) {
+    // どちらかがホロメンでない場合は不可
+    if (sourceData.type !== 'holomen' || targetData.type !== 'holomen') return false;
+    // 名前が違う場合は不可
+    if (sourceData.name !== targetData.name) return false;
+
+    const s = sourceData.bloom;
+    const t = targetData.bloom;
+
+    // ルール判定
+    if (t === 'Debut' && s === '1st') return true;      // Debutの上に1st
+    if (t === '1st' && s === '2nd') return true;        // 1stの上に2nd
+    if (t === '1st' && s === '1st') return true;        // 1stの上に1st (リステップ)
+
+    return false; // それ以外（Debutの上にDebut等）は不可
+}
+
 // --- 要素作成 ---
 function createCardElement(data, withEvents = true) {
     const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.classList.add('card', 'face-up');
@@ -312,7 +322,10 @@ function restoreCard(id, info) {
 }
 
 function setupCardEvents(el) {
-    el.addEventListener('dblclick', () => { if (myRole === 'spectator' || el.parentElement === handDiv) return; socket.emit('flipCard', { id: el.id, isFaceUp: !el.classList.contains('face-up') }); });
+    el.addEventListener('dblclick', () => {
+        if (myRole === 'spectator' || el.parentElement === handDiv) return;
+        socket.emit('flipCard', { id: el.id, isFaceUp: !el.classList.contains('face-up') });
+    });
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (el.parentElement === handDiv) originalNextSibling = el.nextElementSibling;
@@ -321,7 +334,10 @@ function setupCardEvents(el) {
         const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) { el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); }
+        if (el.parentElement !== field) {
+            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px';
+            field.appendChild(el);
+        }
         e.stopPropagation();
     };
 }
@@ -335,25 +351,54 @@ document.onpointermove = (e) => {
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (potentialZoomTarget && dist < 20) { if (!potentialZoomTarget.classList.contains('face-down')) openZoom(potentialZoomTarget.cardData); }
+    if (potentialZoomTarget && dist < 20) {
+        if (!potentialZoomTarget.classList.contains('face-down')) openZoom(potentialZoomTarget.cardData);
+    }
     if (myRole === 'spectator' || !isDragging || !currentCard) {
         if (!isDragging && potentialZoomTarget && potentialZoomTarget.parentElement === field && !potentialZoomTarget.dataset.zoneId && !potentialZoomTarget.dataset.percentX) returnToHand(potentialZoomTarget);
         isDragging = false; currentCard = null; potentialZoomTarget = null; return;
     }
+
     const hRect = handDiv.getBoundingClientRect();
-    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) returnToHand(currentCard);
-    else {
-        const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
-        const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
-        zones.forEach(z => {
-            const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
-            const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
-            if (d < minDist) { minDist = d; closest = z; }
-        });
+    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
+        returnToHand(currentCard);
+    } else {
         const fRect = field.getBoundingClientRect();
         let moveData = { id: currentCard.id, ...currentCard.cardData, zIndex: currentCard.style.zIndex };
-        if (closest) { currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX; moveData.zoneId = closest.id; }
-        else { delete currentCard.dataset.zoneId; const pX = (parseFloat(currentCard.style.left) / fRect.width) * 100, pY = (parseFloat(currentCard.style.top) / fRect.height) * 100; currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY; moveData.percentX = pX; moveData.percentY = pY; }
+        
+        // --- Bloom判定 (他のカードの上にドロップしたか) ---
+        const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
+        const targetCardEl = elementsUnder.find(el => el.classList.contains('card') && el !== currentCard);
+
+        if (targetCardEl && targetCardEl.parentElement === field && canBloom(currentCard.cardData, targetCardEl.cardData)) {
+            // Bloom成功: 下のカードの位置にスナップ
+            currentCard.style.left = targetCardEl.style.left;
+            currentCard.style.top = targetCardEl.style.top;
+            if (targetCardEl.dataset.zoneId) currentCard.dataset.zoneId = targetCardEl.dataset.zoneId;
+            
+            moveData.zoneId = targetCardEl.dataset.zoneId || "";
+            moveData.percentX = targetCardEl.dataset.percentX || "";
+            moveData.percentY = targetCardEl.dataset.percentY || "";
+        } else {
+            // 通常のゾーン判定
+            const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
+            const cr = currentCard.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+            zones.forEach(z => {
+                const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+                const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
+                if (d < minDist) { minDist = d; closest = z; }
+            });
+
+            if (closest) {
+                currentCard.dataset.zoneId = closest.id; delete currentCard.dataset.percentX;
+                moveData.zoneId = closest.id;
+            } else {
+                delete currentCard.dataset.zoneId;
+                const pX = (parseFloat(currentCard.style.left) / fRect.width) * 100, pY = (parseFloat(currentCard.style.top) / fRect.height) * 100;
+                currentCard.dataset.percentX = pX; currentCard.dataset.percentY = pY;
+                moveData.percentX = pX; moveData.percentY = pY;
+            }
+        }
         socket.emit('moveCard', moveData); repositionCards();
     }
     isDragging = false; currentCard = null; potentialZoomTarget = null;
