@@ -1,5 +1,23 @@
 [
-    { "name": "【推し】ときのそら", "type": "holomen" },
-    { "name": "【推し】AZKi", "type": "holomen" },
-    { "name": "【推し】星街すいせい", "type": "holomen" }
+  {
+    "name": "ときのそら",
+    "type": "oshi",
+    "color": "blue",
+    "life": 6,
+    "tags": ["#ホロライブ", "#0期生"],
+    "skills": [
+      {
+        "type": "oshi",
+        "name": "おはよーきんぐ！",
+        "cost": 1,
+        "text": "自分の山札を上から3枚見て、好きな順番で山札の上に戻す。"
+      },
+      {
+        "type": "sp_oshi",
+        "name": "ドリームステージ",
+        "cost": 3,
+        "text": "このターン中、自分のブルーエールを持つホロメン全員の攻撃力を+50する。"
+      }
+    ]
+  }
 ]
