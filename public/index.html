@@ -30,33 +30,13 @@
                 <button onclick="showPage('hub-page')" class="btn-close-gray">閉じる</button>
             </div>
             <div class="filter-bar">
-                <button class="filter-btn active" onclick="filterLibrary('all')">すべて</button>
+                <button class="filter-btn" onclick="filterLibrary('all')">すべて</button>
                 <button class="filter-btn" onclick="filterLibrary('holomen')">ホロメン</button>
                 <button class="filter-btn" onclick="filterLibrary('support')">サポート</button>
                 <button class="filter-btn" onclick="filterLibrary('ayle')">エール</button>
                 <button class="filter-btn" onclick="filterLibrary('oshi')">推し</button>
             </div>
             <div id="global-card-grid" class="card-grid"></div>
-        </div>
-    </div>
-
-    <div id="deck-inspection-modal" class="full-page" style="display: none;">
-        <div class="modal-content list-content">
-            <div class="modal-header">
-                <h2 id="inspection-title">Deck Search</h2>
-                <button onclick="closeDeckInspection()" class="btn-close-gray">閉じる</button>
-            </div>
-            <div id="deck-card-grid" class="card-grid"></div>
-        </div>
-    </div>
-
-    <div id="archive-modal" class="full-page" style="display: none;">
-        <div class="modal-content list-content">
-            <div class="modal-header">
-                <h2>Archive List</h2>
-                <button onclick="closeArchive()" class="btn-close-gray">閉じる</button>
-            </div>
-            <div id="archive-card-grid" class="card-grid"></div>
         </div>
     </div>
 
@@ -88,6 +68,26 @@
                     <div class="deck-section"><h3 class="section-header">エールデッキ (<span id="cheerBuildCount">0</span>/20)</h3><div id="cheerDeckSummary" class="scroll-list"></div></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="deck-inspection-modal" class="full-page" style="display: none;">
+        <div class="modal-content list-content">
+            <div class="modal-header">
+                <h2 id="inspection-title">List</h2>
+                <button onclick="closeDeckInspection()" class="btn-close-gray">閉じる</button>
+            </div>
+            <div id="deck-card-grid" class="card-grid"></div>
+        </div>
+    </div>
+
+    <div id="archive-modal" class="full-page" style="display: none;">
+        <div class="modal-content list-content">
+            <div class="modal-header">
+                <h2>Archive List</h2>
+                <button onclick="closeArchive()" class="btn-close-gray">閉じる</button>
+            </div>
+            <div id="archive-card-grid" class="card-grid"></div>
         </div>
     </div>
 
