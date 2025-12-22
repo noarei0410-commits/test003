@@ -69,22 +69,7 @@ function openArchive() {
 }
 function closeArchive() { archiveModal.style.display = 'none'; }
 
-// --- ライブラリ ---
-function filterLibrary(type) {
-    currentFilter = type;
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.innerText === getTypeName(type)));
-    const grid = document.getElementById('global-card-grid'); grid.innerHTML = "";
-    let filtered = (type === 'oshi') ? OSHI_LIST : (type === 'all' ? MASTER_CARDS : MASTER_CARDS.filter(c => c.type === type));
-    filtered.forEach(card => {
-        const el = createCardElement(card, false); el.onclick = () => openZoom(card); grid.appendChild(el);
-    });
-}
-function getTypeName(type) {
-    const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
-    return map[type];
-}
-
-// --- ズーム & コスト判定 & エール破棄 ---
+// --- ズーム & コスト判定 ---
 function canUseArt(costRequired, attachedAyles) {
     if (!costRequired || costRequired.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -145,8 +130,16 @@ function openZoom(cardData, cardElement = null) {
             });
             ayleListHtml += `</div>`;
         }
+        
+        // 修正箇所: バトンタッチアイコンを一列に並べるための構造
         const bIcons = Array(Number(cardData.baton) || 0).fill('<div class="baton-icon"></div>').join('');
-        if (cardData.baton > 0) batonHtml = `<div class="baton-wrapper"><span class="baton-label">バトンタッチ:</span><div class="baton-icons-container">${bIcons}</div></div>`;
+        if (cardData.baton > 0) {
+            batonHtml = `
+                <div class="baton-wrapper">
+                    <span class="baton-label">バトンタッチ:</span>
+                    <div class="baton-icons-container">${bIcons}</div>
+                </div>`;
+        }
     } else if (cardData.type === 'support') skillsHtml = `<div class="skill-item"><div class="skill-text">${cardData.text || ''}</div></div>`;
 
     container.innerHTML = `<div class="zoom-header"><div><div class="zoom-bloom">${topLabel}</div><div class="zoom-name">${cardData.name}</div></div><div class="zoom-hp">${isHolomen && cardData.hp ? 'HP ' + cardData.hp : ''}</div></div><div class="zoom-skills-list">${skillsHtml}</div>${ayleListHtml}<div class="zoom-tags">${tagsHtml}</div><div class="zoom-footer">${batonHtml}</div>`;
@@ -201,7 +194,6 @@ async function joinRoom(role) {
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 
-// --- 構築UI ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
