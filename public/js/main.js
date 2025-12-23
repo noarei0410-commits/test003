@@ -3,6 +3,8 @@ window.onload = async () => {
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
     window.onresize = repositionCards;
+    
+    // データロード後にハブ画面を表示
     showPage('hub-page');
 };
 
@@ -14,10 +16,11 @@ async function loadCardData() {
             fetch('/data/ayle.json').then(r => r.json()),
             fetch('/data/oshi_holomen.json').then(r => r.json())
         ]);
-        MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
-        AYLE_MASTER = res[2];
+        MASTER_CARDS = [...res[0], ...res[1], ...res[2]]; 
+        AYLE_MASTER = res[2]; 
         OSHI_LIST = res[3];
-    } catch (e) { console.error("Data Load Error", e); }
+        console.log("Card Data Loaded.");
+    } catch (e) { console.error("Load Fail", e); }
 }
 
 async function joinRoom(role) {
