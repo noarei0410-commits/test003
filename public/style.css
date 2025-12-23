@@ -9,35 +9,45 @@ body {
 
 /* --- 画面遷移制御 --- */
 .full-page { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10000; background: #04172b; }
+
+/* --- ハブ画面 (ボタンを大きく縦並びに) --- */
 #hub-page { background: radial-gradient(circle, #0a2d4d, #04172b); z-index: 11000; }
+.hub-container { text-align: center; width: 85%; max-width: 400px; }
+.hub-title { color: #00d2ff; font-size: 36px; margin-bottom: 50px; letter-spacing: 3px; text-shadow: 0 0 15px rgba(0,210,255,0.6); }
+.hub-menu { display: flex; flex-direction: column; gap: 25px; width: 100%; }
+.hub-btn { 
+    background: rgba(255,255,255,0.05); border: 2px solid #00d2ff; 
+    padding: 40px 20px; border-radius: 20px; color: white; 
+    display: flex; flex-direction: column; align-items: center; gap: 15px; 
+    transition: 0.2s; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.hub-btn:active { background: rgba(0,210,255,0.2); transform: scale(0.96); }
+.hub-icon { font-size: 32px; }
+.hub-text { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
 
 /* --- ルーム選択画面 (中央配置) --- */
 .room-content { 
-    width: 90% !important; max-width: 350px !important; height: auto !important; 
-    padding: 30px !important; border: 2px solid #00d2ff !important; 
-    border-radius: 25px !important; background: #04172b !important;
-    box-shadow: 0 0 30px rgba(0,210,255,0.3); display: flex; flex-direction: column; gap: 20px;
+    width: 320px !important; height: auto !important; padding: 30px !important; 
+    border: 2px solid #00d2ff !important; border-radius: 25px !important; 
+    background: #04172b !important; box-shadow: 0 0 30px rgba(0,210,255,0.3); 
+    display: flex; flex-direction: column; gap: 20px; text-align: center;
 }
-.room-content h2 { margin: 0; color: #00d2ff; letter-spacing: 2px; }
-#roomIdInput { 
-    padding: 12px; border-radius: 8px; border: 1px solid #00d2ff; 
-    background: rgba(255,255,255,0.05); color: white; font-size: 16px; text-align: center;
-}
-.room-buttons { display: grid; gap: 10px; }
 
 /* --- デッキ構築UI (維持設定) --- */
 .modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; padding: 15px; width: 98vw; height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
 .builder-layout { display: flex; flex: 1; gap: 15px; overflow: hidden; }
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
+#searchInput { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00d2ff; background: #04172b; color: white; margin-bottom: 10px; }
 #libraryList { flex: 1; overflow-y: auto; }
-.library-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+.library-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
 .type-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-left: 5px; }
 
 .deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 .deck-section { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); }
 .section-header { font-size: 11px; color: #00d2ff; margin-bottom: 8px; border-bottom: 1px solid rgba(0,210,255,0.2); display: flex; justify-content: space-between; }
+.deck-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; }
 
-/* --- 対戦フィールドUI (復元版) --- */
+/* --- 対戦フィールドUI (復元版3カラム) --- */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
 #field-container { width: 98vw; height: 60vh; max-height: 550px; border: 3px double #f0ffff; border-radius: 12px; background: rgba(255,255,255,0.02); padding: 6px; margin-bottom: 4px; }
 #field { display: grid; grid-template-columns: 16% 1fr 16%; gap: 6px; height: 100%; position: relative; }
@@ -58,14 +68,16 @@ body {
 #hand-container { width: 98vw; height: 110px; margin-top: 5px; z-index: 5000; }
 #hand { height: 100%; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px 15px; background: rgba(4, 23, 43, 0.95); overflow-x: auto; align-items: center; }
 
-/* --- カード共通 --- */
-.card { width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: absolute; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; overflow: hidden; transition: transform 0.2s; }
+/* --- カード --- */
+.card { width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: absolute; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; overflow: hidden; }
 #hand .card { position: relative !important; left: auto !important; top: auto !important; flex-shrink: 0; }
 .card.rotated { transform: rotate(90deg); }
 .face-down { background: #16213e !important; color: transparent !important; border: 1.5px solid white !important; }
+.card-color-icon { position: absolute; top: 2px; right: 4px; width: 8px; height: 8px; border-radius: 50%; }
 
-/* --- ボタン共通 --- */
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 5px; }
-.btn-add { background: #00d2ff; color: #04172b; padding: 10px; }
-.btn-spectator { background: #444; color: white; padding: 10px; }
-.btn-back { background: transparent; color: #666; font-size: 12px; margin-top: 5px; text-decoration: underline; }
+/* --- ボタン --- */
+button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; }
+.btn-add { background: #00d2ff; color: #04172b; padding: 6px 12px; }
+.btn-remove { background: #ff5e5e; color: white; padding: 4px 8px; font-size: 10px; }
+.btn-minus { background: #ff5e5e; color: white; padding: 2px 8px; }
+.btn-plus { background: #2ecc71; color: white; padding: 2px 8px; }
