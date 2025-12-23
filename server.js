@@ -43,28 +43,17 @@ io.on('connection', (socket) => {
         shuffleArray(rooms[roomId].mainDeck);
         shuffleArray(rooms[roomId].cheerDeck);
 
-        // 推しホロメンの配置を確定
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = { 
-            ...data.oshi,
-            id: oshiId, 
-            type: 'oshi', 
-            zoneId: 'oshi', 
-            zIndex: 100, 
-            isFaceUp: true 
+            ...data.oshi, id: oshiId, type: 'oshi', zoneId: 'oshi', zIndex: 100, isFaceUp: true 
         };
 
-        // ライフの配置
         const lifeCount = data.oshi.life || 0;
         for (let i = 0; i < lifeCount; i++) {
             if (rooms[roomId].cheerDeck.length > 0) {
                 const lifeCard = rooms[roomId].cheerDeck.pop();
                 rooms[roomId].fieldState[lifeCard.id] = { 
-                    ...lifeCard, 
-                    zoneId: 'life-zone', 
-                    isFaceUp: false, 
-                    isRotated: true, 
-                    zIndex: 10 + i 
+                    ...lifeCard, zoneId: 'life-zone', isFaceUp: false, isRotated: true, zIndex: 10 + i 
                 };
             }
         }
