@@ -35,24 +35,46 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置 (ライフの縦並び含む)
+ * カード再配置 (枠の中央に配置するロジックを最適化)
  */
 function repositionCards() {
-    const fRect = field.getBoundingClientRect();
+    const fieldEl = document.getElementById('field');
+    if (!fieldEl) return;
+    const fRect = fieldEl.getBoundingClientRect();
     const zoneCounts = {};
+
     document.querySelectorAll('.card').forEach(card => {
-        if (card.parentElement !== field || card === currentDragEl) return;
+        // 手札にあるカードやドラッグ中のカードは除外
+        if (card.parentElement !== fieldEl || card === currentDragEl) return;
+
         const zid = card.dataset.zoneId;
         if (zid) {
             const z = document.getElementById(zid);
             if(z) {
-                const zr = z.getBoundingClientRect(), cr = card.getBoundingClientRect();
+                const zr = z.getBoundingClientRect();
+                const cr = card.getBoundingClientRect();
+                
                 if (!zoneCounts[zid]) zoneCounts[zid] = 0;
-                const off = zid === 'life-zone' ? zoneCounts[zid] * 18 : 0;
-                card.style.left = (zr.left - fRect.left) + (zr.width - cr.width) / 2 + 'px';
-                card.style.top = (zr.top - fRect.top) + 5 + off + 'px';
+
+                // 中央配置の計算: (枠の左端 - フィールドの左端) + (枠の幅 - カードの幅) / 2
+                let targetLeft = (zr.left - fRect.left) + (zr.width - cr.width) / 2;
+                let targetTop = (zr.top - fRect.top) + (zr.height - cr.height) / 2;
+
+                // ライフゾーンのみ、重なりを見せるために少しずつずらす
+                if (zid === 'life-zone') {
+                    const offset = zoneCounts[zid] * 18;
+                    targetTop = (zr.top - fRect.top) + 5 + offset;
+                }
+
+                card.style.left = targetLeft + 'px';
+                card.style.top = targetTop + 'px';
+                
                 zoneCounts[zid]++;
             }
+        } else if (card.dataset.percentX) {
+            // 自由配置の場合
+            card.style.left = (card.dataset.percentX / 100) * fRect.width + 'px';
+            card.style.top = (card.dataset.percentY / 100) * fRect.height + 'px';
         }
     });
 }
@@ -65,17 +87,30 @@ function setupCardEvents(el) {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (myRole === 'spectator') return;
         isDragging = true; currentDragEl = el; el.setPointerCapture(e.pointerId);
-        const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
+        const fieldEl = document.getElementById('field');
+        const fRect = fieldEl.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) { 
-            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); 
+        
+        if (el.parentElement !== fieldEl) { 
+            el.style.position = 'absolute'; 
+            el.style.left = (rect.left - fRect.left) + 'px'; 
+            el.style.top = (rect.top - fRect.top) + 'px'; 
+            fieldEl.appendChild(el); 
         }
         e.stopPropagation();
     };
 }
 
-document.onpointermove = (e) => { if (!isDragging || !currentDragEl) return; const fr = field.getBoundingClientRect(); currentDragEl.style.left = (e.clientX - fr.left - offsetX) + 'px'; currentDragEl.style.top = (e.clientY - fr.top - offsetY) + 'px'; };
+document.onpointermove = (e) => { 
+    if (!isDragging || !currentDragEl) return; 
+    const fieldEl = document.getElementById('field');
+    const fr = fieldEl.getBoundingClientRect(); 
+    currentDragEl.style.left = (e.clientX - fr.left - offsetX) + 'px'; 
+    currentDragEl.style.top = (e.clientY - fr.top - offsetY) + 'px'; 
+};
+
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (potentialZoomTarget && dist < 15) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
@@ -89,7 +124,8 @@ document.onpointerup = (e) => {
         const target = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
         let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         
-        if (target && target.parentElement === field) {
+        const fieldEl = document.getElementById('field');
+        if (target && target.parentElement === fieldEl) {
             const isE = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
             if ((currentDragEl.cardData.type === 'ayle' || isE) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
                 currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
@@ -108,10 +144,15 @@ document.onpointerup = (e) => {
  * 枠への吸着ルール
  */
 function normalSnap(e, moveData) {
-    const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
-    const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+    const zones = document.querySelectorAll('.zone');
+    let closest = null;
+    let minDist = 40;
+    const cr = currentDragEl.getBoundingClientRect();
+    const cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+
     zones.forEach(z => {
-        const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+        const zr = z.getBoundingClientRect();
+        const zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
@@ -126,7 +167,9 @@ function normalSnap(e, moveData) {
         currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id;
         currentDragEl.classList.toggle('rotated', closest.id === 'life-zone'); moveData.isRotated = (closest.id === 'life-zone');
     } else { 
-        delete currentDragEl.dataset.zoneId; const fr = field.getBoundingClientRect(); 
+        delete currentDragEl.dataset.zoneId; 
+        const fieldEl = document.getElementById('field');
+        const fr = fieldEl.getBoundingClientRect(); 
         const px = (parseFloat(currentDragEl.style.left)/fr.width)*100, py = (parseFloat(currentDragEl.style.top)/fr.height)*100;
         currentDragEl.dataset.percentX = px; currentDragEl.dataset.percentY = py; moveData.percentX = px; moveData.percentY = py;
     }
@@ -161,7 +204,8 @@ function openZoom(cardData, cardElement = null) {
     const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen');
     
     let stackAyle = [], stackUnder = [];
-    if (!isOshi && cardElement && cardElement.parentElement === field) {
+    const fieldEl = document.getElementById('field');
+    if (!isOshi && cardElement && cardElement.parentElement === fieldEl) {
         const r = cardElement.getBoundingClientRect();
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
