@@ -43,7 +43,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置
+ * カード再配置 (中央寄せ)
  */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
@@ -51,7 +51,7 @@ function repositionCards() {
     const zoneCounts = {};
 
     document.querySelectorAll('.card').forEach(card => {
-        if (card.parentElement !== fieldEl || card === currentDragEl) return;
+        if (card.parentElement !== fieldEl || currentStack.includes(card)) return;
         const zid = card.dataset.zoneId;
         if (zid) {
             const z = document.getElementById(zid);
@@ -72,22 +72,30 @@ function repositionCards() {
 }
 
 /**
- * イベント設定 (ドラッグ開始判定を修正)
+ * イベント設定 (一括移動の準備)
  */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
-        startX = e.clientX; startY = e.clientY; 
-        potentialZoomTarget = el;
+        startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (myRole === 'spectator') return;
         
-        isDragging = true; 
-        dragStarted = false; // まだ動いていない
+        isDragging = true; dragStarted = false;
         currentDragEl = el; 
         el.setPointerCapture(e.pointerId);
         
         const rect = el.getBoundingClientRect();
         offsetX = e.clientX - rect.left; 
         offsetY = e.clientY - rect.top;
+
+        // --- スタック認識 ---
+        currentStack = [];
+        if (el.dataset.zoneId && el.dataset.zoneId !== "") {
+            // 同じゾーンにいる全てのカードをグループ化
+            currentStack = Array.from(document.querySelectorAll('.card'))
+                .filter(c => c.dataset.zoneId === el.dataset.zoneId);
+        } else {
+            currentStack = [el];
+        }
         
         e.stopPropagation();
     };
@@ -96,86 +104,132 @@ function setupCardEvents(el) {
 document.onpointermove = (e) => { 
     if (!isDragging || !currentDragEl) return; 
     
-    // 一定距離(5px)動くまでは手札から出さない(レイアウト崩れ防止)
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (!dragStarted && dist > 5) {
         dragStarted = true;
-        maxZIndex++; 
-        currentDragEl.style.zIndex = maxZIndex;
-        
-        // フィールドレイヤーへ移動（ここで初めて手札のFlexから抜ける）
-        if (currentDragEl.parentElement !== field) {
-            const rect = currentDragEl.getBoundingClientRect();
-            const fRect = field.getBoundingClientRect();
-            currentDragEl.style.position = 'absolute';
-            currentDragEl.style.left = (rect.left - fRect.left) + 'px';
-            currentDragEl.style.top = (rect.top - fRect.top) + 'px';
-            field.appendChild(currentDragEl);
-        }
+        // スタック全員を手札Flexから外し、最前面へ
+        currentStack.forEach(card => {
+            maxZIndex++; card.style.zIndex = maxZIndex;
+            if (card.parentElement !== field) {
+                const r = card.getBoundingClientRect(), fr = field.getBoundingClientRect();
+                card.style.position = 'absolute';
+                card.style.left = (r.left - fr.left) + 'px';
+                card.style.top = (r.top - fr.top) + 'px';
+                field.appendChild(card);
+            }
+        });
     }
 
     if (dragStarted) {
-        const fr = field.getBoundingClientRect(); 
-        currentDragEl.style.left = (e.clientX - fr.left - offsetX) + 'px'; 
-        currentDragEl.style.top = (e.clientY - fr.top - offsetY) + 'px'; 
+        const fr = field.getBoundingClientRect();
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        currentStack.forEach(card => {
+            // リーダー(currentDragEl)との相対距離ではなく、全員を一律の差分で動かす
+            // PointerDown時の位置を基準にする
+            const r = card.getBoundingClientRect();
+            // シンプルにマウス位置に追従させる(リーダー基準)
+            if (card === currentDragEl) {
+                card.style.left = (e.clientX - fr.left - offsetX) + 'px';
+                card.style.top = (e.clientY - fr.top - offsetY) + 'px';
+            } else {
+                // 随伴カードはリーダーとの相対位置を保つ
+                const leadRect = currentDragEl.getBoundingClientRect();
+                const cardOffset = card.dataset.stackOffset ? JSON.parse(card.dataset.stackOffset) : {x:0, y:0};
+                // ※初回移動時にオフセットを固定
+                if (!card.dataset.stackOffset) {
+                    const lR = currentDragEl.getBoundingClientRect();
+                    const cR = card.getBoundingClientRect();
+                    const off = { x: cR.left - lR.left, y: cR.top - lR.top };
+                    card.dataset.stackOffset = JSON.stringify(off);
+                }
+                const off = JSON.parse(card.dataset.stackOffset);
+                card.style.left = (parseFloat(currentDragEl.style.left) + off.x) + 'px';
+                card.style.top = (parseFloat(currentDragEl.style.top) + off.y) + 'px';
+            }
+        });
     }
 };
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    // ほとんど動いていなければズーム表示
     if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
     
     if (myRole === 'spectator' || !isDragging || !currentDragEl) { 
-        isDragging = false; dragStarted = false; currentDragEl = null; return; 
+        isDragging = false; dragStarted = false; currentStack = []; return; 
     }
     
     if (dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
         if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
-            returnToHand(currentDragEl);
+            // グループ全員を手札に戻す
+            currentStack.forEach(c => returnToHand(c));
         } else {
+            // 移動先の判定 (リーダーを基準に決定)
             const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
-            const target = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
-            let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
+            const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
             
             if (target && target.parentElement === field) {
-                const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
-                if ((currentDragEl.cardData.type === 'ayle' || isEquip) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
-                    currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
-                    currentDragEl.style.zIndex = parseInt(target.style.zIndex) - 1; currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
-                    moveData.zIndex = currentDragEl.style.zIndex; moveData.zoneId = currentDragEl.dataset.zoneId;
-                } else if (canBloom(currentDragEl.cardData, target.cardData)) {
-                    currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
-                    currentDragEl.dataset.zoneId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
-                } else normalSnap(e, moveData);
-            } else normalSnap(e, moveData);
-            socket.emit('moveCard', moveData); 
-            repositionCards();
+                // 他のホロメン等に装着する場合
+                currentStack.forEach(c => {
+                    c.style.left = target.style.left; c.style.top = target.style.top;
+                    c.dataset.zoneId = target.dataset.zoneId || "";
+                    // 装着品はターゲットより下に
+                    const isBase = (c.cardData.type === 'holomen' || c.cardData.type === 'oshi');
+                    c.style.zIndex = isBase ? target.style.zIndex : parseInt(target.style.zIndex) - 1;
+                    socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex });
+                });
+            } else {
+                // ゾーン吸着または自由配置
+                normalSnapStack(e);
+            }
         }
     }
-    isDragging = false; dragStarted = false; currentDragEl = null;
+    
+    // オフセット消去
+    currentStack.forEach(c => delete c.dataset.stackOffset);
+    isDragging = false; dragStarted = false; currentStack = [];
+    repositionCards();
 };
 
-function normalSnap(e, moveData) {
+/**
+ * グループ全体のスナップ処理
+ */
+function normalSnapStack(e) {
     const zones = document.querySelectorAll('.zone');
     let closest = null, minDist = 40;
     const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+
     zones.forEach(z => {
         const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y); if (d < minDist) { minDist = d; closest = z; }
     });
-    if (closest) { 
+
+    if (closest) {
+        // 配置制限チェック(リーダーのみで判定)
         if (STAGE_ZONES.includes(closest.id)) {
-            const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && c !== currentDragEl);
-            if (cardsInZone.length === 0 && (currentDragEl.cardData.type === 'holomen' && currentDragEl.cardData.bloom !== 'Debut')) { returnToHand(currentDragEl); return; }
+            const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && !currentStack.includes(c));
+            if (cardsInZone.length === 0 && (currentDragEl.cardData.type === 'holomen' && currentDragEl.cardData.bloom !== 'Debut')) {
+                currentStack.forEach(c => returnToHand(c)); return;
+            }
         }
-        currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id;
-        currentDragEl.classList.toggle('rotated', closest.id === 'life-zone'); moveData.isRotated = (closest.id === 'life-zone');
-    } else { 
-        delete currentDragEl.dataset.zoneId; const fr = field.getBoundingClientRect(); 
-        const px = (parseFloat(currentDragEl.style.left)/fr.width)*100, py = (parseFloat(currentDragEl.style.top)/fr.height)*100;
-        currentDragEl.dataset.percentX = px; currentDragEl.dataset.percentY = py; moveData.percentX = px; moveData.percentY = py;
+        // 全員を新しいゾーンへ
+        currentStack.forEach(c => {
+            c.dataset.zoneId = closest.id; delete c.dataset.percentX;
+            const rotate = (closest.id === 'life-zone');
+            c.classList.toggle('rotated', rotate);
+            socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: closest.id, isRotated: rotate, zIndex: c.style.zIndex });
+        });
+    } else {
+        // 全員を自由配置(現在の位置)へ
+        const fr = field.getBoundingClientRect();
+        currentStack.forEach(c => {
+            delete c.dataset.zoneId;
+            const px = (parseFloat(c.style.left)/fr.width)*100, py = (parseFloat(c.style.top)/fr.height)*100;
+            c.dataset.percentX = px; c.dataset.percentY = py;
+            socket.emit('moveCard', { id: c.id, ...c.cardData, percentX: px, percentY: py, zIndex: c.style.zIndex });
+        });
     }
 }
 
@@ -184,8 +238,6 @@ function returnToHand(card) {
     card.classList.remove('rotated', 'face-down'); card.classList.add('face-up');
     delete card.dataset.zoneId; delete card.dataset.percentX; 
     handDiv.appendChild(card);
-    socket.emit('flipCard', { id: card.id, isFaceUp: true }); 
-    socket.emit('moveCard', { id: card.id, isRotated: false, isFaceUp: true }); 
     socket.emit('returnToHand', { id: card.id });
 }
 
@@ -206,6 +258,9 @@ function canUseArt(costReq, attachedAyles) {
     return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
+/**
+ * ズーム詳細
+ */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
@@ -215,7 +270,7 @@ function openZoom(cardData, cardElement = null) {
     if (cardElement && (cardElement.parentElement === field || cardElement.parentElement === handDiv)) {
         const r = cardElement.getBoundingClientRect();
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
-            const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 5 && Math.abs(cr.top - r.top) < 5;
+            const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
         });
         stackAyle = stack.filter(c => c.cardData.type === 'ayle');
         stackEquip = stack.filter(c => c.cardData.type === 'support');
