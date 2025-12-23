@@ -1,17 +1,6 @@
-/**
- * フィールドへの復元
- */
-function restoreCard(id, info) { 
-    const el = createCardElement({ id, ...info }); 
-    el.dataset.zoneId = info.zoneId || ""; 
-    el.style.zIndex = info.zIndex || 100;
-    if (info.percentX) { el.dataset.percentX = info.percentX; el.dataset.percentY = info.percentY; }
-    field.appendChild(el); 
-    repositionCards(); 
-}
-
 socket.on('gameStarted', (d) => { 
-    field.querySelectorAll('.card').forEach(c => c.remove()); 
+    const fieldEl = document.getElementById('field');
+    fieldEl.querySelectorAll('.card').forEach(c => c.remove()); 
     handDiv.innerHTML = ""; 
     for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); 
     repositionCards(); 
@@ -27,9 +16,12 @@ socket.on('receiveCard', (d) => {
 socket.on('cardMoved', (d) => { 
     let el = document.getElementById(d.id);
     if (!el) return restoreCard(d.id, d);
+    
     el.dataset.zoneId = d.zoneId || "";
     el.style.zIndex = d.zIndex;
-    if (el.parentElement !== field) field.appendChild(el);
+    const fieldEl = document.getElementById('field');
+    if (el.parentElement !== fieldEl) fieldEl.appendChild(el);
+    
     el.classList.toggle('rotated', !!d.isRotated);
     if (d.percentX) { el.dataset.percentX = d.percentX; el.dataset.percentY = d.percentY; } else { delete el.dataset.percentX; }
     repositionCards();
@@ -59,6 +51,16 @@ socket.on('deckInspectionResult', (data) => {
     });
     deckModal.style.display = 'flex';
 });
+
+function restoreCard(id, info) { 
+    const el = createCardElement({ id, ...info }); 
+    el.dataset.zoneId = info.zoneId || ""; 
+    el.style.zIndex = info.zIndex || 100;
+    if (info.percentX) { el.dataset.percentX = info.percentX; el.dataset.percentY = info.percentY; }
+    const fieldEl = document.getElementById('field');
+    fieldEl.appendChild(el); 
+    repositionCards(); 
+}
 
 function closeDeckInspection() { deckModal.style.display = 'none'; }
 function openArchive() {
