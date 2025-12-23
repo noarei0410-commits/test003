@@ -6,6 +6,9 @@ window.onload = async () => {
     showPage('hub-page');
 };
 
+/**
+ * JSONデータの読み込み (参照先の整合性を確保)
+ */
 async function loadCardData() {
     try {
         const res = await Promise.all([
@@ -14,12 +17,19 @@ async function loadCardData() {
             fetch('/data/ayle.json').then(r => r.json()),
             fetch('/data/oshi_holomen.json').then(r => r.json())
         ]);
+        // グローバル変数へ格納
         MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
         AYLE_MASTER = res[2];
         OSHI_LIST = res[3];
-    } catch (e) { console.error("Data Load Error", e); }
+        console.log("Card Data Loaded Successfully");
+    } catch (e) { 
+        console.error("Data Load Error: データのパスまたは構造が正しくありません", e); 
+    }
 }
 
+/**
+ * ルーム参加処理
+ */
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value;
     if (!rid) return alert("ルームIDを入力してください");
@@ -33,6 +43,9 @@ async function joinRoom(role) {
     }
 }
 
+/**
+ * デッキクリックイベントのセットアップ
+ */
 function setupDeckClick(id, type) {
     const el = document.getElementById(id); if (!el) return;
     let clickTimer = null;
@@ -52,7 +65,7 @@ function setupDeckClick(id, type) {
     };
 }
 
-// ボタンイベント紐付け
+// 共通イベント紐付け
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 document.getElementById('startGameBtn').onclick = () => {
