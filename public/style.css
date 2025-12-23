@@ -10,7 +10,7 @@ body {
 /* --- 画面遷移制御 --- */
 .full-page { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; z-index: 10000; background: #04172b; }
 
-/* --- ハブ画面 (ボタンを大きく縦並びに) --- */
+/* --- ハブ画面 (大きな縦並びボタン) --- */
 #hub-page { background: radial-gradient(circle, #0a2d4d, #04172b); z-index: 11000; }
 .hub-container { text-align: center; width: 85%; max-width: 400px; }
 .hub-title { color: #00d2ff; font-size: 36px; margin-bottom: 50px; letter-spacing: 3px; text-shadow: 0 0 15px rgba(0,210,255,0.6); }
@@ -23,9 +23,9 @@ body {
 }
 .hub-btn:active { background: rgba(0,210,255,0.2); transform: scale(0.96); }
 .hub-icon { font-size: 32px; }
-.hub-text { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+.hub-text { font-size: 20px; font-weight: bold; }
 
-/* --- ルーム選択画面 (中央配置) --- */
+/* --- ルーム選択画面 (中央ダイアログ) --- */
 .room-content { 
     width: 320px !important; height: auto !important; padding: 30px !important; 
     border: 2px solid #00d2ff !important; border-radius: 25px !important; 
@@ -66,7 +66,11 @@ body {
 
 /* --- 手札 --- */
 #hand-container { width: 98vw; height: 110px; margin-top: 5px; z-index: 5000; }
-#hand { height: 100%; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px 15px; background: rgba(4, 23, 43, 0.95); overflow-x: auto; align-items: center; }
+#hand { 
+    height: 100%; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; 
+    display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px 15px; 
+    background: rgba(4, 23, 43, 0.95); overflow-x: auto; align-items: center;
+}
 
 /* --- カード --- */
 .card { width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: absolute; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; overflow: hidden; }
@@ -76,8 +80,8 @@ body {
 .card-color-icon { position: absolute; top: 2px; right: 4px; width: 8px; height: 8px; border-radius: 50%; }
 
 /* --- ボタン --- */
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; }
-.btn-add { background: #00d2ff; color: #04172b; padding: 6px 12px; }
+button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; transition: 0.1s; }
+.btn-add { background: #00d2ff; color: #04172b; padding: 8px 15px; }
 .btn-remove { background: #ff5e5e; color: white; padding: 4px 8px; font-size: 10px; }
 .btn-minus { background: #ff5e5e; color: white; padding: 2px 8px; }
 .btn-plus { background: #2ecc71; color: white; padding: 2px 8px; }
