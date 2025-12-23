@@ -1,8 +1,8 @@
 [
-    { "name": "白エール", "type": "ayle" },
-    { "name": "緑エール", "type": "ayle" },
-    { "name": "赤エール", "type": "ayle" },
-    { "name": "青エール", "type": "ayle" },
-    { "name": "黄エール", "type": "ayle" },
-    { "name": "紫エール", "type": "ayle" }
+  { "name": "赤エール", "type": "ayle" },
+  { "name": "青エール", "type": "ayle" },
+  { "name": "緑エール", "type": "ayle" },
+  { "name": "黄エール", "type": "ayle" },
+  { "name": "紫エール", "type": "ayle" },
+  { "name": "白エール", "type": "ayle" }
 ]
