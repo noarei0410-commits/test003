@@ -24,27 +24,31 @@ socket.on('receiveCard', (d) => {
 socket.on('cardMoved', (d) => { 
     let el = document.getElementById(d.id);
     if (!el) return restoreCard(d.id, d);
+    
     el.dataset.zoneId = d.zoneId || "";
     el.style.zIndex = d.zIndex;
+    
+    // HP情報の同期
+    if (d.currentHp !== undefined) {
+        el.cardData.currentHp = d.currentHp;
+        const fieldHp = document.getElementById(`hp-display-${d.id}`);
+        if (fieldHp) fieldHp.innerText = d.currentHp;
+    }
+
     if (el.parentElement !== field) field.appendChild(el);
     el.classList.toggle('rotated', !!d.isRotated);
     if (d.percentX) { el.dataset.percentX = d.percentX; el.dataset.percentY = d.percentY; } else { delete el.dataset.percentX; }
     repositionCards();
 });
 
-// HP更新の受信
 socket.on('hpUpdated', (d) => {
     const el = document.getElementById(d.id);
     if (el && el.cardData) {
         el.cardData.currentHp = d.currentHp;
         const fieldHp = document.getElementById(`hp-display-${d.id}`);
         if (fieldHp) fieldHp.innerText = d.currentHp;
-        
-        // もし自分が今そのカードをズームして見ていたら、ズーム内の数字も更新
         const zoomHp = document.getElementById('zoom-hp-val');
         if (zoomHp && zoomModal.style.display === 'flex') {
-            // 現在ズームされているカードがこのIDか確認
-            // (簡易的に中身を更新)
             zoomHp.innerText = `HP ${d.currentHp}`;
         }
     }
