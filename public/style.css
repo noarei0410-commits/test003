@@ -46,6 +46,19 @@ body {
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
 #searchInput { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00d2ff; background: #04172b; color: white; margin-bottom: 10px; }
 #libraryList, .card-grid { flex: 1; overflow-y: auto; }
+
+/* フィルターバー */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
+.filter-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 16px; font-size: 12px; white-space: nowrap; border-radius: 6px; flex-shrink: 0; }
+.filter-btn.active { background: #00d2ff; color: #04172b; border-color: #00d2ff; font-weight: bold; }
+
+/* カードグリッド (重なり防止の核心) */
+.card-grid { 
+    display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; 
+    justify-content: flex-start; align-content: flex-start; 
+}
+
+/* 構築画面のアイテム */
 .library-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
 .type-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-left: 5px; }
 
@@ -54,7 +67,7 @@ body {
 .section-header { font-size: 11px; color: #00d2ff; margin-bottom: 8px; border-bottom: 1px solid rgba(0,210,255,0.2); display: flex; justify-content: space-between; }
 .deck-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; }
 
-/* --- フィールド UI (3カラム) --- */
+/* --- フィールド UI --- */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
 #field-container { width: 98vw; height: 60vh; max-height: 550px; border: 3px double #f0ffff; border-radius: 12px; background: rgba(255,255,255,0.02); padding: 6px; margin-top: 5px; }
 #field { display: grid; grid-template-columns: 16% 1fr 16%; gap: 6px; height: 100%; position: relative; }
@@ -74,7 +87,7 @@ body {
 #hand { height: 100%; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px 15px; background: rgba(4, 23, 43, 0.95); overflow-x: auto; align-items: center; }
 
 /* ==========================================
-   2. カード基本デザイン & 復活機能
+   2. カード基本デザイン & 重なり防止設定
    ========================================== */
 .card {
     width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px;
@@ -84,14 +97,19 @@ body {
     box-sizing: border-box; overflow: hidden; transition: transform 0.2s, left 0.1s, top 0.1s;
     border: 1px solid #ccc;
 }
-#hand .card { position: relative !important; left: auto !important; top: auto !important; flex-shrink: 0; }
+
+/* 【重要】グリッドや手札の中では重なりを解除する */
+#hand .card, .card-grid .card { 
+    position: relative !important; 
+    left: auto !important; 
+    top: auto !important; 
+    flex-shrink: 0; 
+}
 
 /* カードステータス */
 .card-hp { position: absolute; top: 12px; right: 4px; font-weight: bold; color: #e74c3c; font-size: 9px; }
 .card-bloom { position: absolute; top: 2px; left: 4px; font-weight: bold; color: #3498db; font-size: 8px; }
 .card-color-icon { position: absolute; top: 2px; right: 4px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
-
-/* ハッシュタグ・バトンタッチ (復活) */
 .card-tags { position: absolute; bottom: 12px; left: 4px; font-size: 5px; color: #666; text-align: left; line-height: 1.1; }
 .card-baton { position: absolute; bottom: 2px; right: 4px; font-size: 6px; display: flex; align-items: center; gap: 1px; color: #444; }
 .baton-icon { width: 6px; height: 6px; background: #95a5a6; border-radius: 50%; }
@@ -142,11 +160,8 @@ body {
 .cost-container { display: flex; gap: 2px; }
 .cost-icon { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
 .skill-cost-hp { font-size: 11px; font-weight: bold; color: #e67e22; }
-
-/* READYバッジ */
 .ready-badge { background: #2ecc71; color: #fff; font-size: 8px; padding: 2px 6px; border-radius: 10px; margin-left: auto; font-weight: bold; }
 
-/* 装着セクション */
 .zoom-attach-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
 .attach-title { font-size: 10px; font-weight: bold; color: #2980b9; margin-bottom: 5px; display: block; border-bottom: 1px solid #d0e4ff; }
 .attach-item { font-size: 11px; display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
