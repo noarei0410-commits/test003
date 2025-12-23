@@ -9,6 +9,7 @@ let currentFilter = 'all';
 const field = document.getElementById('field');
 const handDiv = document.getElementById('hand');
 const zoomModal = document.getElementById('zoom-modal');
+const setupModal = document.getElementById('setup-modal');
 
 const STAGE_ZONES = ['collab', 'center', 'back1', 'back2', 'back3', 'back4', 'back5'];
 
@@ -23,11 +24,35 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- ドロー処理 (修正: 確実に手札へ追加) ---
+// --- ルーム参加 (修正: 進行不能を解消) ---
+async function joinRoom(role) {
+    const rid = document.getElementById('roomIdInput').value;
+    if (!rid) return alert("ルームIDを入力してください");
+    
+    myRole = role; 
+    socket.emit('joinRoom', { roomId: rid, role });
+    
+    // 全ての選択用モーダルを隠す
+    showPage(''); 
+    document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
+    
+    if (role === 'player') {
+        // プレイヤーなら構築画面へ確実に遷移
+        showPage('setup-modal');
+        updateLibrary("");
+    } else {
+        // 観戦者ならフィールドを表示
+        document.body.classList.add('spectator-mode');
+    }
+}
+document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
+document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
+
+// --- ドロー処理 ---
 socket.on('receiveCard', (d) => {
     if (!handDiv) return;
     const el = createCardElement({ ...d, isFaceUp: true });
-    el.style.position = 'relative'; // 手札内では並列
+    el.style.position = 'relative';
     handDiv.appendChild(el);
 });
 
@@ -59,7 +84,7 @@ function repositionCards() {
 }
 window.onresize = repositionCards;
 
-// --- 操作イベント (配置制限含む) ---
+// --- 操作イベント (配置制限ルール) ---
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
@@ -90,7 +115,6 @@ document.onpointerup = (e) => {
         let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         
         if (target && target.parentElement === field) {
-            // 重なり判定 (進化・エール・装備)
             const isE = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
             if ((currentDragEl.cardData.type === 'ayle' || isE) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
                 currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
@@ -113,9 +137,7 @@ function normalSnap(e, moveData) {
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
-
     if (closest) { 
-        // 制限: ステージの空き枠にはDebut以外不可
         if (STAGE_ZONES.includes(closest.id)) {
             const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && c !== currentDragEl);
             if (cardsInZone.length === 0 && (currentDragEl.cardData.type !== 'holomen' || currentDragEl.cardData.bloom !== 'Debut')) {
@@ -138,7 +160,7 @@ function returnToHand(card) {
     socket.emit('flipCard', { id: card.id, isFaceUp: true }); socket.emit('moveCard', { id: card.id, isRotated: false, isFaceUp: true }); socket.emit('returnToHand', { id: card.id });
 }
 
-// --- 初期化 & 構築UI ---
+// --- データ読込 & 初期化 ---
 async function loadCardData() {
     try {
         const res = await Promise.all([ fetch('/data/holomen.json').then(r=>r.json()), fetch('/data/support.json').then(r=>r.json()), fetch('/data/ayle.json').then(r=>r.json()), fetch('/data/oshi_holomen.json').then(r=>r.json()) ]);
@@ -159,4 +181,4 @@ function updateLibrary(f = "") {
         btn.onclick = () => addToDeck(card); div.appendChild(btn); list.appendChild(div);
     });
 }
-// ... (他の構築ロジック、ドローイベント、Socket受信等は維持)
+// ... (その他のSocket同期・構築ロジック等は前回設定を維持)
