@@ -1,5 +1,5 @@
 /**
- * カードDOMの生成 (デザイン再現)
+ * カードDOMの生成
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
@@ -35,7 +35,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置 (枠の中央に配置するロジックを最適化)
+ * カード再配置 (中央寄せ)
  */
 function repositionCards() {
     const fieldEl = document.getElementById('field');
@@ -44,7 +44,6 @@ function repositionCards() {
     const zoneCounts = {};
 
     document.querySelectorAll('.card').forEach(card => {
-        // 手札にあるカードやドラッグ中のカードは除外
         if (card.parentElement !== fieldEl || card === currentDragEl) return;
 
         const zid = card.dataset.zoneId;
@@ -53,14 +52,11 @@ function repositionCards() {
             if(z) {
                 const zr = z.getBoundingClientRect();
                 const cr = card.getBoundingClientRect();
-                
                 if (!zoneCounts[zid]) zoneCounts[zid] = 0;
 
-                // 中央配置の計算: (枠の左端 - フィールドの左端) + (枠の幅 - カードの幅) / 2
                 let targetLeft = (zr.left - fRect.left) + (zr.width - cr.width) / 2;
                 let targetTop = (zr.top - fRect.top) + (zr.height - cr.height) / 2;
 
-                // ライフゾーンのみ、重なりを見せるために少しずつずらす
                 if (zid === 'life-zone') {
                     const offset = zoneCounts[zid] * 18;
                     targetTop = (zr.top - fRect.top) + 5 + offset;
@@ -68,11 +64,9 @@ function repositionCards() {
 
                 card.style.left = targetLeft + 'px';
                 card.style.top = targetTop + 'px';
-                
                 zoneCounts[zid]++;
             }
         } else if (card.dataset.percentX) {
-            // 自由配置の場合
             card.style.left = (card.dataset.percentX / 100) * fRect.width + 'px';
             card.style.top = (card.dataset.percentY / 100) * fRect.height + 'px';
         }
@@ -80,7 +74,7 @@ function repositionCards() {
 }
 
 /**
- * ドラッグ開始
+ * イベント設定
  */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
@@ -124,35 +118,47 @@ document.onpointerup = (e) => {
         const target = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
         let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         
+        // --- 装着ロジックの復旧 ---
         const fieldEl = document.getElementById('field');
         if (target && target.parentElement === fieldEl) {
-            const isE = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
-            if ((currentDragEl.cardData.type === 'ayle' || isE) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
-                currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
-                currentDragEl.style.zIndex = parseInt(target.style.zIndex) - 1; currentDragEl.dataset.zoneId = target.dataset.zoneId || ""; moveData.zIndex = currentDragEl.style.zIndex; moveData.zoneId = currentDragEl.dataset.zoneId;
-            } else if (canBloom(currentDragEl.cardData, target.cardData)) {
-                currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
-                currentDragEl.dataset.zoneId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
-            } else normalSnap(e, moveData);
-        } else normalSnap(e, moveData);
+            const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
+            
+            // 1. エールまたは装着アイテムをホロメン/推しに重ねる
+            if ((currentDragEl.cardData.type === 'ayle' || isEquip) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
+                currentDragEl.style.left = target.style.left;
+                currentDragEl.style.top = target.style.top;
+                // 下に重ねる (zIndexをターゲットより小さく)
+                currentDragEl.style.zIndex = parseInt(target.style.zIndex) - 1;
+                currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
+                moveData.zIndex = currentDragEl.style.zIndex;
+                moveData.zoneId = currentDragEl.dataset.zoneId;
+            } 
+            // 2. Bloom (進化) の重なり
+            else if (canBloom(currentDragEl.cardData, target.cardData)) {
+                currentDragEl.style.left = target.style.left;
+                currentDragEl.style.top = target.style.top;
+                currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
+                moveData.zoneId = currentDragEl.dataset.zoneId;
+            } 
+            else normalSnap(e, moveData);
+        } else {
+            normalSnap(e, moveData);
+        }
         socket.emit('moveCard', moveData); repositionCards();
     }
     isDragging = false; currentDragEl = null;
 };
 
 /**
- * 枠への吸着ルール
+ * 枠吸着
  */
 function normalSnap(e, moveData) {
     const zones = document.querySelectorAll('.zone');
-    let closest = null;
-    let minDist = 40;
-    const cr = currentDragEl.getBoundingClientRect();
-    const cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+    let closest = null, minDist = 40;
+    const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
 
     zones.forEach(z => {
-        const zr = z.getBoundingClientRect();
-        const zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
+        const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
@@ -175,9 +181,6 @@ function normalSnap(e, moveData) {
     }
 }
 
-/**
- * 手札へ戻す (自動表向き)
- */
 function returnToHand(card) {
     card.style.position = 'relative'; card.style.left = ''; card.style.top = ''; 
     card.classList.remove('rotated', 'face-down'); card.classList.add('face-up');
@@ -187,16 +190,13 @@ function returnToHand(card) {
     socket.emit('returnToHand', { id: card.id });
 }
 
-/**
- * 進化判定
- */
 function canBloom(s, t) {
     if (s.type !== 'holomen' || t.type !== 'holomen' || s.name !== t.name) return false;
     return (t.bloom === 'Debut' && s.bloom === '1st') || (t.bloom === '1st' && (s.bloom === '2nd' || s.bloom === '1st'));
 }
 
 /**
- * 詳細表示
+ * ズーム表示
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
