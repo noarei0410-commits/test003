@@ -1,6 +1,8 @@
 const socket = io();
 
+// ゾーン定義
 const STAGE_ZONES = ['collab', 'center', 'back1', 'back2', 'back3', 'back4', 'back5'];
+const COLORS = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
 
 // グローバル状態
 let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
@@ -16,3 +18,4 @@ const handDiv = document.getElementById('hand');
 const setupModal = document.getElementById('setup-modal');
 const zoomModal = document.getElementById('zoom-modal');
 const deckModal = document.getElementById('deck-inspection-modal');
+const deckGrid = document.getElementById('deck-card-grid');
