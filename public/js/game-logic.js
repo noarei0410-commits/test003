@@ -5,12 +5,14 @@ function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
+    // カード名
     const nameSpan = document.createElement('span');
     nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
 
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
+    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const statValue = data.type === 'oshi' ? data.life : data.hp;
         if (statValue) {
@@ -43,7 +45,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置
+ * カード再配置 (中央寄せ)
  */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
@@ -170,7 +172,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (アーツ名とダメージ表示を修正)
+ * ズーム詳細
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -197,8 +199,6 @@ function openZoom(cardData, cardElement = null) {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
         let ready = (s.type === 'arts' && canUseArt(s.cost, stackAyle.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
         let costHtml = (s.type === 'arts') ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
-        
-        // アーツ名とダメージの配置
         let damageHtml = s.damage ? `<span class="skill-damage">${s.damage}</span>` : "";
         
         return `
