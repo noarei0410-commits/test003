@@ -135,7 +135,6 @@ body {
 .label-oshi { background: #f39c12; }
 .label-sp_oshi { background: #e67e22; }
 
-/* アーツ名とダメージの横並び設定 */
 .skill-name-row { display: flex; flex: 1; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
 .skill-damage { color: #e74c3c; font-size: 16px; margin-left: 10px; }
 
