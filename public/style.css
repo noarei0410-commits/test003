@@ -47,25 +47,11 @@ body {
 #searchInput { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00d2ff; background: #04172b; color: white; margin-bottom: 10px; }
 #libraryList, .card-grid { flex: 1; overflow-y: auto; }
 
-/* フィルターバー */
 .filter-bar { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
 .filter-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 16px; font-size: 12px; white-space: nowrap; border-radius: 6px; flex-shrink: 0; }
 .filter-btn.active { background: #00d2ff; color: #04172b; border-color: #00d2ff; font-weight: bold; }
 
-/* カードグリッド (折り返し対応) */
-.card-grid { 
-    display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; 
-    justify-content: flex-start; align-content: flex-start; 
-}
-
-/* 構築画面のアイテム */
-.library-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
-.type-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-left: 5px; }
-
-.deck-lists-container { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-.deck-section { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); }
-.section-header { font-size: 11px; color: #00d2ff; margin-bottom: 8px; border-bottom: 1px solid rgba(0,210,255,0.2); display: flex; justify-content: space-between; }
-.deck-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; }
+.card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; justify-content: flex-start; align-content: flex-start; }
 
 /* --- フィールド UI --- */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
@@ -97,17 +83,15 @@ body {
     box-sizing: border-box; overflow: hidden; transition: transform 0.2s, left 0.1s, top 0.1s;
     border: 1px solid #ccc;
 }
-/* 手札・ライブラリ内での配置解除 */
 #hand .card, .card-grid .card { position: relative !important; left: auto !important; top: auto !important; flex-shrink: 0; }
 
 .card-hp { position: absolute; top: 12px; right: 4px; font-weight: bold; color: #e74c3c; font-size: 9px; }
 .card-bloom { position: absolute; top: 2px; left: 4px; font-weight: bold; color: #3498db; font-size: 8px; }
 .card-color-icon { position: absolute; top: 2px; right: 4px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
-.card-tags { display: none; } /* 拡大前は非表示 */
+.card-tags { display: none; }
 .card-baton { position: absolute; bottom: 2px; right: 4px; font-size: 6px; display: flex; align-items: center; gap: 1px; color: #444; }
 .baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
 
-/* エールカラー */
 .ayle-red { background-color: #ffcccc; border: 2px solid #ff4500; }
 .ayle-blue { background-color: #cce5ff; border: 2px solid #1e90ff; }
 .ayle-green { background-color: #d4edda; border: 2px solid #2ecc71; }
@@ -139,20 +123,10 @@ body {
     border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; cursor: default;
     position: relative;
 }
-.zoom-header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+.zoom-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 8px; }
 .zoom-name { font-size: 20px; font-weight: bold; }
 .zoom-hp { font-size: 18px; color: #e74c3c; font-weight: bold; }
 .zoom-life { font-size: 18px; color: #f39c12; font-weight: bold; }
-
-/* ズームフッター (左下配置用) */
-.zoom-footer {
-    display: flex; flex-direction: column; gap: 8px;
-    padding-top: 10px; border-top: 1px solid #eee; margin-top: auto;
-}
-.zoom-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.zoom-tag-item { font-size: 12px; color: #3498db; font-weight: bold; }
-.zoom-baton-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #444; }
-.baton-dots-container { display: flex; gap: 2px; }
 
 .skill-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 8px; }
 .skill-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
@@ -160,17 +134,26 @@ body {
 .label-arts { background: #e74c3c; }
 .label-oshi { background: #f39c12; }
 .label-sp_oshi { background: #e67e22; }
+
+/* アーツ名とダメージの横並び設定 */
+.skill-name-row { display: flex; flex: 1; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
+.skill-damage { color: #e74c3c; font-size: 16px; margin-left: 10px; }
+
 .cost-container { display: flex; gap: 2px; }
 .cost-icon { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
 .skill-cost-hp { font-size: 11px; font-weight: bold; color: #e67e22; }
-.ready-badge { background: #2ecc71; color: #fff; font-size: 8px; padding: 2px 6px; border-radius: 10px; margin-left: auto; font-weight: bold; }
+.ready-badge { background: #2ecc71; color: #fff; font-size: 8px; padding: 2px 6px; border-radius: 10px; font-weight: bold; margin-left: 5px; }
+
+.zoom-footer { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid #eee; margin-top: auto; }
+.zoom-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.zoom-tag-item { font-size: 12px; color: #3498db; font-weight: bold; }
+.zoom-baton-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #444; }
 
 .zoom-attach-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
 .attach-title { font-size: 10px; font-weight: bold; color: #2980b9; margin-bottom: 5px; display: block; border-bottom: 1px solid #d0e4ff; }
 .attach-item { font-size: 11px; display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
 .btn-discard-small { background: #ff5e5e; color: white; border: none; font-size: 8px; padding: 2px 5px; border-radius: 4px; cursor: pointer; }
 
-/* 汎用ボタン */
 button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; transition: 0.1s; }
 .btn-add { background: #00d2ff; color: #04172b; padding: 8px 15px; }
 .btn-minus { background: #ff5e5e; color: white; padding: 2px 8px; }
