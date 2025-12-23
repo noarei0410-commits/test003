@@ -8,7 +8,7 @@ const COLORS = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '�
 let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
 let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator';
-let currentDragEl = null, isDragging = false;
+let currentDragEl = null, isDragging = false, dragStarted = false; // dragStartedを追加
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let potentialZoomTarget = null;
 
