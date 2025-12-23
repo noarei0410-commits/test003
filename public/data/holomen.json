@@ -25,6 +25,56 @@
     ]
   },
   {
+    "name": "ときのそら",
+    "type": "holomen",
+    "hp": "210",
+    "bloom": "1st",
+    "color": "blue",
+    "tags": ["#ホロライブ", "#JP", "#0期生"],
+    "baton": 1,
+    "skills": [
+      {
+        "name": "きみのためのメロディ",
+        "type": "arts",
+        "cost": ["blue", "any"],
+        "damage": "70",
+        "text": "相手のセンターに70ダメージ。"
+      },
+      {
+        "name": "スカイ・ハイ",
+        "type": "arts",
+        "cost": ["blue", "blue", "any"],
+        "damage": "100",
+        "text": "次の自分の番、このメンバーの与えるダメージを+20する。"
+      }
+    ]
+  },
+  {
+    "name": "ときのそら",
+    "type": "holomen",
+    "hp": "250",
+    "bloom": "2nd",
+    "color": "blue",
+    "tags": ["#ホロライブ", "#JP", "#0期生"],
+    "baton": 2,
+    "skills": [
+      {
+        "name": "Dreaming!",
+        "type": "arts",
+        "cost": ["blue", "blue"],
+        "damage": "120",
+        "text": "相手のセンターに120ダメージ。自分の山札を2枚引く。"
+      },
+      {
+        "name": "Beyond the Blue",
+        "type": "arts",
+        "cost": ["blue", "blue", "any", "any"],
+        "damage": "180+",
+        "text": "相手のサイドの枚数が2枚以下なら、ダメージを+40する。"
+      }
+    ]
+  },
+  {
     "name": "白上フブキ",
     "type": "holomen",
     "hp": "170",
