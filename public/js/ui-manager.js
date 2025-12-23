@@ -1,28 +1,17 @@
-/**
- * ページ/モーダルの表示切り替え
- */
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => { p.style.display = 'none'; });
     const target = document.getElementById(pageId);
     if (target) {
         target.style.display = 'flex';
         if (pageId === 'card-list-page') filterLibrary('all');
-        if (pageId === 'setup-modal') { 
-            updateLibrary(""); 
-            renderDecks(); 
-        }
+        if (pageId === 'setup-modal') { updateLibrary(""); renderDecks(); }
     }
 }
 
-/**
- * 構築画面のライブラリ描画
- */
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
     const search = f.toLowerCase();
-    
-    // 推し＋メイン＋サポートを表示対象に
     const all = [...OSHI_LIST, ...MASTER_CARDS.filter(c => c.type !== 'ayle')];
     
     all.filter(c => c.name.toLowerCase().includes(search)).forEach(card => {
@@ -37,31 +26,18 @@ function updateLibrary(f = "") {
     });
 }
 
-/**
- * カードを構築リストへ追加
- */
 function addToDeck(card) {
-    if (card.type === 'oshi') {
-        selectedOshi = { ...card };
-    } else if (card.type === 'ayle') {
-        if (cheerDeckList.length < 20) cheerDeckList.push({ ...card, type: 'ayle' });
-    } else {
-        mainDeckList.push({ ...card });
-    }
+    if (card.type === 'oshi') selectedOshi = { ...card };
+    else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card, type: 'ayle' }); }
+    else mainDeckList.push({ ...card });
     renderDecks();
 }
 
-/**
- * 現在のデッキ構築内容をレンダリング
- */
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
 
-    // 推し
     oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button onclick="selectedOshi=null;renderDecks()" class="btn-remove">X</button></div>` : "";
-    
-    // メインデッキ
     mSum.innerHTML = "";
     const grouped = mainDeckList.reduce((acc, c) => { 
         const key = `${c.name}_${c.bloom||""}`; 
@@ -77,7 +53,6 @@ function renderDecks() {
         mSum.appendChild(div);
     });
 
-    // エール
     cSum.innerHTML = "";
     const cheerTypes = [{name:"白エール"},{name:"緑エール"},{name:"赤エール"},{name:"青エール"},{name:"黄エール"},{name:"紫エール"}];
     cheerTypes.forEach(c => {
@@ -94,9 +69,6 @@ function renderDecks() {
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
 
-/**
- * カードリスト画面のフィルタリング描画
- */
 function filterLibrary(type) {
     const grid = document.getElementById('global-card-grid'); if (!grid) return;
     grid.innerHTML = "";
