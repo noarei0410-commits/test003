@@ -3,8 +3,6 @@ window.onload = async () => {
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
     window.onresize = repositionCards;
-    
-    // 初期状態でハブ画面を表示
     showPage('hub-page');
 };
 
@@ -25,8 +23,13 @@ async function joinRoom(role) {
     if (!rid) return alert("ルームIDを入力してください");
     myRole = role; 
     socket.emit('joinRoom', { roomId: rid, role });
-    if (role === 'player') showPage('setup-modal');
-    else { showPage(''); document.body.classList.add('spectator-mode'); }
+    if (role === 'player') {
+        showPage('setup-modal');
+        updateLibrary(""); renderDecks();
+    } else {
+        showPage(''); // フィールドへ
+        document.body.classList.add('spectator-mode');
+    }
 }
 
 function setupDeckClick(id, type) {
