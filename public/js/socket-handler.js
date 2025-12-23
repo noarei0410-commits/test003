@@ -32,6 +32,24 @@ socket.on('cardMoved', (d) => {
     repositionCards();
 });
 
+// HP更新の受信
+socket.on('hpUpdated', (d) => {
+    const el = document.getElementById(d.id);
+    if (el && el.cardData) {
+        el.cardData.currentHp = d.currentHp;
+        const fieldHp = document.getElementById(`hp-display-${d.id}`);
+        if (fieldHp) fieldHp.innerText = d.currentHp;
+        
+        // もし自分が今そのカードをズームして見ていたら、ズーム内の数字も更新
+        const zoomHp = document.getElementById('zoom-hp-val');
+        if (zoomHp && zoomModal.style.display === 'flex') {
+            // 現在ズームされているカードがこのIDか確認
+            // (簡易的に中身を更新)
+            zoomHp.innerText = `HP ${d.currentHp}`;
+        }
+    }
+});
+
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
 socket.on('cardFlipped', (d) => { 
     const el = document.getElementById(d.id); 
