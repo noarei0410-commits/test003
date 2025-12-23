@@ -24,46 +24,13 @@ function showPage(pageId) {
 }
 window.onload = loadCardData;
 
-// --- デッキサーチ ---
-function openDeckInspection(type) {
-    if (myRole !== 'player') return;
-    socket.emit('inspectDeck', type);
-}
-socket.on('deckInspectionResult', (data) => {
-    const { type, cards } = data;
-    deckGrid.innerHTML = "";
-    document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
-    cards.forEach(card => {
-        const container = document.createElement('div'); container.className = "archive-item";
-        const el = createCardElement(card, false); el.classList.remove('face-down'); el.classList.add('face-up');
-        const pickBtn = document.createElement('button'); pickBtn.className = "btn-recover"; pickBtn.innerText = "手札へ";
-        pickBtn.onclick = () => { socket.emit('pickCardFromDeck', { type, cardId: card.id }); closeDeckInspection(); };
-        container.appendChild(el); container.appendChild(pickBtn); deckGrid.appendChild(container);
-    });
-    deckModal.style.display = 'flex';
+// --- ドロー処理 ---
+socket.on('receiveCard', (d) => {
+    if (!handDiv) return;
+    const el = createCardElement({ ...d, isFaceUp: true });
+    el.style.position = 'relative'; // 手札内では並列
+    handDiv.appendChild(el);
 });
-function closeDeckInspection() { deckModal.style.display = 'none'; }
-
-// --- アーカイブ ---
-function openArchive() {
-    const grid = document.getElementById('archive-card-grid'); grid.innerHTML = "";
-    const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
-    if (archiveCards.length === 0) grid.innerHTML = "<p style='width:100%; text-align:center;'>空です</p>";
-    else {
-        archiveCards.forEach(card => {
-            const container = document.createElement('div'); container.className = "archive-item";
-            const el = createCardElement(card.cardData, false); el.classList.remove('face-down'); el.classList.add('face-up');
-            if (myRole === 'player') {
-                const recoverBtn = document.createElement('button'); recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
-                recoverBtn.onclick = (e) => { e.stopPropagation(); returnToHand(card); closeArchive(); };
-                container.appendChild(el); container.appendChild(recoverBtn);
-            } else container.appendChild(el);
-            grid.appendChild(container);
-        });
-    }
-    document.getElementById('archive-modal').style.display = 'flex';
-}
-function closeArchive() { document.getElementById('archive-modal').style.display = 'none'; }
 
 // --- カードリスト・フィルタ ---
 function filterLibrary(type) {
@@ -80,14 +47,6 @@ function filterLibrary(type) {
         const el = createCardElement(card, false); el.onclick = () => openZoom(card, el); grid.appendChild(el);
     });
 }
-
-// --- ドロー・追加処理 (重要) ---
-socket.on('receiveCard', (d) => {
-    if (!handDiv) return;
-    const el = createCardElement({ ...d, isFaceUp: true });
-    el.style.position = 'relative'; // 手札内では相対位置にする
-    handDiv.appendChild(el);
-});
 
 // --- ズーム機能 ---
 function canUseArt(costReq, attachedAyles) {
@@ -135,7 +94,6 @@ function openZoom(cardData, cardElement = null) {
     container.innerHTML = `<div class="zoom-header"><div><b>${cardData.name}</b></div>${hpLife}</div><div class="zoom-skills-list">${skillsHtml}</div>${underHtml}${equipHtml}${ayleHtml}`;
     zoomModal.style.display = 'flex';
 }
-window.discardFromZoom = (id) => { const el = document.getElementById(id); if(!el) return; socket.emit('moveCard', {id, zoneId:'archive', zIndex:10, ...el.cardData}); el.dataset.zoneId='archive'; repositionCards(); zoomModal.style.display='none'; };
 zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.className === 'zoom-hint-outside') zoomModal.style.display = 'none'; };
 
 // --- 配置ロジック ---
@@ -166,22 +124,7 @@ function repositionCards() {
 }
 window.onresize = repositionCards;
 
-// --- カード生成・操作 ---
-function createCardElement(data, withEvents = true) {
-    if(!data) return document.createElement('div');
-    const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.className = 'card';
-    el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
-    if (data.isRotated) el.classList.add('rotated');
-    if (data.type === 'holomen' || data.type === 'oshi') {
-        if (data.color) { const ci = document.createElement('div'); ci.className = `card-color-icon color-${data.color}`; el.appendChild(ci); }
-        if (data.type === 'holomen') {
-            const hp = document.createElement('div'); hp.className = 'card-hp'; hp.innerText = data.hp || '';
-            const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = (data.bloom || 'D').charAt(0); el.appendChild(hp); el.appendChild(bl);
-        }
-    }
-    el.cardData = data; if (withEvents) setupCardEvents(el); return el;
-}
-
+// --- 操作イベント ---
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
@@ -213,7 +156,9 @@ document.onpointerup = (e) => {
         const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
         const target = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
         let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
+        
         if (target && target.parentElement === field) {
+            // 重なり処理 (Bloom, Ayle, Equip)
             const isE = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
             if ((currentDragEl.cardData.type === 'ayle' || isE) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
                 currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
@@ -222,11 +167,17 @@ document.onpointerup = (e) => {
                 currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
                 currentDragEl.dataset.zoneId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
             } else normalSnap(e, moveData);
-        } else normalSnap(e, moveData);
+        } else {
+            // 枠への吸着処理
+            normalSnap(e, moveData);
+        }
         socket.emit('moveCard', moveData); repositionCards();
     }
     isDragging = false; currentDragEl = null;
 };
+
+// ステージ枠のID定義
+const STAGE_ZONES = ['collab', 'center', 'back1', 'back2', 'back3', 'back4', 'back5'];
 
 function normalSnap(e, moveData) {
     const zones = document.querySelectorAll('.zone'); let closest = null, minDist = 40;
@@ -236,7 +187,16 @@ function normalSnap(e, moveData) {
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
+
     if (closest) { 
+        // 修正: ステージの枠にはDebut以外のホロメンを直接置けないようにする
+        if (STAGE_ZONES.includes(closest.id)) {
+            if (currentDragEl.cardData.type === 'holomen' && currentDragEl.cardData.bloom !== 'Debut') {
+                returnToHand(currentDragEl);
+                return;
+            }
+        }
+
         currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id;
         currentDragEl.classList.toggle('rotated', closest.id === 'life-zone'); moveData.isRotated = (closest.id === 'life-zone');
     } else { 
@@ -245,11 +205,7 @@ function normalSnap(e, moveData) {
         currentDragEl.dataset.percentX = px; currentDragEl.dataset.percentY = py; moveData.percentX = px; moveData.percentY = py;
     }
 }
-function restoreCard(id, info) {
-    const el = createCardElement({ id, ...info });
-    el.dataset.zoneId = info.zoneId || ""; el.dataset.percentX = info.percentX || ""; el.dataset.percentY = info.percentY || "";
-    el.style.zIndex = info.zIndex; field.appendChild(el); repositionCards();
-}
+
 function returnToHand(card) {
     card.style.position = 'relative'; card.style.left = ''; card.style.top = ''; 
     card.classList.remove('rotated', 'face-down'); card.classList.add('face-up');
@@ -260,22 +216,35 @@ function returnToHand(card) {
     socket.emit('returnToHand', { id: card.id });
 }
 
-// --- データ読み込み & UI反映 ---
+// --- 初期化 & データ読み込み ---
 async function loadCardData() {
     try {
-        const [h, s, a, o] = await Promise.all([
-            fetch('/data/holomen.json').then(r => r.json()),
-            fetch('/data/support.json').then(r => r.json()),
-            fetch('/data/ayle.json').then(r => r.json()),
-            fetch('/data/oshi_holomen.json').then(r => r.json())
+        const responses = await Promise.all([
+            fetch('/data/holomen.json'), fetch('/data/support.json'),
+            fetch('/data/ayle.json'), fetch('/data/oshi_holomen.json')
         ]);
-        MASTER_CARDS = [...h, ...s, ...a];
-        OSHI_LIST = o;
-        AYLE_MASTER = a;
+        const [hD, sD, aD, oD] = await Promise.all(responses.map(r => r.json()));
+        MASTER_CARDS = [...hD, ...sD, ...aD]; AYLE_MASTER = aD; OSHI_LIST = oD;
         updateLibrary(); renderDecks();
     } catch (e) { console.error("Data Load Error:", e); }
 }
 
+function createCardElement(data, withEvents = true) {
+    if(!data) return document.createElement('div');
+    const el = document.createElement('div'); el.id = data.id || ""; el.innerText = data.name; el.className = 'card';
+    el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
+    if (data.isRotated) el.classList.add('rotated');
+    if (data.type === 'holomen' || data.type === 'oshi') {
+        if (data.color) { const ci = document.createElement('div'); ci.className = `card-color-icon color-${data.color}`; el.appendChild(ci); }
+        if (data.type === 'holomen') {
+            const hp = document.createElement('div'); hp.className = 'card-hp'; hp.innerText = data.hp || '';
+            const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = (data.bloom || 'D').charAt(0); el.appendChild(hp); el.appendChild(bl);
+        }
+    }
+    el.cardData = data; if (withEvents) setupCardEvents(el); return el;
+}
+
+// --- 構築UI ---
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
@@ -290,12 +259,14 @@ function updateLibrary(f = "") {
         div.appendChild(btn); list.appendChild(div);
     });
 }
+
 function addToDeck(card) {
     if (card.type === 'oshi') selectedOshi = { ...card };
     else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card }); }
     else mainDeckList.push({ ...card });
     renderDecks();
 }
+
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
@@ -326,22 +297,18 @@ function renderDecks() {
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
 
-// --- デッキ・ドローイベント ---
+document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
+document.getElementById('startGameBtn').onclick = () => {
+    socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: selectedOshi });
+    showPage(''); 
+};
+
+// --- デッキ・ドロー ---
 let deckClickTimer = null;
 function setupDeckClick(id, type) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.onpointerdown = (e) => {
-        e.preventDefault();
-        deckClickTimer = setTimeout(() => { openDeckInspection(type); deckClickTimer = null; }, 500);
-    };
-    el.onpointerup = () => {
-        if (deckClickTimer) {
-            clearTimeout(deckClickTimer);
-            deckClickTimer = null;
-            if(myRole === 'player') socket.emit(type === 'main' ? 'drawMainCard' : 'drawCheerCard');
-        }
-    };
+    const el = document.getElementById(id); if (!el) return;
+    el.onpointerdown = (e) => { e.preventDefault(); deckClickTimer = setTimeout(() => { openDeckInspection(type); deckClickTimer = null; }, 500); };
+    el.onpointerup = () => { if (deckClickTimer) { clearTimeout(deckClickTimer); deckClickTimer = null; if(myRole === 'player') socket.emit(type === 'main' ? 'drawMainCard' : 'drawCheerCard'); } };
 }
 setupDeckClick('main-deck-zone', 'main');
 setupDeckClick('cheer-deck-zone', 'cheer');
@@ -351,19 +318,7 @@ function canBloom(s, t) {
     return (t.bloom === 'Debut' && s.bloom === '1st') || (t.bloom === '1st' && (s.bloom === '2nd' || s.bloom === '1st'));
 }
 
-async function joinRoom(role) {
-    const rid = document.getElementById('roomIdInput').value;
-    if (!rid) return alert("Required");
-    myRole = role; socket.emit('joinRoom', { roomId: rid, role });
-    showPage(''); document.getElementById('status').innerText = `Room: ${rid}${role==='spectator'?' (観戦)':''}`;
-    if (role === 'player') document.getElementById('setup-modal').style.display = 'flex';
-    else document.body.classList.add('spectator-mode');
-}
-document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
-document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
-document.getElementById('startGameBtn').onclick = () => { socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: selectedOshi }); showPage(''); };
-
-// --- Socket受信 ---
+// --- Socket ---
 socket.on('gameStarted', (d) => { field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = ""; for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); repositionCards(); });
 socket.on('init', (d) => { field.querySelectorAll('.card').forEach(c => c.remove()); for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); repositionCards(); });
 socket.on('deckCount', (c) => { 
@@ -377,3 +332,9 @@ socket.on('cardMoved', (d) => {
 });
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
 socket.on('cardFlipped', (d) => { const el = document.getElementById(d.id); if (el) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); } });
+
+function restoreCard(id, info) {
+    const el = createCardElement({ id, ...info });
+    el.dataset.zoneId = info.zoneId || ""; el.dataset.percentX = info.percentX || ""; el.dataset.percentY = info.percentY || "";
+    el.style.zIndex = info.zIndex; field.appendChild(el); repositionCards();
+}
