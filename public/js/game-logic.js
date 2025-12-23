@@ -5,14 +5,12 @@ function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
-    // カード名
     const nameSpan = document.createElement('span');
     nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
 
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
-    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const statValue = data.type === 'oshi' ? data.life : data.hp;
         if (statValue) {
@@ -24,24 +22,17 @@ function createCardElement(data, withEvents = true) {
         if (data.color) {
             const clDiv = document.createElement('div'); clDiv.className = `card-color-icon color-${data.color.toLowerCase()}`; el.appendChild(clDiv);
         }
-
-        // --- ハッシュタグ (データとしては持つがCSSで非表示) ---
         if (data.tags && Array.isArray(data.tags)) {
             const tagsDiv = document.createElement('div'); tagsDiv.className = 'card-tags';
             tagsDiv.innerHTML = data.tags.join('<br>'); el.appendChild(tagsDiv);
         }
-
-        // --- バトンタッチ (小さなドットを表示) ---
         if (data.baton !== undefined) {
             const batonDiv = document.createElement('div'); batonDiv.className = 'card-baton';
-            for(let i=0; i<data.baton; i++) { 
-                const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); 
-            }
+            for(let i=0; i<data.baton; i++) { const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); }
             el.appendChild(batonDiv);
         }
     }
 
-    // エールカラー
     if (data.type === 'ayle' || (data.name && data.name.includes('エール'))) {
         for (let kanji in COLORS) { if (data.name.includes(kanji)) { el.classList.add(`ayle-${COLORS[kanji]}`); break; } }
     }
@@ -52,7 +43,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置
+ * カード再配置 (中央寄せ)
  */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
@@ -179,7 +170,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (ハッシュタグ・バトンタッチ表示追加)
+ * ズーム詳細 (ハッシュタグとバトンコストを左下に配置)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -196,15 +187,11 @@ function openZoom(cardData, cardElement = null) {
         stackEquip = stack.filter(c => c.cardData.type === 'support' && ['tool', 'mascot', 'fan'].includes((c.cardData.category || '').toLowerCase()));
     }
 
-    // ハッシュタグ表示の生成
     const tagsHtml = (cardData.tags && cardData.tags.length) 
-        ? `<div class="zoom-tags">${cardData.tags.map(t => `<span class="zoom-tag-item">${t}</span>`).join('')}</div>` 
-        : "";
+        ? `<div class="zoom-tags">${cardData.tags.map(t => `<span class="zoom-tag-item">${t}</span>`).join('')}</div>` : "";
 
-    // バトンタッチ表示の生成
     const batonHtml = (cardData.baton !== undefined)
-        ? `<div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-dots-container">${Array(cardData.baton).fill('<div class="baton-dot"></div>').join('')}</div></div>`
-        : "";
+        ? `<div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-dots-container">${Array(cardData.baton).fill('<div class="baton-dot"></div>').join('')}</div></div>` : "";
 
     const skillsHtml = (cardData.skills || []).map(s => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
@@ -220,16 +207,13 @@ function openZoom(cardData, cardElement = null) {
     let hpLife = isOshi ? `<div class="zoom-life">LIFE ${cardData.life || 0}</div>` : (isHolomen ? `<div class="zoom-hp">HP ${cardData.hp || 0}</div>` : "");
 
     container.innerHTML = `
-        <div class="zoom-header">
-            <div>
-                <div class="zoom-name">${cardData.name}</div>
-                ${tagsHtml}
-            </div>
-            ${hpLife}
-        </div>
-        ${batonHtml}
+        <div class="zoom-header"><div class="zoom-name">${cardData.name}</div>${hpLife}</div>
         <div class="zoom-skills-list">${skillsHtml}</div>
         ${attachHtml}
+        <div class="zoom-footer">
+            ${tagsHtml}
+            ${batonHtml}
+        </div>
     `;
     zoomModal.style.display = 'flex';
     zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
