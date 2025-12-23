@@ -3,8 +3,6 @@ function showPage(pageId) {
     const target = document.getElementById(pageId);
     if (target) {
         target.style.display = 'flex';
-        if (pageId === 'card-list-page') filterLibrary('all');
-        if (pageId === 'setup-modal') { updateLibrary(""); renderDecks(); }
     }
 }
 
@@ -28,7 +26,7 @@ function updateLibrary(f = "") {
 
 function addToDeck(card) {
     if (card.type === 'oshi') selectedOshi = { ...card };
-    else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card }); }
+    else if (card.type === 'ayle') { if (cheerDeckList.length < 20) cheerDeckList.push({ ...card, type:'ayle' }); }
     else mainDeckList.push({ ...card });
     renderDecks();
 }
@@ -36,6 +34,7 @@ function addToDeck(card) {
 function renderDecks() {
     const oSum = document.getElementById('oshiSummary'), mSum = document.getElementById('mainDeckSummary'), cSum = document.getElementById('cheerDeckSummary');
     if (!oSum) return;
+
     oSum.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span><button onclick="selectedOshi=null;renderDecks()" class="btn-remove">X</button></div>` : "";
     mSum.innerHTML = "";
     const grouped = mainDeckList.reduce((acc, c) => { const key = `${c.name}_${c.bloom||""}`; acc[key] = (acc[key] || { d: c, n: 0 }); acc[key].n++; return acc; }, {});
@@ -49,8 +48,8 @@ function renderDecks() {
         mSum.appendChild(div);
     });
     cSum.innerHTML = "";
-    const types = [{name:"白エール"},{name:"緑エール"},{name:"赤エール"},{name:"青エール"},{name:"黄エール"},{name:"紫エール"}];
-    types.forEach(c => {
+    const cheerTypes = [{name:"白エール"},{name:"緑エール"},{name:"赤エール"},{name:"青エール"},{name:"黄エール"},{name:"紫エール"}];
+    cheerTypes.forEach(c => {
         const n = cheerDeckList.filter(x => x.name === c.name).length;
         const div = document.createElement('div'); div.className = "deck-item";
         div.innerHTML = `<span>${c.name} : ${n}</span><div><button class="btn-minus">-</button><button class="btn-plus">+</button></div>`;
