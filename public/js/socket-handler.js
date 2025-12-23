@@ -28,14 +28,14 @@ socket.on('deckCount', (c) => {
 
 socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
-    deckGrid.innerHTML = "";
+    const grid = document.getElementById('deck-card-grid'); grid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
     cards.forEach(card => {
         const container = document.createElement('div'); container.className = "archive-item";
         const el = createCardElement(card, false); el.classList.remove('face-down'); el.classList.add('face-up');
         const pickBtn = document.createElement('button'); pickBtn.className = "btn-recover"; pickBtn.innerText = "手札へ";
         pickBtn.onclick = () => { socket.emit('pickCardFromDeck', { type, cardId: card.id }); closeDeckInspection(); };
-        container.appendChild(el); container.appendChild(pickBtn); deckGrid.appendChild(container);
+        container.appendChild(el); container.appendChild(pickBtn); grid.appendChild(container);
     });
     deckModal.style.display = 'flex';
 });
@@ -49,4 +49,4 @@ function restoreCard(id, info) {
 }
 
 function closeDeckInspection() { deckModal.style.display = 'none'; }
-function openArchive() { /* 以前のアーカイブ表示ロジック統合済 */ }
+function openArchive() { /* アーカイブ表示ロジックはui-managerに類似 */ }
