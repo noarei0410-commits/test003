@@ -1,18 +1,16 @@
 /**
- * カードDOMの生成 (タグ・バトンタッチ表示追加)
+ * カードDOMの生成
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
-    // カード名
     const nameSpan = document.createElement('span');
     nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
 
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
-    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const statValue = data.type === 'oshi' ? data.life : data.hp;
         if (statValue) {
@@ -24,12 +22,10 @@ function createCardElement(data, withEvents = true) {
         if (data.color) {
             const clDiv = document.createElement('div'); clDiv.className = `card-color-icon color-${data.color.toLowerCase()}`; el.appendChild(clDiv);
         }
-        // --- ハッシュタグ (復活) ---
         if (data.tags && Array.isArray(data.tags)) {
             const tagsDiv = document.createElement('div'); tagsDiv.className = 'card-tags';
             tagsDiv.innerHTML = data.tags.join('<br>'); el.appendChild(tagsDiv);
         }
-        // --- バトンタッチ (復活) ---
         if (data.baton !== undefined) {
             const batonDiv = document.createElement('div'); batonDiv.className = 'card-baton';
             for(let i=0; i<data.baton; i++) { const dot = document.createElement('div'); dot.className='baton-icon'; batonDiv.appendChild(dot); }
@@ -75,9 +71,6 @@ function repositionCards() {
     });
 }
 
-/**
- * ドラッグ＆ドロップイベント
- */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
@@ -164,9 +157,6 @@ function canBloom(s, t) {
     return (t.bloom === 'Debut' && s.bloom === '1st') || (t.bloom === '1st' && (s.bloom === '2nd' || s.bloom === '1st'));
 }
 
-/**
- * アーツ使用可否判定 (READY機能復活)
- */
 function canUseArt(costReq, attachedAyles) {
     if (!costReq || costReq.length === 0) return true;
     let available = attachedAyles.reduce((acc, c) => {
@@ -179,9 +169,6 @@ function canUseArt(costReq, attachedAyles) {
     return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
-/**
- * ズーム詳細 (装着品・READY表示復活)
- */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
@@ -208,7 +195,6 @@ function openZoom(cardData, cardElement = null) {
     let attachHtml = "";
     if(stackAyle.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装着エール</span>${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button></div>`).join('')}</div>`;
     if(stackEquip.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装備アイテム</span>${stackEquip.map(e => `<div class="attach-item"><span>■ ${e.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button></div>`).join('')}</div>`;
-    if(stackUnder.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">進化元</span>${stackUnder.map(u => `<div class="attach-item"><span>◆ ${u.cardData.bloom}</span></div>`).join('')}</div>`;
 
     let hpLife = isOshi ? `<div class="zoom-life">LIFE ${cardData.life || 0}</div>` : (isHolomen ? `<div class="zoom-hp">HP ${cardData.hp || 0}</div>` : "");
 
