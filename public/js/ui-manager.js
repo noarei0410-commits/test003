@@ -6,14 +6,13 @@ function showPage(pageId) {
     const target = document.getElementById(pageId);
     if (target) {
         target.style.display = 'flex';
-        // ライブラリ画面なら初期表示を実行
         if (pageId === 'card-list-page') filterLibrary('all');
         if (pageId === 'setup-modal') { updateLibrary(""); renderDecks(); }
     }
 }
 
 /**
- * 構築画面の左側ライブラリ描画
+ * 構築画面のライブラリ描画
  */
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
@@ -71,31 +70,15 @@ function renderDecks() {
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
 
-/**
- * カードリスト（閲覧専用ライブラリ）のフィルタリング描画修正
- */
 function filterLibrary(type) {
     const grid = document.getElementById('global-card-grid'); if (!grid) return;
     grid.innerHTML = "";
-    
     document.querySelectorAll('.filter-btn').forEach(btn => {
         const typeMap = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
         btn.classList.toggle('active', btn.innerText === typeMap[type]);
     });
-
-    let list = [];
-    if (type === 'all') {
-        list = [...OSHI_LIST, ...MASTER_CARDS];
-    } else if (type === 'oshi') {
-        list = OSHI_LIST;
-    } else {
-        list = MASTER_CARDS.filter(c => c.type === type);
-    }
-
-    // 重ならずに全て表示するためにグリッドに追加
+    let list = (type === 'all') ? [...OSHI_LIST, ...MASTER_CARDS] : (type === 'oshi' ? OSHI_LIST : MASTER_CARDS.filter(c => c.type === type));
     list.forEach(card => {
-        const el = createCardElement(card, false); 
-        el.onclick = () => openZoom(card, el); 
-        grid.appendChild(el);
+        const el = createCardElement(card, false); el.onclick = () => openZoom(card, el); grid.appendChild(el);
     });
 }
