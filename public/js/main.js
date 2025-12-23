@@ -3,6 +3,8 @@ window.onload = async () => {
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
     window.onresize = repositionCards;
+    
+    // 初期状態でハブ画面を表示
     showPage('hub-page');
 };
 
@@ -14,8 +16,10 @@ async function loadCardData() {
             fetch('/data/ayle.json').then(r => r.json()),
             fetch('/data/oshi_holomen.json').then(r => r.json())
         ]);
-        MASTER_CARDS = [...res[0], ...res[1], ...res[2]]; AYLE_MASTER = res[2]; OSHI_LIST = res[3];
-    } catch (e) { console.error(e); }
+        MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
+        AYLE_MASTER = res[2];
+        OSHI_LIST = res[3];
+    } catch (e) { console.error("Data Load Error", e); }
 }
 
 async function joinRoom(role) {
@@ -25,7 +29,6 @@ async function joinRoom(role) {
     socket.emit('joinRoom', { roomId: rid, role });
     if (role === 'player') {
         showPage('setup-modal');
-        updateLibrary(""); renderDecks();
     } else {
         showPage(''); // フィールドへ
         document.body.classList.add('spectator-mode');
@@ -37,7 +40,10 @@ function setupDeckClick(id, type) {
     let clickTimer = null;
     el.onpointerdown = (e) => {
         e.preventDefault();
-        clickTimer = setTimeout(() => { socket.emit('inspectDeck', type); clickTimer = null; }, 500);
+        clickTimer = setTimeout(() => {
+            if (myRole === 'player') socket.emit('inspectDeck', type);
+            clickTimer = null;
+        }, 500);
     };
     el.onpointerup = () => {
         if (clickTimer) {
@@ -48,6 +54,7 @@ function setupDeckClick(id, type) {
     };
 }
 
+// ボタンイベント紐付け
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
 document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator');
 document.getElementById('startGameBtn').onclick = () => {
