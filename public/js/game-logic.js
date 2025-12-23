@@ -5,14 +5,12 @@ function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
-    // カード名
     const nameSpan = document.createElement('span');
     nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
 
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
-    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const statValue = data.type === 'oshi' ? data.life : data.hp;
         if (statValue) {
@@ -172,7 +170,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (バトンコストの大型化・横並び修正)
+ * ズーム詳細 (効果テキスト表示機能追加)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -195,6 +193,7 @@ function openZoom(cardData, cardElement = null) {
     const batonHtml = (cardData.baton !== undefined)
         ? `<div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-dots-container">${Array(cardData.baton).fill('<div class="baton-dot"></div>').join('')}</div></div>` : "";
 
+    // ホロメン/推しのスキルリスト
     const skillsHtml = (cardData.skills || []).map(s => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
         let ready = (s.type === 'arts' && canUseArt(s.cost, stackAyle.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
@@ -215,6 +214,9 @@ function openZoom(cardData, cardElement = null) {
             </div>`;
     }).join('');
 
+    // サポートカード等の共通効果テキスト
+    const effectTextHtml = cardData.text ? `<div class="zoom-effect-text">${cardData.text}</div>` : "";
+
     let attachHtml = "";
     if(stackAyle.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装着エール</span>${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button></div>`).join('')}</div>`;
     if(stackEquip.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装備アイテム</span>${stackEquip.map(e => `<div class="attach-item"><span>■ ${e.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button></div>`).join('')}</div>`;
@@ -223,6 +225,7 @@ function openZoom(cardData, cardElement = null) {
 
     container.innerHTML = `
         <div class="zoom-header"><div class="zoom-name">${cardData.name}</div>${hpLife}</div>
+        ${effectTextHtml}
         <div class="zoom-skills-list">${skillsHtml}</div>
         ${attachHtml}
         <div class="zoom-footer">
