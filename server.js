@@ -35,20 +35,13 @@ io.on('connection', (socket) => {
     socket.on('setGame', (data) => {
         const roomId = socket.roomId;
         if (!rooms[roomId] || socket.role !== 'player') return;
-        
         rooms[roomId].fieldState = {}; 
         rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4() }));
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
-        
         shuffleArray(rooms[roomId].mainDeck);
         shuffleArray(rooms[roomId].cheerDeck);
-
         const oshiId = uuidv4();
-        rooms[roomId].fieldState[oshiId] = { 
-            id: oshiId, name: data.oshi.name, type: 'oshi', 
-            zoneId: 'oshi', zIndex: 100, isFaceUp: true, ...data.oshi 
-        };
-
+        rooms[roomId].fieldState[oshiId] = { id: oshiId, name: data.oshi.name, type: 'oshi', zoneId: 'oshi', zIndex: 100, isFaceUp: true, ...data.oshi };
         const lifeCount = data.oshi.life || 0;
         for (let i = 0; i < lifeCount; i++) {
             if (rooms[roomId].cheerDeck.length > 0) {
