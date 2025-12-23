@@ -89,10 +89,11 @@ body {
 .card-bloom { position: absolute; top: 2px; left: 4px; font-weight: bold; color: #3498db; font-size: 8px; }
 .card-color-icon { position: absolute; top: 2px; right: 4px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
 .card-tags { display: none; }
+
+/* バトンタッチ横並び */
 .card-baton { position: absolute; bottom: 2px; right: 4px; font-size: 6px; display: flex; flex-direction: row; align-items: center; gap: 1px; color: #444; }
 .baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
 
-/* カラー設定 */
 .ayle-red { background-color: #ffcccc; border: 2px solid #ff4500; }
 .ayle-blue { background-color: #cce5ff; border: 2px solid #1e90ff; }
 .ayle-green { background-color: #d4edda; border: 2px solid #2ecc71; }
@@ -129,36 +130,16 @@ body {
 .zoom-hp { font-size: 18px; color: #e74c3c; font-weight: bold; }
 .zoom-life { font-size: 18px; color: #f39c12; font-weight: bold; }
 
-/* ズームフッター (左下配置) */
-.zoom-footer {
-    display: flex; flex-direction: column; gap: 10px;
-    padding-top: 10px; border-top: 1px solid #eee; margin-top: auto;
-}
+/* 効果テキスト (サポート・スタッフ用) */
+.zoom-effect-text { font-size: 14px; line-height: 1.5; color: #333; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid #00d2ff; }
+
+.zoom-footer { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid #eee; margin-top: auto; }
 .zoom-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .zoom-tag-item { font-size: 12px; color: #3498db; font-weight: bold; }
 
-/* バトンタッチ横並び設定 (詳細画面) */
-.zoom-baton-row { 
-    display: flex !important; 
-    flex-direction: row !important; 
-    align-items: center; 
-    gap: 10px; 
-    font-size: 14px; 
-    font-weight: bold; 
-    color: #444; 
-}
-.baton-dots-container { 
-    display: flex !important; 
-    flex-direction: row !important; 
-    gap: 4px; 
-}
-/* 拡大時のアイコンを大きく */
-.zoom-container .baton-dot { 
-    width: 10px; 
-    height: 10px; 
-    background: #95a5a6; 
-    border-radius: 50%; 
-}
+.zoom-baton-row { display: flex !important; flex-direction: row !important; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; color: #444; }
+.baton-dots-container { display: flex !important; flex-direction: row !important; gap: 4px; }
+.zoom-container .baton-dot { width: 10px; height: 10px; background: #95a5a6; border-radius: 50%; }
 
 .skill-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 8px; }
 .skill-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
