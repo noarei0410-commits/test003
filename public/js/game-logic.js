@@ -172,7 +172,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細
+ * ズーム詳細 (バトンコストの大型化・横並び修正)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
