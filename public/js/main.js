@@ -30,8 +30,7 @@ async function joinRoom(role) {
 }
 
 function setupDeckClick(id, type) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    const el = document.getElementById(id); if (!el) return;
     let clickTimer = null;
     el.onpointerdown = (e) => {
         e.preventDefault();
