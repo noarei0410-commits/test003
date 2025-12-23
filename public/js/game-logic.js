@@ -43,7 +43,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置 (中央寄せ)
+ * カード再配置 (枠の中央寄せ)
  */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
@@ -174,7 +174,7 @@ function openZoom(cardData, cardElement = null) {
     const container = document.querySelector('.zoom-container');
     const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen');
     
-    let stackAyle = [], stackEquip = [], stackUnder = [];
+    let stackAyle = [], stackEquip = [];
     if (cardElement && cardElement.parentElement === field) {
         const r = cardElement.getBoundingClientRect();
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
@@ -182,7 +182,6 @@ function openZoom(cardData, cardElement = null) {
         });
         stackAyle = stack.filter(c => c.cardData.type === 'ayle');
         stackEquip = stack.filter(c => c.cardData.type === 'support' && ['tool', 'mascot', 'fan'].includes((c.cardData.category || '').toLowerCase()));
-        stackUnder = stack.filter(c => c.cardData.type === 'holomen' && c.cardData.name === cardData.name);
     }
 
     const skillsHtml = (cardData.skills || []).map(s => {
@@ -202,9 +201,3 @@ function openZoom(cardData, cardElement = null) {
     zoomModal.style.display = 'flex';
     zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
 }
-
-window.discardFromZoom = (id) => { 
-    const el = document.getElementById(id); if(!el) return;
-    socket.emit('moveCard', {id, zoneId:'archive', zIndex:10, ...el.cardData}); 
-    el.dataset.zoneId='archive'; repositionCards(); zoomModal.style.display='none'; 
-};
