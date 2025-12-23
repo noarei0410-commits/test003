@@ -43,7 +43,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置 (中央寄せ)
+ * カード再配置
  */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
@@ -170,7 +170,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (ハッシュタグとバトンコストを左下に配置)
+ * ズーム詳細 (アーツ名とダメージ表示を修正)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -197,7 +197,22 @@ function openZoom(cardData, cardElement = null) {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
         let ready = (s.type === 'arts' && canUseArt(s.cost, stackAyle.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
         let costHtml = (s.type === 'arts') ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
-        return `<div class="skill-item"><div class="skill-header"><div class="skill-type-label label-${s.type}">${labelTxt}</div>${costHtml}<div class="skill-name">${s.name}${ready}</div></div><div class="skill-text">${s.text || ''}</div></div>`;
+        
+        // アーツ名とダメージの配置
+        let damageHtml = s.damage ? `<span class="skill-damage">${s.damage}</span>` : "";
+        
+        return `
+            <div class="skill-item">
+                <div class="skill-header">
+                    <div class="skill-type-label label-${s.type}">${labelTxt}</div>
+                    ${costHtml}
+                    <div class="skill-name-row">
+                        <span>${s.name}${ready}</span>
+                        ${damageHtml}
+                    </div>
+                </div>
+                <div class="skill-text">${s.text || ''}</div>
+            </div>`;
     }).join('');
 
     let attachHtml = "";
