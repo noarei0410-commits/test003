@@ -1,6 +1,3 @@
-/**
- * フィールドへの復元
- */
 function restoreCard(id, info) { 
     const el = createCardElement({ id, ...info }); 
     el.dataset.zoneId = info.zoneId || ""; 
