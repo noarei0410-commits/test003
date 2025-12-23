@@ -3,8 +3,6 @@ window.onload = async () => {
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
     window.onresize = repositionCards;
-    
-    // データロード後にハブ画面を表示
     showPage('hub-page');
 };
 
@@ -16,11 +14,10 @@ async function loadCardData() {
             fetch('/data/ayle.json').then(r => r.json()),
             fetch('/data/oshi_holomen.json').then(r => r.json())
         ]);
-        MASTER_CARDS = [...res[0], ...res[1], ...res[2]]; 
-        AYLE_MASTER = res[2]; 
+        MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
+        AYLE_MASTER = res[2];
         OSHI_LIST = res[3];
-        console.log("Card Data Loaded.");
-    } catch (e) { console.error("Load Fail", e); }
+    } catch (e) { console.error("Data Load Error", e); }
 }
 
 async function joinRoom(role) {
@@ -28,8 +25,12 @@ async function joinRoom(role) {
     if (!rid) return alert("ルームIDを入力してください");
     myRole = role; 
     socket.emit('joinRoom', { roomId: rid, role });
-    if (role === 'player') showPage('setup-modal');
-    else { showPage(''); document.body.classList.add('spectator-mode'); }
+    if (role === 'player') {
+        showPage('setup-modal');
+    } else {
+        showPage(''); // フィールドへ
+        document.body.classList.add('spectator-mode');
+    }
 }
 
 function setupDeckClick(id, type) {
