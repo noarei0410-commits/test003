@@ -71,54 +71,90 @@ function repositionCards() {
     });
 }
 
+/**
+ * イベント設定 (ドラッグ開始判定を修正)
+ */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
-        startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
+        startX = e.clientX; startY = e.clientY; 
+        potentialZoomTarget = el;
         if (myRole === 'spectator') return;
-        isDragging = true; currentDragEl = el; el.setPointerCapture(e.pointerId);
-        const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
-        offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
-        maxZIndex++; el.style.zIndex = maxZIndex;
-        if (el.parentElement !== field) { 
-            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); 
-        }
+        
+        isDragging = true; 
+        dragStarted = false; // まだ動いていない
+        currentDragEl = el; 
+        el.setPointerCapture(e.pointerId);
+        
+        const rect = el.getBoundingClientRect();
+        offsetX = e.clientX - rect.left; 
+        offsetY = e.clientY - rect.top;
+        
         e.stopPropagation();
     };
 }
 
 document.onpointermove = (e) => { 
     if (!isDragging || !currentDragEl) return; 
-    const fr = field.getBoundingClientRect(); 
-    currentDragEl.style.left = (e.clientX - fr.left - offsetX) + 'px'; currentDragEl.style.top = (e.clientY - fr.top - offsetY) + 'px'; 
+    
+    // 一定距離(5px)動くまでは手札から出さない(レイアウト崩れ防止)
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    if (!dragStarted && dist > 5) {
+        dragStarted = true;
+        maxZIndex++; 
+        currentDragEl.style.zIndex = maxZIndex;
+        
+        // フィールドレイヤーへ移動（ここで初めて手札のFlexから抜ける）
+        if (currentDragEl.parentElement !== field) {
+            const rect = currentDragEl.getBoundingClientRect();
+            const fRect = field.getBoundingClientRect();
+            currentDragEl.style.position = 'absolute';
+            currentDragEl.style.left = (rect.left - fRect.left) + 'px';
+            currentDragEl.style.top = (rect.top - fRect.top) + 'px';
+            field.appendChild(currentDragEl);
+        }
+    }
+
+    if (dragStarted) {
+        const fr = field.getBoundingClientRect(); 
+        currentDragEl.style.left = (e.clientX - fr.left - offsetX) + 'px'; 
+        currentDragEl.style.top = (e.clientY - fr.top - offsetY) + 'px'; 
+    }
 };
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (potentialZoomTarget && dist < 15) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
-    if (myRole === 'spectator' || !isDragging || !currentDragEl) { isDragging = false; currentDragEl = null; return; }
+    // ほとんど動いていなければズーム表示
+    if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
     
-    const hRect = handDiv.getBoundingClientRect();
-    if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
-        returnToHand(currentDragEl);
-    } else {
-        const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
-        const target = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
-        let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
-        
-        if (target && target.parentElement === field) {
-            const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
-            if ((currentDragEl.cardData.type === 'ayle' || isEquip) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
-                currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
-                currentDragEl.style.zIndex = parseInt(target.style.zIndex) - 1; currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
-                moveData.zIndex = currentDragEl.style.zIndex; moveData.zoneId = currentDragEl.dataset.zoneId;
-            } else if (canBloom(currentDragEl.cardData, target.cardData)) {
-                currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
-                currentDragId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
-            } else normalSnap(e, moveData);
-        } else normalSnap(e, moveData);
-        socket.emit('moveCard', moveData); repositionCards();
+    if (myRole === 'spectator' || !isDragging || !currentDragEl) { 
+        isDragging = false; dragStarted = false; currentDragEl = null; return; 
     }
-    isDragging = false; currentDragEl = null;
+    
+    if (dragStarted) {
+        const hRect = handDiv.getBoundingClientRect();
+        if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
+            returnToHand(currentDragEl);
+        } else {
+            const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
+            const target = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
+            let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
+            
+            if (target && target.parentElement === field) {
+                const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
+                if ((currentDragEl.cardData.type === 'ayle' || isEquip) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
+                    currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
+                    currentDragEl.style.zIndex = parseInt(target.style.zIndex) - 1; currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
+                    moveData.zIndex = currentDragEl.style.zIndex; moveData.zoneId = currentDragEl.dataset.zoneId;
+                } else if (canBloom(currentDragEl.cardData, target.cardData)) {
+                    currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
+                    currentDragEl.dataset.zoneId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
+                } else normalSnap(e, moveData);
+            } else normalSnap(e, moveData);
+            socket.emit('moveCard', moveData); 
+            repositionCards();
+        }
+    }
+    isDragging = false; dragStarted = false; currentDragEl = null;
 };
 
 function normalSnap(e, moveData) {
@@ -146,7 +182,8 @@ function normalSnap(e, moveData) {
 function returnToHand(card) {
     card.style.position = 'relative'; card.style.left = ''; card.style.top = ''; 
     card.classList.remove('rotated', 'face-down'); card.classList.add('face-up');
-    delete card.dataset.zoneId; delete card.dataset.percentX; handDiv.appendChild(card);
+    delete card.dataset.zoneId; delete card.dataset.percentX; 
+    handDiv.appendChild(card);
     socket.emit('flipCard', { id: card.id, isFaceUp: true }); 
     socket.emit('moveCard', { id: card.id, isRotated: false, isFaceUp: true }); 
     socket.emit('returnToHand', { id: card.id });
@@ -169,23 +206,18 @@ function canUseArt(costReq, attachedAyles) {
     return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
-/**
- * ズーム詳細 (装着品の効果文表示を復活)
- */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
     const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen');
     
     let stackAyle = [], stackEquip = [];
-    if (cardElement && cardElement.parentElement === field) {
+    if (cardElement && (cardElement.parentElement === field || cardElement.parentElement === handDiv)) {
         const r = cardElement.getBoundingClientRect();
-        // 重なっているカードをスキャン
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 5 && Math.abs(cr.top - r.top) < 5;
         });
         stackAyle = stack.filter(c => c.cardData.type === 'ayle');
-        // サポートカードかつ装備品カテゴリーのもの
         stackEquip = stack.filter(c => c.cardData.type === 'support');
     }
 
@@ -220,7 +252,6 @@ function openZoom(cardData, cardElement = null) {
     let attachHtml = "";
     if(stackAyle.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装着エール</span>${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button></div>`).join('')}</div>`;
     
-    // 装備サポートカードの説明文を表示するように修正
     if(stackEquip.length) attachHtml += `
         <div class="zoom-attach-section">
             <span class="attach-title">装備アイテム / サポート</span>
