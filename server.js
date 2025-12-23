@@ -39,32 +39,20 @@ io.on('connection', (socket) => {
         rooms[roomId].fieldState = {}; 
         rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4() }));
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
-        
         shuffleArray(rooms[roomId].mainDeck);
         shuffleArray(rooms[roomId].cheerDeck);
 
-        // 推しホロメンの配置を確定
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = { 
-            ...data.oshi,
-            id: oshiId, 
-            type: 'oshi', 
-            zoneId: 'oshi', // 確実にoshiゾーンへ
-            zIndex: 100, 
-            isFaceUp: true 
+            ...data.oshi, id: oshiId, type: 'oshi', zoneId: 'oshi', zIndex: 100, isFaceUp: true 
         };
 
-        // ライフの配置
         const lifeCount = data.oshi.life || 0;
         for (let i = 0; i < lifeCount; i++) {
             if (rooms[roomId].cheerDeck.length > 0) {
                 const lifeCard = rooms[roomId].cheerDeck.pop();
                 rooms[roomId].fieldState[lifeCard.id] = { 
-                    ...lifeCard, 
-                    zoneId: 'life-zone', 
-                    isFaceUp: false, 
-                    isRotated: true, 
-                    zIndex: 10 + i 
+                    ...lifeCard, zoneId: 'life-zone', isFaceUp: false, isRotated: true, zIndex: 10 + i 
                 };
             }
         }
@@ -105,6 +93,26 @@ io.on('connection', (socket) => {
         if (rooms[roomId] && rooms[roomId].fieldState[data.id]) {
             rooms[roomId].fieldState[data.id].isFaceUp = data.isFaceUp;
             socket.to(roomId).emit('cardFlipped', data);
+        }
+    });
+
+    socket.on('inspectDeck', (type) => {
+        const roomId = socket.roomId;
+        if (!rooms[roomId]) return;
+        const cards = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
+        socket.emit('deckInspectionResult', { type, cards });
+    });
+
+    socket.on('pickCardFromDeck', ({ type, cardId }) => {
+        const roomId = socket.roomId;
+        if (!rooms[roomId] || socket.role !== 'player') return;
+        let deck = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
+        const cardIdx = deck.findIndex(c => c.id === cardId);
+        if (cardIdx !== -1) {
+            const card = deck.splice(cardIdx, 1)[0];
+            shuffleArray(deck);
+            socket.emit('receiveCard', card);
+            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
 
