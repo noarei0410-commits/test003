@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
         if (!rooms[roomId] || socket.role !== 'player') return;
         
         rooms[roomId].fieldState = {}; 
-        rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4() }));
+        rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4(), currentHp: card.hp }));
         rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
         
         shuffleArray(rooms[roomId].mainDeck);
@@ -81,6 +81,14 @@ io.on('connection', (socket) => {
         if (rooms[roomId]) {
             rooms[roomId].fieldState[data.id] = { ...rooms[roomId].fieldState[data.id], ...data };
             socket.to(roomId).emit('cardMoved', data);
+        }
+    });
+
+    socket.on('updateHp', (data) => {
+        const roomId = socket.roomId;
+        if (rooms[roomId] && rooms[roomId].fieldState[data.id]) {
+            rooms[roomId].fieldState[data.id].currentHp = data.currentHp;
+            io.to(roomId).emit('hpUpdated', data);
         }
     });
 
