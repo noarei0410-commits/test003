@@ -1,5 +1,5 @@
 /**
- * カードDOMの生成 (HP更新対応)
+ * カードDOMの生成
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
@@ -13,7 +13,6 @@ function createCardElement(data, withEvents = true) {
 
     // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
-        // 現在のHPを表示 (無ければ最大HP)
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); 
         hpDiv.className = 'card-hp'; 
@@ -113,7 +112,8 @@ document.onpointermove = (e) => {
                 card.style.left = (e.clientX - fr.left - offsetX) + 'px'; card.style.top = (e.clientY - fr.top - offsetY) + 'px';
             } else {
                 if (!card.dataset.stackOffset) {
-                    const lR = currentDragEl.getBoundingClientRect(), cR = card.getBoundingClientRect();
+                    const lR = currentDragEl.getBoundingClientRect();
+                    const cR = card.getBoundingClientRect();
                     card.dataset.stackOffset = JSON.stringify({ x: cR.left - lR.left, y: cR.top - lR.top });
                 }
                 const off = JSON.parse(card.dataset.stackOffset);
@@ -128,6 +128,7 @@ document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
     if (myRole === 'spectator' || !isDragging || !currentDragEl) { isDragging = false; dragStarted = false; currentStack = []; return; }
+    
     if (dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
         if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
@@ -135,13 +136,33 @@ document.onpointerup = (e) => {
         } else {
             const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
+            
             if (target && target.parentElement === field) {
+                // Bloom（進化）のダメージ引き継ぎロジック
+                if (canBloom(currentDragEl.cardData, target.cardData)) {
+                    // ダメージ計算: 最大HP - 現在HP
+                    const prevMax = parseInt(target.cardData.hp || 0);
+                    const prevCurrent = parseInt(target.cardData.currentHp !== undefined ? target.cardData.currentHp : prevMax);
+                    const damageTaken = prevMax - prevCurrent;
+
+                    // 新しいHP = 進化後の最大HP - ダメージ
+                    const nextMax = parseInt(currentDragEl.cardData.hp || 0);
+                    currentDragEl.cardData.currentHp = Math.max(0, nextMax - damageTaken);
+
+                    // 表示更新
+                    const hpDisplay = document.getElementById(`hp-display-${currentDragEl.id}`);
+                    if (hpDisplay) hpDisplay.innerText = currentDragEl.cardData.currentHp;
+                }
+
                 currentStack.forEach(c => {
                     c.style.left = target.style.left; c.style.top = target.style.top;
                     c.dataset.zoneId = target.dataset.zoneId || "";
                     const isBase = (c.cardData.type === 'holomen' || c.cardData.type === 'oshi');
                     c.style.zIndex = isBase ? target.style.zIndex : parseInt(target.style.zIndex) - 1;
-                    socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex });
+                    // ダメージ情報を乗せた状態で同期
+                    socket.emit('moveCard', { 
+                        id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex, currentHp: c.cardData.currentHp 
+                    });
                 });
             } else { normalSnapStack(e); }
         }
@@ -206,7 +227,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (HPカウンター機能追加)
+ * ズーム詳細
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -246,7 +267,6 @@ function openZoom(cardData, cardElement = null) {
 
     const effectTextHtml = cardData.text ? `<div class="zoom-effect-text">${cardData.text}</div>` : "";
 
-    // HP管理セクション
     let hpDisplayHtml = "";
     if (isHolomen) {
         const currentHp = cardData.currentHp !== undefined ? cardData.currentHp : cardData.hp;
@@ -280,28 +300,17 @@ function openZoom(cardData, cardElement = null) {
     zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
 }
 
-/**
- * HP変更処理 (クライアント側)
- */
 window.changeHp = (id, amount) => {
     const el = document.getElementById(id);
     if (!el || !el.cardData) return;
-    
-    // 現在の値を数値化
     let current = parseInt(el.cardData.currentHp !== undefined ? el.cardData.currentHp : el.cardData.hp);
     let newVal = current + amount;
     if (newVal < 0) newVal = 0;
-    
-    // ローカルデータを更新
     el.cardData.currentHp = newVal;
-    
-    // UIを即座に更新
     const zoomVal = document.getElementById('zoom-hp-val');
     if (zoomVal) zoomVal.innerText = `HP ${newVal}`;
     const fieldHp = document.getElementById(`hp-display-${id}`);
     if (fieldHp) fieldHp.innerText = newVal;
-    
-    // サーバーへ通知
     socket.emit('updateHp', { id: id, currentHp: newVal });
 };
 
