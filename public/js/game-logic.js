@@ -1,28 +1,44 @@
 /**
- * カードDOMの生成
+ * カードDOMの生成 (全プロパティの参照を正規化)
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
+    // カード名
     const nameSpan = document.createElement('span');
-    nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
+    nameSpan.innerText = data.name || "None"; el.appendChild(nameSpan);
 
+    // 基本ステータスクラス
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
+    // ホロメン・推しの特殊装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
-        if (data.hp) {
-            const hp = document.createElement('div'); hp.className = 'card-hp'; hp.innerText = data.hp; el.appendChild(hp);
+        // HP表示 (oshiはlifeを表示)
+        const statValue = data.type === 'oshi' ? data.life : data.hp;
+        if (statValue) {
+            const hpDiv = document.createElement('div'); 
+            hpDiv.className = 'card-hp'; 
+            hpDiv.innerText = statValue; 
+            el.appendChild(hpDiv);
         }
+        // Bloom表示
         if (data.bloom) {
-            const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = data.bloom.charAt(0); el.appendChild(bl);
+            const blDiv = document.createElement('div'); 
+            blDiv.className = 'card-bloom'; 
+            blDiv.innerText = data.bloom.charAt(0); 
+            el.appendChild(blDiv);
         }
+        // 属性色アイコン
         if (data.color) {
-            const ci = document.createElement('div'); ci.className = `card-color-icon color-${data.color}`; el.appendChild(ci);
+            const clDiv = document.createElement('div'); 
+            clDiv.className = `card-color-icon color-${data.color.toLowerCase()}`; 
+            el.appendChild(clDiv);
         }
     }
 
+    // エールカードのデザイン
     if (data.type === 'ayle' || (data.name && data.name.includes('エール'))) {
         for (let kanji in COLORS) {
             if (data.name.includes(kanji)) { el.classList.add(`ayle-${COLORS[kanji]}`); break; }
@@ -35,33 +51,27 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置 (中央寄せ)
+ * 再配置ロジック (枠の中央寄せ)
  */
 function repositionCards() {
-    const fieldEl = document.getElementById('field');
-    if (!fieldEl) return;
+    const fieldEl = document.getElementById('field'); if (!fieldEl) return;
     const fRect = fieldEl.getBoundingClientRect();
     const zoneCounts = {};
 
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== fieldEl || card === currentDragEl) return;
-
         const zid = card.dataset.zoneId;
         if (zid) {
             const z = document.getElementById(zid);
             if(z) {
-                const zr = z.getBoundingClientRect();
-                const cr = card.getBoundingClientRect();
+                const zr = z.getBoundingClientRect(), cr = card.getBoundingClientRect();
                 if (!zoneCounts[zid]) zoneCounts[zid] = 0;
-
                 let targetLeft = (zr.left - fRect.left) + (zr.width - cr.width) / 2;
                 let targetTop = (zr.top - fRect.top) + (zr.height - cr.height) / 2;
-
                 if (zid === 'life-zone') {
                     const offset = zoneCounts[zid] * 18;
                     targetTop = (zr.top - fRect.top) + 5 + offset;
                 }
-
                 card.style.left = targetLeft + 'px';
                 card.style.top = targetTop + 'px';
                 zoneCounts[zid]++;
@@ -74,24 +84,18 @@ function repositionCards() {
 }
 
 /**
- * イベント設定
+ * ドラッグ＆ドロップイベント
  */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (myRole === 'spectator') return;
         isDragging = true; currentDragEl = el; el.setPointerCapture(e.pointerId);
-        const rect = el.getBoundingClientRect();
-        const fieldEl = document.getElementById('field');
-        const fRect = fieldEl.getBoundingClientRect();
+        const rect = el.getBoundingClientRect(), fRect = field.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         maxZIndex++; el.style.zIndex = maxZIndex;
-        
-        if (el.parentElement !== fieldEl) { 
-            el.style.position = 'absolute'; 
-            el.style.left = (rect.left - fRect.left) + 'px'; 
-            el.style.top = (rect.top - fRect.top) + 'px'; 
-            fieldEl.appendChild(el); 
+        if (el.parentElement !== field) { 
+            el.style.position = 'absolute'; el.style.left = (rect.left - fRect.left) + 'px'; el.style.top = (rect.top - fRect.top) + 'px'; field.appendChild(el); 
         }
         e.stopPropagation();
     };
@@ -99,8 +103,7 @@ function setupCardEvents(el) {
 
 document.onpointermove = (e) => { 
     if (!isDragging || !currentDragEl) return; 
-    const fieldEl = document.getElementById('field');
-    const fr = fieldEl.getBoundingClientRect(); 
+    const fr = field.getBoundingClientRect(); 
     currentDragEl.style.left = (e.clientX - fr.left - offsetX) + 'px'; 
     currentDragEl.style.top = (e.clientY - fr.top - offsetY) + 'px'; 
 };
@@ -118,32 +121,17 @@ document.onpointerup = (e) => {
         const target = elementsUnder.find(el => el.classList.contains('card') && el !== currentDragEl);
         let moveData = { id: currentDragEl.id, ...currentDragEl.cardData, zIndex: currentDragEl.style.zIndex };
         
-        // --- 装着ロジックの復旧 ---
-        const fieldEl = document.getElementById('field');
-        if (target && target.parentElement === fieldEl) {
+        if (target && target.parentElement === field) {
             const isEquip = ['tool', 'mascot', 'fan'].includes((currentDragEl.cardData.category || '').toLowerCase());
-            
-            // 1. エールまたは装着アイテムをホロメン/推しに重ねる
             if ((currentDragEl.cardData.type === 'ayle' || isEquip) && (target.cardData.type === 'holomen' || target.cardData.type === 'oshi')) {
-                currentDragEl.style.left = target.style.left;
-                currentDragEl.style.top = target.style.top;
-                // 下に重ねる (zIndexをターゲットより小さく)
-                currentDragEl.style.zIndex = parseInt(target.style.zIndex) - 1;
-                currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
-                moveData.zIndex = currentDragEl.style.zIndex;
-                moveData.zoneId = currentDragEl.dataset.zoneId;
-            } 
-            // 2. Bloom (進化) の重なり
-            else if (canBloom(currentDragEl.cardData, target.cardData)) {
-                currentDragEl.style.left = target.style.left;
-                currentDragEl.style.top = target.style.top;
-                currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
-                moveData.zoneId = currentDragEl.dataset.zoneId;
-            } 
-            else normalSnap(e, moveData);
-        } else {
-            normalSnap(e, moveData);
-        }
+                currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
+                currentDragEl.style.zIndex = parseInt(target.style.zIndex) - 1; currentDragEl.dataset.zoneId = target.dataset.zoneId || "";
+                moveData.zIndex = currentDragEl.style.zIndex; moveData.zoneId = currentDragEl.dataset.zoneId;
+            } else if (canBloom(currentDragEl.cardData, target.cardData)) {
+                currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
+                currentDragEl.dataset.zoneId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
+            } else normalSnap(e, moveData);
+        } else normalSnap(e, moveData);
         socket.emit('moveCard', moveData); repositionCards();
     }
     isDragging = false; currentDragEl = null;
@@ -156,13 +144,11 @@ function normalSnap(e, moveData) {
     const zones = document.querySelectorAll('.zone');
     let closest = null, minDist = 40;
     const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
-
     zones.forEach(z => {
         const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
-
     if (closest) { 
         if (STAGE_ZONES.includes(closest.id)) {
             const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && c !== currentDragEl);
@@ -173,9 +159,7 @@ function normalSnap(e, moveData) {
         currentDragEl.dataset.zoneId = closest.id; delete currentDragEl.dataset.percentX; moveData.zoneId = closest.id;
         currentDragEl.classList.toggle('rotated', closest.id === 'life-zone'); moveData.isRotated = (closest.id === 'life-zone');
     } else { 
-        delete currentDragEl.dataset.zoneId; 
-        const fieldEl = document.getElementById('field');
-        const fr = fieldEl.getBoundingClientRect(); 
+        delete currentDragEl.dataset.zoneId; const fr = field.getBoundingClientRect(); 
         const px = (parseFloat(currentDragEl.style.left)/fr.width)*100, py = (parseFloat(currentDragEl.style.top)/fr.height)*100;
         currentDragEl.dataset.percentX = px; currentDragEl.dataset.percentY = py; moveData.percentX = px; moveData.percentY = py;
     }
@@ -196,7 +180,7 @@ function canBloom(s, t) {
 }
 
 /**
- * ズーム表示
+ * ズーム詳細
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -204,8 +188,7 @@ function openZoom(cardData, cardElement = null) {
     const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen');
     
     let stackAyle = [], stackUnder = [];
-    const fieldEl = document.getElementById('field');
-    if (!isOshi && cardElement && cardElement.parentElement === fieldEl) {
+    if (!isOshi && cardElement && cardElement.parentElement === field) {
         const r = cardElement.getBoundingClientRect();
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
