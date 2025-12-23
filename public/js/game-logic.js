@@ -43,7 +43,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * カード再配置 (中央寄せ)
+ * カード再配置
  */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
@@ -113,7 +113,7 @@ document.onpointerup = (e) => {
                 moveData.zIndex = currentDragEl.style.zIndex; moveData.zoneId = currentDragEl.dataset.zoneId;
             } else if (canBloom(currentDragEl.cardData, target.cardData)) {
                 currentDragEl.style.left = target.style.left; currentDragEl.style.top = target.style.top;
-                currentDragEl.dataset.zoneId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
+                currentDragId = target.dataset.zoneId || ""; moveData.zoneId = currentDragEl.dataset.zoneId;
             } else normalSnap(e, moveData);
         } else normalSnap(e, moveData);
         socket.emit('moveCard', moveData); repositionCards();
@@ -170,7 +170,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (効果テキスト表示機能追加)
+ * ズーム詳細 (装着品の効果文表示を復活)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -180,11 +180,13 @@ function openZoom(cardData, cardElement = null) {
     let stackAyle = [], stackEquip = [];
     if (cardElement && cardElement.parentElement === field) {
         const r = cardElement.getBoundingClientRect();
+        // 重なっているカードをスキャン
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 5 && Math.abs(cr.top - r.top) < 5;
         });
         stackAyle = stack.filter(c => c.cardData.type === 'ayle');
-        stackEquip = stack.filter(c => c.cardData.type === 'support' && ['tool', 'mascot', 'fan'].includes((c.cardData.category || '').toLowerCase()));
+        // サポートカードかつ装備品カテゴリーのもの
+        stackEquip = stack.filter(c => c.cardData.type === 'support');
     }
 
     const tagsHtml = (cardData.tags && cardData.tags.length) 
@@ -193,7 +195,6 @@ function openZoom(cardData, cardElement = null) {
     const batonHtml = (cardData.baton !== undefined)
         ? `<div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-dots-container">${Array(cardData.baton).fill('<div class="baton-dot"></div>').join('')}</div></div>` : "";
 
-    // ホロメン/推しのスキルリスト
     const skillsHtml = (cardData.skills || []).map(s => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
         let ready = (s.type === 'arts' && canUseArt(s.cost, stackAyle.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
@@ -214,12 +215,25 @@ function openZoom(cardData, cardElement = null) {
             </div>`;
     }).join('');
 
-    // サポートカード等の共通効果テキスト
     const effectTextHtml = cardData.text ? `<div class="zoom-effect-text">${cardData.text}</div>` : "";
 
     let attachHtml = "";
     if(stackAyle.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装着エール</span>${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button></div>`).join('')}</div>`;
-    if(stackEquip.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装備アイテム</span>${stackEquip.map(e => `<div class="attach-item"><span>■ ${e.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button></div>`).join('')}</div>`;
+    
+    // 装備サポートカードの説明文を表示するように修正
+    if(stackEquip.length) attachHtml += `
+        <div class="zoom-attach-section">
+            <span class="attach-title">装備アイテム / サポート</span>
+            ${stackEquip.map(e => `
+                <div class="attach-item">
+                    <div class="attach-item-header">
+                        <span>■ ${e.cardData.name}</span>
+                        <button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button>
+                    </div>
+                    <div class="attach-item-text">${e.cardData.text || '(効果文なし)'}</div>
+                </div>
+            `).join('')}
+        </div>`;
 
     let hpLife = isOshi ? `<div class="zoom-life">LIFE ${cardData.life || 0}</div>` : (isHolomen ? `<div class="zoom-hp">HP ${cardData.hp || 0}</div>` : "");
 
