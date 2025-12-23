@@ -12,13 +12,15 @@
         "name": "そらともへの挨拶",
         "type": "arts",
         "cost": ["blue"],
+        "damage": "30",
         "text": "相手のセンターに30ダメージ。"
       },
       {
         "name": "ドリームステージ",
         "type": "arts",
         "cost": ["blue", "any"],
-        "text": "相手のセンターに60ダメージ。"
+        "damage": "60+",
+        "text": "自分のエールの数だけダメージを+10する。"
       }
     ]
   },
@@ -35,24 +37,8 @@
         "name": "こんこんきーつね！",
         "type": "arts",
         "cost": ["white"],
+        "damage": "20",
         "text": "自分の山札を1枚引く。"
-      }
-    ]
-  },
-  {
-    "name": "さくらみこ",
-    "type": "holomen",
-    "hp": "190",
-    "bloom": "Debut",
-    "color": "red",
-    "tags": ["#ホロライブ", "#JP", "#0期生"],
-    "baton": 2,
-    "skills": [
-      {
-        "name": "エリートパンチ",
-        "type": "arts",
-        "cost": ["red", "any"],
-        "text": "相手のセンターに50ダメージ。"
       }
     ]
   }
