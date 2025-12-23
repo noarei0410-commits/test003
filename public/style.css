@@ -89,8 +89,6 @@ body {
 .card-bloom { position: absolute; top: 2px; left: 4px; font-weight: bold; color: #3498db; font-size: 8px; }
 .card-color-icon { position: absolute; top: 2px; right: 4px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
 .card-tags { display: none; }
-
-/* バトンタッチ横並び */
 .card-baton { position: absolute; bottom: 2px; right: 4px; font-size: 6px; display: flex; flex-direction: row; align-items: center; gap: 1px; color: #444; }
 .baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
 
@@ -130,7 +128,6 @@ body {
 .zoom-hp { font-size: 18px; color: #e74c3c; font-weight: bold; }
 .zoom-life { font-size: 18px; color: #f39c12; font-weight: bold; }
 
-/* 効果テキスト (サポート・スタッフ用) */
 .zoom-effect-text { font-size: 14px; line-height: 1.5; color: #333; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid #00d2ff; }
 
 .zoom-footer { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid #eee; margin-top: auto; }
@@ -158,7 +155,10 @@ body {
 
 .zoom-attach-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
 .attach-title { font-size: 10px; font-weight: bold; color: #2980b9; margin-bottom: 5px; display: block; border-bottom: 1px solid #d0e4ff; }
-.attach-item { font-size: 11px; display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+.attach-item { font-size: 12px; padding: 4px 0; border-bottom: 1px dashed #d0e4ff; margin-bottom: 4px; }
+.attach-item:last-child { border-bottom: none; }
+.attach-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 2px; }
+.attach-item-text { font-size: 10px; color: #555; font-style: italic; line-height: 1.3; }
 .btn-discard-small { background: #ff5e5e; color: white; border: none; font-size: 8px; padding: 2px 5px; border-radius: 4px; cursor: pointer; }
 
 button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; transition: 0.1s; }
