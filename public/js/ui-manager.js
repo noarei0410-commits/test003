@@ -13,7 +13,7 @@ function showPage(pageId) {
 }
 
 /**
- * 構築画面のライブラリ描画
+ * 構築画面の左側ライブラリ描画
  */
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
@@ -72,19 +72,17 @@ function renderDecks() {
 }
 
 /**
- * カードリスト（確認用ライブラリ）のフィルタリング描画修正
+ * カードリスト（閲覧専用ライブラリ）のフィルタリング描画修正
  */
 function filterLibrary(type) {
     const grid = document.getElementById('global-card-grid'); if (!grid) return;
     grid.innerHTML = "";
     
-    // アクティブクラスの切り替え
     document.querySelectorAll('.filter-btn').forEach(btn => {
         const typeMap = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', ayle: 'エール', oshi: '推し' };
         btn.classList.toggle('active', btn.innerText === typeMap[type]);
     });
 
-    // データの統合
     let list = [];
     if (type === 'all') {
         list = [...OSHI_LIST, ...MASTER_CARDS];
@@ -94,7 +92,7 @@ function filterLibrary(type) {
         list = MASTER_CARDS.filter(c => c.type === type);
     }
 
-    // 描画実行
+    // 重ならずに全て表示するためにグリッドに追加
     list.forEach(card => {
         const el = createCardElement(card, false); 
         el.onclick = () => openZoom(card, el); 
