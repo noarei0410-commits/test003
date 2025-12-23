@@ -46,9 +46,11 @@ body {
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
 #searchInput { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00d2ff; background: #04172b; color: white; margin-bottom: 10px; }
 #libraryList, .card-grid { flex: 1; overflow-y: auto; }
+
 .filter-bar { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
 .filter-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 16px; font-size: 12px; white-space: nowrap; border-radius: 6px; flex-shrink: 0; }
 .filter-btn.active { background: #00d2ff; color: #04172b; border-color: #00d2ff; font-weight: bold; }
+
 .card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; justify-content: flex-start; align-content: flex-start; }
 
 /* --- フィールド UI --- */
@@ -78,7 +80,7 @@ body {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
     position: absolute; z-index: 1000; touch-action: none; padding: 4px;
-    box-sizing: border-box; overflow: hidden; transition: transform 0.2s;
+    box-sizing: border-box; overflow: hidden; transition: transform 0.2s, left 0.1s, top 0.1s;
     border: 1px solid #ccc;
 }
 #hand .card, .card-grid .card { position: relative !important; left: auto !important; top: auto !important; flex-shrink: 0; }
@@ -121,12 +123,13 @@ body {
     border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; cursor: default;
     position: relative;
 }
-.zoom-header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+.zoom-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 8px; }
 .zoom-name { font-size: 20px; font-weight: bold; }
 .zoom-hp { font-size: 18px; color: #e74c3c; font-weight: bold; }
 .zoom-life { font-size: 18px; color: #f39c12; font-weight: bold; }
 
 .zoom-effect-text { font-size: 14px; line-height: 1.5; color: #333; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid #00d2ff; }
+
 .zoom-footer { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid #eee; margin-top: auto; }
 .zoom-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .zoom-tag-item { font-size: 12px; color: #3498db; font-weight: bold; }
@@ -153,6 +156,7 @@ body {
 .zoom-attach-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
 .attach-title { font-size: 10px; font-weight: bold; color: #2980b9; margin-bottom: 5px; display: block; border-bottom: 1px solid #d0e4ff; }
 .attach-item { font-size: 12px; padding: 4px 0; border-bottom: 1px dashed #d0e4ff; margin-bottom: 4px; }
+.attach-item:last-child { border-bottom: none; }
 .attach-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 2px; }
 .attach-item-text { font-size: 10px; color: #555; font-style: italic; line-height: 1.3; }
 .btn-discard-small { background: #ff5e5e; color: white; border: none; font-size: 8px; padding: 2px 5px; border-radius: 4px; cursor: pointer; }
