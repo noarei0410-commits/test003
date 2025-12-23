@@ -46,19 +46,6 @@ body {
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
 #searchInput { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00d2ff; background: #04172b; color: white; margin-bottom: 10px; }
 #libraryList, .card-grid { flex: 1; overflow-y: auto; }
-
-/* フィルターバー */
-.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
-.filter-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 16px; font-size: 12px; white-space: nowrap; border-radius: 6px; flex-shrink: 0; }
-.filter-btn.active { background: #00d2ff; color: #04172b; border-color: #00d2ff; font-weight: bold; }
-
-/* カードグリッド (重なり防止の核心) */
-.card-grid { 
-    display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; 
-    justify-content: flex-start; align-content: flex-start; 
-}
-
-/* 構築画面のアイテム */
 .library-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
 .type-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-left: 5px; }
 
@@ -87,7 +74,7 @@ body {
 #hand { height: 100%; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px 15px; background: rgba(4, 23, 43, 0.95); overflow-x: auto; align-items: center; }
 
 /* ==========================================
-   2. カード基本デザイン & 重なり防止設定
+   2. カード基本デザイン & 表示設定
    ========================================== */
 .card {
     width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px;
@@ -97,22 +84,19 @@ body {
     box-sizing: border-box; overflow: hidden; transition: transform 0.2s, left 0.1s, top 0.1s;
     border: 1px solid #ccc;
 }
-
-/* 【重要】グリッドや手札の中では重なりを解除する */
-#hand .card, .card-grid .card { 
-    position: relative !important; 
-    left: auto !important; 
-    top: auto !important; 
-    flex-shrink: 0; 
-}
+#hand .card, .card-grid .card { position: relative !important; left: auto !important; top: auto !important; flex-shrink: 0; }
 
 /* カードステータス */
 .card-hp { position: absolute; top: 12px; right: 4px; font-weight: bold; color: #e74c3c; font-size: 9px; }
 .card-bloom { position: absolute; top: 2px; left: 4px; font-weight: bold; color: #3498db; font-size: 8px; }
 .card-color-icon { position: absolute; top: 2px; right: 4px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
-.card-tags { position: absolute; bottom: 12px; left: 4px; font-size: 5px; color: #666; text-align: left; line-height: 1.1; }
+
+/* ハッシュタグ (拡大前は非表示にする指示に対応) */
+.card-tags { display: none; }
+
+/* バトンタッチ */
 .card-baton { position: absolute; bottom: 2px; right: 4px; font-size: 6px; display: flex; align-items: center; gap: 1px; color: #444; }
-.baton-icon { width: 6px; height: 6px; background: #95a5a6; border-radius: 50%; }
+.baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
 
 /* エールカラー */
 .ayle-red { background-color: #ffcccc; border: 2px solid #ff4500; }
@@ -134,7 +118,7 @@ body {
 .card.rotated { transform: rotate(90deg); }
 
 /* ==========================================
-   3. 詳細表示 (Zoom Modal)
+   3. 詳細表示 (Zoom Modal) 改修
    ========================================== */
 #zoom-modal {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -142,13 +126,21 @@ body {
     flex-direction: column; justify-content: center; align-items: center; cursor: pointer; gap: 10px;
 }
 .zoom-container {
-    background: #fff; color: #000; width: 320px; max-height: 85vh;
-    border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; cursor: default;
+    background: #fff; color: #000; width: 340px; max-height: 85vh;
+    border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; cursor: default;
 }
-.zoom-header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 5px; }
-.zoom-name { font-size: 18px; font-weight: bold; }
-.zoom-hp { font-size: 16px; color: #e74c3c; font-weight: bold; }
-.zoom-life { font-size: 16px; color: #f39c12; font-weight: bold; }
+.zoom-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+.zoom-name { font-size: 20px; font-weight: bold; }
+.zoom-hp { font-size: 18px; color: #e74c3c; font-weight: bold; }
+.zoom-life { font-size: 18px; color: #f39c12; font-weight: bold; }
+
+/* 拡大時ハッシュタグ (復活) */
+.zoom-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.zoom-tag-item { font-size: 11px; color: #3498db; font-weight: bold; }
+
+/* 拡大時バトンタッチ (復活) */
+.zoom-baton-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #444; margin-top: 5px; }
+.baton-dots-container { display: flex; gap: 2px; }
 
 .skill-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 8px; }
 .skill-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
@@ -173,6 +165,7 @@ button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; t
 .btn-minus { background: #ff5e5e; color: white; padding: 2px 8px; }
 .btn-plus { background: #2ecc71; color: white; padding: 2px 8px; }
 .btn-close-gray { background: #444; color: white; padding: 10px; }
+.btn-back { background: transparent; color: #666; font-size: 12px; margin-top: 5px; text-decoration: underline; }
 #startGameBtn { padding: 15px; background: #00d2ff; width: 100%; font-size: 18px; margin-bottom: 10px; }
 #startGameBtn:disabled { background: #333; color: #666; cursor: not-allowed; }
 
