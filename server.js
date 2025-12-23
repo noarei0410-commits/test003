@@ -43,47 +43,38 @@ io.on('connection', (socket) => {
         shuffleArray(rooms[roomId].mainDeck);
         shuffleArray(rooms[roomId].cheerDeck);
 
+        // 推しホロメンの配置を確定
         const oshiId = uuidv4();
         rooms[roomId].fieldState[oshiId] = { 
-            id: oshiId, name: data.oshi.name, type: 'oshi', 
-            zoneId: 'oshi', zIndex: 100, isFaceUp: true, ...data.oshi 
+            ...data.oshi,
+            id: oshiId, 
+            type: 'oshi', 
+            zoneId: 'oshi', // 確実にoshiゾーンへ
+            zIndex: 100, 
+            isFaceUp: true 
         };
 
+        // ライフの配置
         const lifeCount = data.oshi.life || 0;
         for (let i = 0; i < lifeCount; i++) {
             if (rooms[roomId].cheerDeck.length > 0) {
                 const lifeCard = rooms[roomId].cheerDeck.pop();
-                rooms[roomId].fieldState[lifeCard.id] = { ...lifeCard, zoneId: 'life-zone', isFaceUp: false, isRotated: true, zIndex: 10 + i };
+                rooms[roomId].fieldState[lifeCard.id] = { 
+                    ...lifeCard, 
+                    zoneId: 'life-zone', 
+                    isFaceUp: false, 
+                    isRotated: true, 
+                    zIndex: 10 + i 
+                };
             }
         }
         io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
     });
 
-    socket.on('inspectDeck', (type) => {
-        const roomId = socket.roomId;
-        if (!rooms[roomId]) return;
-        const cards = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
-        socket.emit('deckInspectionResult', { type, cards });
-    });
-
-    socket.on('pickCardFromDeck', ({ type, cardId }) => {
-        const roomId = socket.roomId;
-        if (!rooms[roomId] || socket.role !== 'player') return;
-        let deck = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
-        const cardIdx = deck.findIndex(c => c.id === cardId);
-        if (cardIdx !== -1) {
-            const card = deck.splice(cardIdx, 1)[0];
-            shuffleArray(deck);
-            socket.emit('receiveCard', card);
-            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
-        }
-    });
-
     socket.on('drawMainCard', () => {
         const roomId = socket.roomId;
         if (rooms[roomId] && rooms[roomId].mainDeck.length > 0) {
-            const card = rooms[roomId].mainDeck.pop();
-            socket.emit('receiveCard', card);
+            socket.emit('receiveCard', rooms[roomId].mainDeck.pop());
             io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
@@ -91,8 +82,7 @@ io.on('connection', (socket) => {
     socket.on('drawCheerCard', () => {
         const roomId = socket.roomId;
         if (rooms[roomId] && rooms[roomId].cheerDeck.length > 0) {
-            const card = rooms[roomId].cheerDeck.pop();
-            socket.emit('receiveCard', card);
+            socket.emit('receiveCard', rooms[roomId].cheerDeck.pop());
             io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
