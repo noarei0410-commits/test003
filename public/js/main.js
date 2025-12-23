@@ -3,8 +3,6 @@ window.onload = async () => {
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
     window.onresize = repositionCards;
-    
-    // 初期状態でハブ画面を表示
     showPage('hub-page');
 };
 
