@@ -2,69 +2,57 @@
   {
     "name": "ときのそら",
     "type": "holomen",
-    "hp": 180,
+    "hp": "180",
     "bloom": "Debut",
     "color": "blue",
-    "tags": ["#ホロライブ", "#0期生"],
+    "tags": ["#ホロライブ", "#JP", "#0期生"],
     "baton": 1,
     "skills": [
       {
-        "type": "gift",
-        "name": "そらとも",
-        "text": "自分のメインステップに1回使える。自分の山札を上から3枚見て、その中から「ときのそら」を1枚公開して手札に加えてもよい。"
+        "name": "そらともへの挨拶",
+        "type": "arts",
+        "cost": ["blue"],
+        "text": "相手のセンターに30ダメージ。"
       },
       {
-        "type": "arts",
-        "name": "そらともハグ",
-        "cost": ["blue", "any"],
-        "damage": 30,
-        "text": "なし"
-      }
-    ]
-  },
-  {
-    "name": "ときのそら",
-    "type": "holomen",
-    "hp": 220,
-    "bloom": "1st",
-    "color": "blue",
-    "tags": ["#ホロライブ", "#0期生"],
-    "baton": 2,
-    "skills": [
-      {
-        "type": "collab",
-        "name": "アイドル活動",
-        "text": "このホロメンがコラボ席にいる時、自分のセンターホロメンの攻撃力に+20する。"
-      },
-      {
-        "type": "arts",
-        "name": "ぐるぐる旋律",
-        "cost": ["blue", "blue", "any"],
-        "damage": 60,
-        "text": "相手のセンターホロメンを「ねむり」状態にする。"
-      }
-    ]
-  },
-  {
-    "name": "ときのそら",
-    "type": "holomen",
-    "hp": 280,
-    "bloom": "2nd",
-    "color": "blue",
-    "tags": ["#ホロライブ", "#0期生"],
-    "baton": 2,
-    "skills": [
-      {
-        "type": "gift",
         "name": "ドリームステージ",
-        "text": "このホロメンが場にいる限り、自分のブルーエールを持つホロメン全員のHPを+20する。"
-      },
-      {
         "type": "arts",
-        "name": "全肯定応援歌",
-        "cost": ["blue", "blue", "blue"],
-        "damage": "120+",
-        "text": "自分に付いているエールが4つ以上なら、+50ダメージ。"
+        "cost": ["blue", "any"],
+        "text": "相手のセンターに60ダメージ。"
+      }
+    ]
+  },
+  {
+    "name": "白上フブキ",
+    "type": "holomen",
+    "hp": "170",
+    "bloom": "Debut",
+    "color": "white",
+    "tags": ["#ホロライブ", "#JP", "#1期生", "#ゲーマーズ"],
+    "baton": 1,
+    "skills": [
+      {
+        "name": "こんこんきーつね！",
+        "type": "arts",
+        "cost": ["white"],
+        "text": "自分の山札を1枚引く。"
+      }
+    ]
+  },
+  {
+    "name": "さくらみこ",
+    "type": "holomen",
+    "hp": "190",
+    "bloom": "Debut",
+    "color": "red",
+    "tags": ["#ホロライブ", "#JP", "#0期生"],
+    "baton": 2,
+    "skills": [
+      {
+        "name": "エリートパンチ",
+        "type": "arts",
+        "cost": ["red", "any"],
+        "text": "相手のセンターに50ダメージ。"
       }
     ]
   }
