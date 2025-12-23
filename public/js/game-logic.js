@@ -52,7 +52,9 @@ function setupCardEvents(el) {
 document.onpointermove = (e) => { if (!isDragging || !currentDragEl) return; const fr = field.getBoundingClientRect(); currentDragEl.style.left = (e.clientX - fr.left - offsetX) + 'px'; currentDragEl.style.top = (e.clientY - fr.top - offsetY) + 'px'; };
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    // 指を離した際、移動距離が小さければ詳細表示
     if (potentialZoomTarget && dist < 15) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
+    
     if (myRole === 'spectator' || !isDragging || !currentDragEl) { isDragging = false; currentDragEl = null; return; }
     
     const hRect = handDiv.getBoundingClientRect();
@@ -85,7 +87,6 @@ function normalSnap(e, moveData) {
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y);
         if (d < minDist) { minDist = d; closest = z; }
     });
-
     if (closest) { 
         if (STAGE_ZONES.includes(closest.id)) {
             const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && c !== currentDragEl);
@@ -116,6 +117,19 @@ function canBloom(s, t) {
     return (t.bloom === 'Debut' && s.bloom === '1st') || (t.bloom === '1st' && (s.bloom === '2nd' || s.bloom === '1st'));
 }
 
+function canUseArt(costReq, attachedAyles) {
+    if (!costReq || costReq.length === 0) return true;
+    let available = attachedAyles.reduce((acc, c) => {
+        const colors = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
+        for (let k in colors) if (c.name && c.name.includes(k)) { acc[colors[k]] = (acc[colors[k]] || 0) + 1; break; }
+        return acc;
+    }, {});
+    let specific = costReq.filter(c => c !== 'any'), anyCount = costReq.filter(c => c === 'any').length;
+    for (let c of specific) { if (available[c] && available[c] > 0) available[c]--; else return false; }
+    return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
+}
+
+// 修正: 詳細画面を開く処理と背景クリックで閉じるロジックの統合
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
@@ -134,8 +148,9 @@ function openZoom(cardData, cardElement = null) {
 
     let skillsHtml = (cardData.skills || []).map(s => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
+        let ready = (s.type === 'arts' && canUseArt(s.cost, stackAyle.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
         let costHtml = (s.type === 'arts') ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">ホロパワー：-${s.cost || 0}</span>`;
-        return `<div class="skill-item"><div class="skill-header"><div class="skill-type-label label-${s.type}">${labelTxt}</div>${costHtml}<div class="skill-name">${s.name}</div></div><div class="skill-text">${s.text || ''}</div></div>`;
+        return `<div class="skill-item"><div class="skill-header"><div class="skill-type-label label-${s.type}">${labelTxt}</div>${costHtml}<div class="skill-name">${s.name}${ready}</div></div><div class="skill-text">${s.text || ''}</div></div>`;
     }).join('');
 
     let underHtml = stackUnder.length ? `<div class="zoom-under-section"><span class="section-title">進化前</span>${stackUnder.map(u => `<div class="ayle-list-item"><span>● ${u.cardData.bloom}</span></div>`).join('')}</div>` : "";
@@ -143,4 +158,11 @@ function openZoom(cardData, cardElement = null) {
 
     container.innerHTML = `<div class="zoom-header"><div><b>${cardData.name}</b></div>${hpLife}</div><div class="zoom-skills-list">${skillsHtml}</div>${underHtml}`;
     zoomModal.style.display = 'flex';
+
+    // 背景をクリックした際に閉じるイベントを設定
+    zoomModal.onclick = (e) => {
+        if (e.target === zoomModal) {
+            zoomModal.style.display = 'none';
+        }
+    };
 }
