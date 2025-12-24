@@ -9,7 +9,7 @@ let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
 let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator';
 let currentDragEl = null, isDragging = false, dragStarted = false;
-let currentStack = []; // 一括移動用のグループ保持
+let currentStack = []; 
 let startX = 0, startY = 0, offsetX = 0, offsetY = 0, maxZIndex = 1000;
 let potentialZoomTarget = null;
 
