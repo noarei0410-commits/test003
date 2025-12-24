@@ -7,8 +7,8 @@ function createCardElement(data, withEvents = true) {
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); hpDiv.className = 'card-hp'; hpDiv.id = `hp-display-${data.id}`; hpDiv.innerText = currentHp || data.life || ""; el.appendChild(hpDiv);
-        if (data.bloom) { const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = data.bloom.charAt(0); el.appendChild(bl); }
-        if (data.color) { const cl = document.createElement('div'); cl.className = `card-color-icon`; cl.style.background = COLORS[data.color] || 'white'; el.appendChild(cl); }
+        if (data.bloom) { const blDiv = document.createElement('div'); blDiv.className = 'card-bloom'; blDiv.innerText = data.bloom.charAt(0); el.appendChild(blDiv); }
+        if (data.color) { const clDiv = document.createElement('div'); clDiv.className = `card-color-icon`; clDiv.style.background = COLORS[data.color] || 'white'; el.appendChild(clDiv); }
         if (data.baton !== undefined) {
             const batonDiv = document.createElement('div'); batonDiv.className = 'card-baton';
             for(let i=0; i<data.baton; i++) { const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); }
