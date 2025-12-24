@@ -24,17 +24,13 @@ socket.on('receiveCard', (d) => {
 socket.on('cardMoved', (d) => { 
     let el = document.getElementById(d.id);
     if (!el) return restoreCard(d.id, d);
-    
     el.dataset.zoneId = d.zoneId || "";
     el.style.zIndex = d.zIndex;
-    
-    // HP情報の同期
     if (d.currentHp !== undefined) {
         el.cardData.currentHp = d.currentHp;
         const fieldHp = document.getElementById(`hp-display-${d.id}`);
         if (fieldHp) fieldHp.innerText = d.currentHp;
     }
-
     if (el.parentElement !== field) field.appendChild(el);
     el.classList.toggle('rotated', !!d.isRotated);
     if (d.percentX) { el.dataset.percentX = d.percentX; el.dataset.percentY = d.percentY; } else { delete el.dataset.percentX; }
