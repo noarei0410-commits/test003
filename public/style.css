@@ -17,7 +17,6 @@ body {
 .hub-container { width: 90%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; text-align: center; }
 .hub-title { color: #00d2ff; font-size: 32px; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,210,255,0.6); margin-bottom: 10px; }
 
-/* 共通の枠組みスタイル */
 .room-list-container, .hub-form-container, .hub-extra-container { 
     background: rgba(0,0,0,0.4); border: 1px solid #00d2ff; border-radius: 15px; 
     padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
@@ -25,7 +24,6 @@ body {
 
 .section-label { color: #00d2ff; font-size: 13px; font-weight: bold; text-align: left; margin-bottom: 10px; display: block; }
 
-/* ルームリスト内部 */
 .room-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; height: 150px; }
 .room-item { 
     background: rgba(255,255,255,0.05); border: 1px solid rgba(0, 210, 255, 0.3); 
@@ -34,37 +32,48 @@ body {
 }
 .room-item:hover { background: rgba(0, 210, 255, 0.15); border-color: #00d2ff; }
 
-/* 入力エリア */
 #roomIdInput { 
     width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(0, 210, 255, 0.5); 
     background: rgba(4, 23, 43, 0.8); color: white; text-align: center; font-size: 16px; margin-bottom: 15px;
 }
-#roomIdInput:focus { border-color: #00d2ff; outline: none; box-shadow: 0 0 10px rgba(0,210,255,0.3); }
 
-/* アクションボタン共通 */
 .hub-join-btns { display: flex; gap: 10px; }
 .hub-btn { 
     flex: 1; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; 
     transition: 0.2s; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);
     color: white; display: flex; flex-direction: column; align-items: center; gap: 5px;
 }
-.hub-btn:active { transform: scale(0.95); }
-
 .player-btn { border-color: rgba(255, 94, 94, 0.5); }
-.player-btn:hover { background: rgba(255, 94, 94, 0.15); border-color: #ff5e5e; box-shadow: 0 0 10px rgba(255,94,94,0.2); }
+.player-btn:hover { background: rgba(255, 94, 94, 0.15); border-color: #ff5e5e; }
 .spectator-btn { border-color: rgba(46, 204, 113, 0.5); }
-.spectator-btn:hover { background: rgba(46, 204, 113, 0.15); border-color: #2ecc71; box-shadow: 0 0 10px rgba(46,204,113,0.2); }
+.spectator-btn:hover { background: rgba(46, 204, 113, 0.15); border-color: #2ecc71; }
 
-/* ライブラリボタン */
 .btn-library-item {
     width: 100%; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold;
     background: rgba(255,255,255,0.05); border: 1px solid rgba(0, 210, 255, 0.4);
     color: #00d2ff; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 10px;
 }
-.btn-library-item:hover { background: rgba(0, 210, 255, 0.1); border-color: #00d2ff; box-shadow: 0 0 10px rgba(0,210,255,0.2); }
 
-/* --- デッキ構築画面 --- */
-#setup-modal .modal-content { background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; padding: 20px; width: 98vw; height: 96vh; display: flex; flex-direction: column; }
+/* --- カードリスト画面 & グリッド (修正済み) --- */
+.card-grid { 
+    display: flex !important; 
+    flex-direction: row !important; 
+    flex-wrap: wrap !important; /* 折り返しを有効化 */
+    gap: 15px; 
+    padding: 20px; 
+    justify-content: flex-start; 
+    align-content: flex-start;
+    overflow-y: auto; 
+    flex: 1; /* 親要素の中で最大まで広がる */
+}
+
+/* モーダルコンテンツの基本レイアウト */
+.modal-content { 
+    background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; 
+    padding: 20px; width: 98vw; height: 96vh; display: flex; flex-direction: column; 
+}
+
+/* --- デッキ構築画面の配置 --- */
 .builder-layout { display: flex !important; flex-direction: row !important; flex: 1; gap: 20px; overflow: hidden; }
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px; overflow: hidden; }
 #libraryList { flex: 1; overflow-y: auto; }
@@ -76,16 +85,12 @@ body {
 #ui-layer { width: 100%; padding: 5px 20px; display: flex; justify-content: space-between; height: 35px; align-items: center; background: rgba(0,0,0,0.4); }
 #field-container { width: 98vw; flex: 1; margin-top: 5px; position: relative; background: radial-gradient(ellipse at center, rgba(40, 80, 120, 0.3) 0%, rgba(4, 23, 43, 0.8) 100%); border-radius: 15px; border: 2px solid rgba(0, 210, 255, 0.3); overflow: auto; }
 #field { display: grid; grid-template-columns: 130px 1fr 1fr 1fr 130px; grid-template-rows: 150px 220px 150px; gap: 15px; padding: 20px; height: 100%; min-width: 1100px; }
+
 .zone { border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; justify-content: center; align-items: center; color: rgba(255,255,255,0.4); font-size: 11px; font-weight: bold; text-align: center; width: 100%; height: 100%; position: relative; }
-.deck-zone { border-color: #00d2ff; color: #00d2ff; cursor: pointer; }
 
-/* レイアウト配置 */
 .field-left-area { grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 15px; }
-/* ライフゾーンを残りのスペース全体に広げる */
-.life-zone-vertical { flex: 1; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; min-height: 0; }
-/* エールデッキを固定の高さにして小さくする */
+.life-zone-vertical { flex: 4; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; }
 #cheer-deck-zone { flex: none; height: 110px; }
-
 .field-center-top { grid-column: 2 / span 3; grid-row: 1; display: flex; gap: 15px; }
 .field-right-top { grid-column: 5; grid-row: 1; }
 .field-back-stage { grid-column: 2 / span 3; grid-row: 2 / span 2; border: 2px dashed rgba(255,255,255,0.2); border-radius: 15px; display: flex; flex-direction: column; padding: 15px; position: relative; }
