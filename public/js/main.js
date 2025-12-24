@@ -26,7 +26,11 @@ async function joinRoom(role) {
     socket.roomId = rid; myRole = role; 
     socket.emit('joinRoom', { roomId: rid, role });
     if (role === 'player') showPage('setup-modal');
-    else { showPage(''); document.body.classList.add('spectator-mode'); }
+    else {
+        showPage('');
+        document.getElementById('game-main-wrapper').style.display = 'flex';
+        document.body.classList.add('spectator-mode');
+    }
 }
 
 function setupDeckClick(id, type) {
@@ -43,5 +47,6 @@ document.getElementById('joinSpectatorBtn').onclick = () => joinRoom('spectator'
 document.getElementById('startGameBtn').onclick = () => {
     socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: selectedOshi });
     showPage(''); 
+    document.getElementById('game-main-wrapper').style.display = 'flex';
 };
 document.getElementById('searchInput').oninput = (e) => updateLibrary(e.target.value);
