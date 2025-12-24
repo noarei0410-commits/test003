@@ -54,20 +54,19 @@ body {
     color: #00d2ff; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 10px;
 }
 
-/* --- カードリスト画面 & グリッド (修正済み) --- */
+/* --- カードリスト画面 & グリッド --- */
 .card-grid { 
     display: flex !important; 
     flex-direction: row !important; 
-    flex-wrap: wrap !important; /* 折り返しを有効化 */
+    flex-wrap: wrap !important; 
     gap: 15px; 
     padding: 20px; 
     justify-content: flex-start; 
     align-content: flex-start;
     overflow-y: auto; 
-    flex: 1; /* 親要素の中で最大まで広がる */
+    flex: 1; 
 }
 
-/* モーダルコンテンツの基本レイアウト */
 .modal-content { 
     background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; 
     padding: 20px; width: 98vw; height: 96vh; display: flex; flex-direction: column; 
@@ -86,8 +85,31 @@ body {
 #field-container { width: 98vw; flex: 1; margin-top: 5px; position: relative; background: radial-gradient(ellipse at center, rgba(40, 80, 120, 0.3) 0%, rgba(4, 23, 43, 0.8) 100%); border-radius: 15px; border: 2px solid rgba(0, 210, 255, 0.3); overflow: auto; }
 #field { display: grid; grid-template-columns: 130px 1fr 1fr 1fr 130px; grid-template-rows: 150px 220px 150px; gap: 15px; padding: 20px; height: 100%; min-width: 1100px; }
 
-.zone { border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; justify-content: center; align-items: center; color: rgba(255,255,255,0.4); font-size: 11px; font-weight: bold; text-align: center; width: 100%; height: 100%; position: relative; }
+/* ゾーン共通スタイル */
+.zone { 
+    border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(255,255,255,0.05); 
+    border-radius: 12px; display: flex; justify-content: center; align-items: center; 
+    color: rgba(255,255,255,0.4); font-size: 11px; font-weight: bold; text-align: center; 
+    width: 100%; height: 100%; position: relative; 
+}
 
+/* デッキゾーン固有スタイル (色変更) */
+.deck-zone { 
+    cursor: pointer; 
+    border-width: 2px;
+}
+/* エールデッキ: 指定色 */
+#cheer-deck-zone { 
+    border-color: rgba(193, 228, 233, 1); 
+    color: rgba(193, 228, 233, 1); 
+}
+/* メインデッキ: 指定色 */
+#main-deck-zone { 
+    border-color: rgba(187, 200, 230, 1); 
+    color: rgba(187, 200, 230, 1); 
+}
+
+/* レイアウト個別配置 */
 .field-left-area { grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 15px; }
 .life-zone-vertical { flex: 4; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; }
 #cheer-deck-zone { flex: none; height: 110px; }
