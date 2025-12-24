@@ -97,6 +97,7 @@ io.on('connection', (socket) => {
     socket.on('moveCard', (data) => {
         const roomId = socket.roomId;
         if (rooms[roomId]) {
+            // 受信したデータを現在の状態にマージ
             rooms[roomId].fieldState[data.id] = { ...rooms[roomId].fieldState[data.id], ...data };
             socket.to(roomId).emit('cardMoved', data);
         }
