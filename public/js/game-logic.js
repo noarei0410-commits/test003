@@ -1,48 +1,64 @@
 /**
  * カードDOMの生成
+ * ホロメン、推し、エールの各タイプに応じた要素を生成
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
-    if (data.color) {
-        const colorKey = COLORS[data.color] || 'white';
-        el.classList.add('border-' + colorKey);
-    }
+    // 属性色の取得（エールカードは名前に基づくかdata.colorから）
+    const colorVal = data.color || (data.type === 'ayle' ? data.name.charAt(0) : null);
+    const colorKey = COLORS[colorVal] || 'white';
+    el.classList.add('border-' + colorKey);
 
     if (data.type === 'oshi') el.classList.add('oshi-card');
+    if (data.type === 'ayle') el.classList.add('ayle-card');
 
-    const nameSpan = document.createElement('span');
-    nameSpan.innerText = data.name || ""; 
-    el.appendChild(nameSpan);
+    // --- 種別ごとの内部要素生成 ---
+    if (data.type === 'ayle') {
+        // エールカード：中央にアイコンのみ作成（名前やステータスは表示しない）
+        const centerIcon = document.createElement('div');
+        centerIcon.className = 'ayle-center-icon';
+        centerIcon.style.background = COLORS[colorVal] || 'white';
+        el.appendChild(centerIcon);
+    } else {
+        // ホロメン・推し・サポート：名前を表示
+        const nameSpan = document.createElement('span');
+        nameSpan.innerText = data.name || ""; 
+        el.appendChild(nameSpan);
+    }
 
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
-    if (data.type === 'holomen' || data.type === 'oshi') {
-        if (data.color) {
-            const clDiv = document.createElement('div'); 
-            clDiv.className = 'card-color-icon'; 
-            clDiv.style.background = COLORS[data.color] || 'white';
-            el.appendChild(clDiv);
-        }
+    // --- ホロメン専用のステータス表示 (HP, Bloom, Baton) ---
+    if (data.type === 'holomen') {
+        const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
+        const hpDiv = document.createElement('div'); 
+        hpDiv.className = 'card-hp'; 
+        hpDiv.id = `hp-display-${data.id}`;
+        hpDiv.innerText = currentHp || ""; 
+        el.appendChild(hpDiv);
 
-        if (data.type === 'holomen') {
-            const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
-            const hpDiv = document.createElement('div'); 
-            hpDiv.className = 'card-hp'; 
-            hpDiv.id = `hp-display-${data.id}`;
-            hpDiv.innerText = currentHp || ""; 
-            el.appendChild(hpDiv);
-            if (data.bloom) {
-                const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = data.bloom.charAt(0); el.appendChild(bl);
-            }
-            if (data.baton !== undefined) {
-                const bDiv = document.createElement('div'); bDiv.className = 'card-baton';
-                for(let i=0; i<data.baton; i++) { const d=document.createElement('div'); d.className='baton-dot'; bDiv.appendChild(d); }
-                el.appendChild(bDiv);
-            }
+        if (data.bloom) {
+            const bl = document.createElement('div'); bl.className = 'card-bloom'; 
+            bl.innerText = data.bloom.charAt(0); el.appendChild(bl);
         }
+        if (data.baton !== undefined) {
+            const bDiv = document.createElement('div'); bDiv.className = 'card-baton';
+            for(let i=0; i<data.baton; i++) { 
+                const d=document.createElement('div'); d.className='baton-dot'; bDiv.appendChild(d); 
+            }
+            el.appendChild(bDiv);
+        }
+    }
+
+    // --- 属性アイコン表示（エール以外） ---
+    if ((data.type === 'holomen' || data.type === 'oshi') && colorVal) {
+        const clDiv = document.createElement('div'); 
+        clDiv.className = 'card-color-icon'; 
+        clDiv.style.background = COLORS[colorVal] || 'white';
+        el.appendChild(clDiv);
     }
 
     el.cardData = data;
@@ -51,7 +67,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * 拡大表示 (推しホロメン・ライフ配置修正版)
+ * 拡大表示 (推し・エールカード完全対応版)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -60,12 +76,23 @@ function openZoom(cardData, cardElement = null) {
     const contentInner = document.querySelector('.zoom-content-inner');
     if (!zoomOuter || !contentInner) return;
 
-    zoomOuter.className = 'zoom-outer-container';
-    if (cardData.color) zoomOuter.classList.add('border-' + (COLORS[cardData.color] || 'white'));
-    const colorCode = COLORS[cardData.color] || 'white';
+    const colorVal = cardData.color || (cardData.type === 'ayle' ? cardData.name.charAt(0) : null);
+    const colorKey = COLORS[colorVal] || 'white';
+    const colorCode = COLORS[colorVal] || 'white';
 
-    // --- 推しホロメン用レイアウト ---
-    if (cardData.type === 'oshi') {
+    zoomOuter.className = 'zoom-outer-container border-' + colorKey;
+
+    // --- 1. エールカード用レイアウト ---
+    if (cardData.type === 'ayle') {
+        zoomOuter.classList.add('ayle-zoom');
+        contentInner.innerHTML = `
+            <div class="ayle-zoom-layout">
+                <div class="zoom-ayle-icon-large" style="background: ${colorCode};"></div>
+                <div class="zoom-ayle-name-label">${cardData.name}</div>
+            </div>`;
+    } 
+    // --- 2. 推しホロメン用レイアウト ---
+    else if (cardData.type === 'oshi') {
         zoomOuter.classList.add('oshi-zoom');
         const skillsHtml = (cardData.skills || []).map((s) => {
             const isSP = s.name.includes("SP");
@@ -93,15 +120,25 @@ function openZoom(cardData, cardElement = null) {
                 </div>
             </div>`;
     } 
-    // --- 通常ホロメン用レイアウト ---
+    // --- 3. 通常ホロメン・サポート用レイアウト ---
     else {
         const isSpec = (myRole === 'spectator');
         let attachedAyles = [];
         if (cardElement && cardElement.parentElement === field) {
             const r = cardElement.getBoundingClientRect();
-            attachedAyles = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement && c.cardData.type === 'ayle').filter(c => { const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10; }).map(c => c.cardData);
+            attachedAyles = Array.from(document.querySelectorAll('.card'))
+                .filter(c => c !== cardElement && c.cardData.type === 'ayle')
+                .filter(c => {
+                    const cr = c.getBoundingClientRect();
+                    return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
+                }).map(c => c.cardData);
         }
-        const hpControlsHtml = (!isSpec && cardData.type === 'holomen') ? `<div class="zoom-hp-controls-inline"><button class="btn-zoom-hp-inline minus" onclick="changeHp('${cardData.id}', -10)">-</button><button class="btn-zoom-hp-inline plus" onclick="changeHp('${cardData.id}', 10)">+</button></div>` : "";
+        
+        const hpControlsHtml = (!isSpec && cardData.type === 'holomen') 
+            ? `<div class="zoom-hp-controls-inline">
+                 <button class="btn-zoom-hp-inline minus" onclick="changeHp('${cardData.id}', -10)">-</button>
+                 <button class="btn-zoom-hp-inline plus" onclick="changeHp('${cardData.id}', 10)">+</button>
+               </div>` : "";
         
         const skillsHtml = (cardData.skills || []).map((s) => {
             let leftContent = ""; let showDamage = false;
@@ -153,7 +190,7 @@ function openZoom(cardData, cardElement = null) {
 }
 
 /**
- * カードイベント設定
+ * カードイベント設定 (ドラッグ＆ドロップ判定)
  */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
@@ -187,8 +224,13 @@ document.onpointermove = (e) => {
         currentStack.forEach(card => {
             if (card === currentDragEl) { card.style.left = (e.clientX - fr.left - offsetX) + 'px'; card.style.top = (e.clientY - fr.top - offsetY) + 'px'; }
             else {
-                if (!card.dataset.stackOffset) { const lR = currentDragEl.getBoundingClientRect(), cR = card.getBoundingClientRect(); card.dataset.stackOffset = JSON.stringify({ x: cR.left - lR.left, y: cR.top - lR.top }); }
-                const off = JSON.parse(card.dataset.stackOffset); card.style.left = (parseFloat(currentDragEl.style.left) + off.x) + 'px'; card.style.top = (parseFloat(currentDragEl.style.top) + off.y) + 'px';
+                if (!card.dataset.stackOffset) { 
+                    const lR = currentDragEl.getBoundingClientRect(), cR = card.getBoundingClientRect(); 
+                    card.dataset.stackOffset = JSON.stringify({ x: cR.left - lR.left, y: cR.top - lR.top }); 
+                }
+                const off = JSON.parse(card.dataset.stackOffset); 
+                card.style.left = (parseFloat(currentDragEl.style.left) + off.x) + 'px'; 
+                card.style.top = (parseFloat(currentDragEl.style.top) + off.y) + 'px';
             }
         });
     }
@@ -200,11 +242,13 @@ document.onpointerup = (e) => {
     
     if (isDragging && currentDragEl && dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
-        if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) { currentStack.forEach(c => returnToHand(c)); }
-        else {
+        if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) { 
+            currentStack.forEach(c => returnToHand(c)); 
+        } else {
             const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
             if (target && target.parentElement === field) {
+                // ブルーム判定
                 if (canBloom(currentDragEl.cardData, target.cardData)) {
                     const damage = parseInt(target.cardData.hp || 0) - parseInt(target.cardData.currentHp || target.cardData.hp || 0);
                     currentDragEl.cardData.currentHp = Math.max(0, parseInt(currentDragEl.cardData.hp) - damage);
@@ -222,6 +266,9 @@ document.onpointerup = (e) => {
     isDragging = false; dragStarted = false; currentDragEl = null; currentStack = []; repositionCards();
 };
 
+/**
+ * アーツ使用可否判定
+ */
 function canUseArt(costArr, attachedAyles) {
     if (!costArr || costArr.length === 0) return true;
     let available = attachedAyles.map(a => a.name.replace('エール', ''));
@@ -236,6 +283,9 @@ function canUseArt(costArr, attachedAyles) {
     return available.length >= anyCount;
 }
 
+/**
+ * HP変更処理
+ */
 function changeHp(id, delta) {
     const el = document.getElementById(id);
     if (el && el.cardData) {
@@ -246,6 +296,9 @@ function changeHp(id, delta) {
     }
 }
 
+/**
+ * 手札に戻す処理
+ */
 function returnToHand(el) {
     if (el.dataset.zoneId === 'life-zone') { if (!confirm("ライフを手札に戻しますか？")) return; }
     socket.emit('returnToHand', { id: el.id });
@@ -254,6 +307,9 @@ function returnToHand(el) {
     handDiv.appendChild(el); repositionCards();
 }
 
+/**
+ * ブルーム(進化)判定
+ */
 function canBloom(dragCard, targetCard) {
     if (!dragCard || !targetCard || dragCard.type !== 'holomen' || targetCard.type !== 'holomen') return false;
     if (dragCard.name !== targetCard.name) return false;
@@ -261,6 +317,9 @@ function canBloom(dragCard, targetCard) {
     return ranks[dragCard.bloom] === ranks[targetCard.bloom] + 1;
 }
 
+/**
+ * ゾーンごとの自動再配置
+ */
 function repositionCards() {
     const zones = document.querySelectorAll('.zone');
     zones.forEach(zone => {
@@ -276,6 +335,9 @@ function repositionCards() {
     });
 }
 
+/**
+ * ゾーンへの吸着処理
+ */
 function normalSnapStack(e) {
     const zones = Array.from(document.querySelectorAll('.zone'));
     const targetZone = zones.find(z => {
