@@ -1,18 +1,20 @@
 /* --- ホロメンカード：エール色別の縁取り (拡大前) --- */
-.card.border-white  { border: 2.5px solid #ffffff; box-shadow: 0 0 5px #fff; }
-.card.border-green  { border: 2.5px solid #2ecc71; box-shadow: 0 0 5px #2ecc71; }
-.card.border-red    { border: 2.5px solid #e74c3c; box-shadow: 0 0 5px #e74c3c; }
-.card.border-blue   { border: 2.5px solid #3498db; box-shadow: 0 0 5px #3498db; }
-.card.border-yellow { border: 2.5px solid #f1c40f; box-shadow: 0 0 5px #f1c40f; }
-.card.border-purple { border: 2.5px solid #9b59b6; box-shadow: 0 0 5px #9b59b6; }
+/* より鮮やかで視認性の高い色に変更 */
+.card.border-white  { border: 2.5px solid #ffffff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.8); }
+.card.border-green  { border: 2.5px solid #00d25b; box-shadow: 0 0 6px rgba(0, 210, 91, 0.8); }
+.card.border-red    { border: 2.5px solid #ff3333; box-shadow: 0 0 6px rgba(255, 51, 51, 0.8); }
+.card.border-blue   { border: 2.5px solid #3399ff; box-shadow: 0 0 6px rgba(51, 153, 255, 0.8); }
+.card.border-yellow { border: 2.5px solid #ffcc00; box-shadow: 0 0 6px rgba(255, 204, 0, 0.8); }
+.card.border-purple { border: 2.5px solid #aa66cc; box-shadow: 0 0 6px rgba(170, 102, 204, 0.8); }
 
 /* --- 拡大表示：エール色別の縁取り (拡大後) --- */
-.zoom-outer-container.border-white  { border: 5px solid #ffffff; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
-.zoom-outer-container.border-green  { border: 5px solid #2ecc71; box-shadow: 0 0 20px rgba(46,204,113,0.5); }
-.zoom-outer-container.border-red    { border: 5px solid #e74c3c; box-shadow: 0 0 20px rgba(231,76,60,0.5); }
-.zoom-outer-container.border-blue   { border: 5px solid #3498db; box-shadow: 0 0 20px rgba(52,152,219,0.5); }
-.zoom-outer-container.border-yellow { border: 5px solid #f1c40f; box-shadow: 0 0 20px rgba(241,196,15,0.5); }
-.zoom-outer-container.border-purple { border: 5px solid #9b59b6; box-shadow: 0 0 20px rgba(155,89,182,0.5); }
+/* 同様に、より鮮やかな色に変更 */
+.zoom-outer-container.border-white  { border: 5px solid #ffffff; box-shadow: 0 0 25px rgba(255, 255, 255, 0.6); }
+.zoom-outer-container.border-green  { border: 5px solid #00d25b; box-shadow: 0 0 25px rgba(0, 210, 91, 0.6); }
+.zoom-outer-container.border-red    { border: 5px solid #ff3333; box-shadow: 0 0 25px rgba(255, 51, 51, 0.6); }
+.zoom-outer-container.border-blue   { border: 5px solid #3399ff; box-shadow: 0 0 25px rgba(51, 153, 255, 0.6); }
+.zoom-outer-container.border-yellow { border: 5px solid #ffcc00; box-shadow: 0 0 25px rgba(255, 204, 0, 0.6); }
+.zoom-outer-container.border-purple { border: 5px solid #aa66cc; box-shadow: 0 0 25px rgba(170, 102, 204, 0.6); }
 
 /* --- 拡大表示全体の構造 --- */
 #zoom-modal {
