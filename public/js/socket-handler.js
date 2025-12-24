@@ -9,12 +9,20 @@ function restoreCard(id, info) {
 socket.on('init', (d) => {
     myRole = d.role; field.querySelectorAll('.card').forEach(c => c.remove());
     if (d.fieldState) for (const id in d.fieldState) restoreCard(id, d.fieldState[id]);
-    if (d.deckCount) { document.getElementById('mainCount').innerText = d.deckCount.main; document.getElementById('cheerCount').innerText = d.deckCount.cheer; }
+    if (d.deckCount) { 
+        const mc = document.getElementById('mainCount'); if(mc) mc.innerText = d.deckCount.main; 
+        const cc = document.getElementById('cheerCount'); if(cc) cc.innerText = d.deckCount.cheer;
+    }
     document.getElementById('room-info').innerText = `Room: ${socket.roomId} (${d.role})`;
 });
 
-socket.on('gameStarted', (d) => { field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = ""; for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); repositionCards(); });
+socket.on('gameStarted', (d) => { 
+    field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = ""; 
+    for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); repositionCards(); 
+});
+
 socket.on('receiveCard', (d) => { const el = createCardElement({ ...d, isFaceUp: true }); el.style.position = 'relative'; handDiv.appendChild(el); });
+
 socket.on('cardMoved', (d) => { 
     let el = document.getElementById(d.id); if (!el) return restoreCard(d.id, d);
     el.dataset.zoneId = d.zoneId || ""; el.style.zIndex = d.zIndex;
@@ -26,14 +34,26 @@ socket.on('cardMoved', (d) => {
 
 socket.on('hpUpdated', (d) => { const el = document.getElementById(d.id); if (el && el.cardData) { el.cardData.currentHp = d.currentHp; const fhp = document.getElementById(`hp-display-${d.id}`); if (fhp) fhp.innerText = d.currentHp; } });
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
-socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
+socket.on('deckCount', (c) => { 
+    const mc = document.getElementById('mainCount'); if(mc) mc.innerText = c.main; 
+    const cc = document.getElementById('cheerCount'); if(cc) cc.innerText = c.cheer;
+});
 
+/**
+ * ロビー画面のルームリスト更新 (新デザイン対応)
+ */
 socket.on('roomListUpdate', (list) => {
     const listEl = document.getElementById('roomList'); if (!listEl) return;
-    listEl.innerHTML = list.length === 0 ? '<p>No active rooms</p>' : "";
+    listEl.innerHTML = list.length === 0 ? '<p style="font-size:12px; color:#666; margin-top:20px;">現在稼働中のルームはありません</p>' : "";
     list.forEach(room => {
         const item = document.createElement('div'); item.className = 'room-item';
-        item.innerHTML = `<span>Room: ${room.id}</span><span>P:${room.playerCount} S:${room.spectatorCount}</span>`;
+        item.innerHTML = `
+            <span style="font-weight:bold; color:#00d2ff;"># ${room.id}</span>
+            <div style="font-size:11px; color:#aaa; display:flex; gap:10px;">
+                <span>Player: <b style="color:#ff5e5e;">${room.playerCount}</b></span>
+                <span>Spec: <b style="color:#2ecc71;">${room.spectatorCount}</b></span>
+            </div>
+        `;
         item.onclick = () => { document.getElementById('roomIdInput').value = room.id; };
         listEl.appendChild(item);
     });
@@ -49,7 +69,7 @@ function openArchive() {
         el.onclick = () => openZoom(card.cardData, el);
         container.appendChild(el);
         if (!isSpec) {
-            const btn = document.createElement('button'); btn.innerText = "手札へ";
+            const btn = document.createElement('button'); btn.innerText = "回収";
             btn.onclick = () => { returnToHand(card); deckModal.style.display = 'none'; };
             container.appendChild(btn);
         }
