@@ -70,7 +70,7 @@ io.on('connection', (socket) => {
 
     socket.on('moveCard', (data) => { if (rooms[socket.roomId]) { rooms[socket.roomId].fieldState[data.id] = { ...rooms[socket.roomId].fieldState[data.id], ...data }; socket.to(socket.roomId).emit('cardMoved', data); } });
     socket.on('updateHp', (d) => { if (rooms[socket.roomId] && rooms[socket.roomId].fieldState[d.id]) { rooms[socket.roomId].fieldState[d.id].currentHp = d.currentHp; io.to(socket.roomId).emit('hpUpdated', d); } });
-    socket.on('returnToHand', (d) => { if (rooms[socket.roomId]) { delete rooms[socket.roomId].fieldState[d.id]; socket.to(roomId).emit('cardRemoved', { id: d.id }); } });
+    socket.on('returnToHand', (d) => { if (rooms[socket.roomId]) { delete rooms[socket.roomId].fieldState[d.id]; socket.to(socket.roomId).emit('cardRemoved', { id: d.id }); } });
     socket.on('flipCard', (d) => { if (rooms[socket.roomId] && rooms[socket.roomId].fieldState[d.id]) { rooms[socket.roomId].fieldState[d.id].isFaceUp = d.isFaceUp; socket.to(socket.roomId).emit('cardFlipped', d); } });
     socket.on('inspectDeck', (type) => { const r = rooms[socket.roomId]; if (r) socket.emit('deckInspectionResult', { type, cards: type === 'main' ? r.mainDeck : r.cheerDeck }); });
     socket.on('pickCardFromDeck', ({ type, cardId }) => {
@@ -85,4 +85,5 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('Server running on port 3000'));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
