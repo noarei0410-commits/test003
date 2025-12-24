@@ -2,13 +2,19 @@ function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     const nameSpan = document.createElement('span'); nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
+
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
+
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); hpDiv.className = 'card-hp'; hpDiv.id = `hp-display-${data.id}`; hpDiv.innerText = currentHp || data.life || ""; el.appendChild(hpDiv);
-        if (data.bloom) { const blDiv = document.createElement('div'); blDiv.className = 'card-bloom'; blDiv.innerText = data.bloom.charAt(0); el.appendChild(blDiv); }
-        if (data.color) { const clDiv = document.createElement('div'); clDiv.className = `card-color-icon`; clDiv.style.background = COLORS[data.color] || 'white'; el.appendChild(clDiv); }
+        if (data.bloom) { const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = data.bloom.charAt(0); el.appendChild(bl); }
+        if (data.color) { 
+            const colorCode = COLORS[data.color] || 'white';
+            const cl = document.createElement('div'); cl.className = `card-color-icon`; 
+            cl.style.background = colorCode; el.appendChild(cl); 
+        }
         if (data.baton !== undefined) {
             const batonDiv = document.createElement('div'); batonDiv.className = 'card-baton';
             for(let i=0; i<data.baton; i++) { const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); }
@@ -16,6 +22,7 @@ function createCardElement(data, withEvents = true) {
         }
     }
     if (data.type === 'ayle') { for (let k in COLORS) { if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); } }
+
     el.cardData = data;
     if (withEvents) setupCardEvents(el);
     return el;
@@ -147,62 +154,93 @@ function normalSnapStack(e) {
     }
 }
 
+/**
+ * 拡大表示 (新しい指示レイアウトを適用)
+ */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
-    const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen'), isSpec = (myRole === 'spectator');
-    let stackAyle = [], stackEquip = [];
-    if (cardElement && (cardElement.parentElement === field || cardElement.parentElement === handDiv || cardElement.closest('#deck-card-grid'))) {
-        const r = cardElement.getBoundingClientRect();
-        const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
-            const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
-        });
-        stackAyle = stack.filter(c => c.cardData.type === 'ayle');
-        stackEquip = stack.filter(c => c.cardData.type === 'support');
-    }
-    const power = document.querySelectorAll('.card[data-zone-id="holopower"]').length;
-    const skillsHtml = (cardData.skills || []).map((s, idx) => {
-        let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
-        let isReady = s.type === 'arts' ? canUseArt(s.cost, stackAyle.map(e => e.cardData)) : (power >= (s.cost || 0));
-        let action = isReady ? ((s.type === 'arts' || isSpec) ? `<span class="ready-badge">READY</span>` : `<button class="btn-activate-skill" onclick="activateOshiSkill('${cardData.id}',${idx},${s.cost})">発動</button>`) : "";
-        let cost = s.type === 'arts' ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${COLORS[c] || 'white'}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
-        return `<div class="skill-item"><div class="skill-header"><div class="skill-type-label label-${s.type}">${labelTxt}</div>${cost}<div class="skill-name-row"><span>${s.name}${action}</span>${s.damage ? `<span class="skill-damage">${s.damage}</span>` : ""}</div></div><div class="skill-text">${s.text || ''}</div></div>`;
+    const isSpec = (myRole === 'spectator');
+    
+    // スキルHTMLの生成
+    const skillsHtml = (cardData.skills || []).map((s) => {
+        return `
+            <div class="skill-box">
+                <div class="skill-header-row">
+                    <span>${s.name}</span>
+                    <span>${s.damage || ""}</span>
+                </div>
+                <div class="skill-text-detail">${s.text || ""}</div>
+            </div>`;
     }).join('');
-    const effectTextHtml = cardData.text ? `<div class="zoom-effect-text">${cardData.text}</div>` : "";
-    let hpDisplayHtml = isHolomen ? `<div class="zoom-hp-area"><div class="zoom-hp" id="zoom-hp-val">HP ${cardData.currentHp || cardData.hp}</div>${isSpec ? "" : `<div class="hp-control-btns"><button class="btn-hp" style="background:#e74c3c" onclick="changeHp('${cardData.id}', -10)">-</button><button class="btn-hp" style="background:#2ecc71" onclick="changeHp('${cardData.id}', 10)">+</button></div>`}</div>` : (isOshi ? `<div class="zoom-life">LIFE ${cardData.life || 0} <span style="font-size:10px; color:#aaa; margin-left:5px;">(Power: ${power})</span></div>` : "");
-    let attachHtml = `<div class="zoom-attach-section">${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span>${isSpec ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button>`}</div>`).join('')}${stackEquip.map(e => `<div class="attach-item"><div class="attach-item-header"><span>■ ${e.cardData.name}</span>${isSpec ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button>`}</div><div class="attach-item-text">${e.cardData.text || ''}</div></div>`).join('')}</div>`;
-    container.innerHTML = `<div class="zoom-header"><div class="zoom-name">${cardData.name}</div>${hpDisplayHtml}</div>${effectTextHtml}<div class="zoom-skills-list">${skillsHtml}</div>${attachHtml}<div class="zoom-footer"><div class="zoom-tags">${(cardData.tags || []).map(t => `<span>${t}</span>`).join('')}</div><div class="zoom-baton-row"><span>バトン:</span><div class="baton-dots-container">${Array(cardData.baton || 0).fill('<div class="baton-dot"></div>').join('')}</div></div></div>`;
-    zoomModal.style.display = 'flex'; zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
+
+    // バトンタッチアイコンの生成
+    const batonIcons = Array(cardData.baton || 0).fill('<div class="baton-dot-large"></div>').join('');
+
+    // エクストラの生成 (ある場合のみ)
+    const extraHtml = cardData.extra ? `
+        <div class="zoom-extra-area">
+            <span class="extra-label">エクストラ：</span>${cardData.extra}
+        </div>` : "";
+
+    // カラーアイコンの取得
+    const colorCode = COLORS[cardData.color] || 'white';
+
+    // 全体レイアウトの組み立て
+    container.innerHTML = `
+        <div class="zoom-bloom-rank">${cardData.bloom || ""}</div>
+        <div class="zoom-name-center">${cardData.name}</div>
+        
+        <div class="zoom-top-right-group">
+            <div class="zoom-color-icon-large" style="background: ${colorCode};"></div>
+            <div class="zoom-hp-display" id="zoom-hp-val">HP ${cardData.currentHp || cardData.hp || cardData.life || 0}</div>
+        </div>
+
+        <div class="zoom-main-content">
+            ${skillsHtml}
+        </div>
+
+        <div class="zoom-bottom-left-group">
+            <div class="zoom-tags-row">
+                ${(cardData.tags || []).map(t => `<span>#${t}</span>`).join(' ')}
+            </div>
+            <div class="zoom-baton-row">
+                <span>バトンタッチ:</span>
+                <div class="baton-icon-list">${batonIcons}</div>
+            </div>
+        </div>
+
+        ${extraHtml}
+
+        ${(!isSpec && (cardData.type === 'holomen')) ? `
+            <div class="zoom-hp-controls">
+                <button class="btn-zoom-hp" style="background:#e74c3c" onclick="changeHp('${cardData.id}', -10)">-</button>
+                <button class="btn-zoom-hp" style="background:#2ecc71" onclick="changeHp('${cardData.id}', 10)">+</button>
+            </div>` : ""}
+    `;
+
+    zoomModal.style.display = 'flex';
+    zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.closest('.zoom-outer-container') === null) zoomModal.style.display = 'none'; };
 }
 
-window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
-    if (myRole === 'spectator') return;
-    const hpCards = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
-    if (hpCards.length < cost) return alert("ホロパワーが足りません");
-    if (!confirm(`ホロパワーを ${cost} 枚消費してスキルを発動しますか？`)) return;
-    for (let i = 0; i < cost; i++) {
-        const c = hpCards[i]; c.dataset.zoneId = 'archive'; c.classList.remove('rotated', 'face-down'); c.classList.add('face-up');
-        socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: 'archive', isRotated: false, isFaceUp: true, zIndex: 10 });
-    }
-    zoomModal.style.display = 'none'; repositionCards();
+window.activateOshiSkill = (id, idx, cost) => {
+    const hp = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
+    if (hp.length < cost) return alert("パワー不足");
+    if (!confirm("発動しますか？")) return;
+    for(let i=0; i<cost; i++){ const c=hp[i]; c.dataset.zoneId='archive'; c.classList.remove('rotated','face-down'); c.classList.add('face-up'); socket.emit('moveCard', {id:c.id, ...c.cardData, zoneId:'archive', isRotated:false, isFaceUp:true, zIndex:10}); }
+    zoomModal.style.display='none'; repositionCards();
 };
 
-window.changeHp = (id, amount) => {
-    if (myRole === 'spectator') return;
-    const el = document.getElementById(id); if (!el) return;
-    let newVal = Math.max(0, parseInt(el.cardData.currentHp || el.cardData.hp) + amount);
+window.changeHp = (id, amt) => {
+    const el = document.getElementById(id); if(!el) return;
+    let current = parseInt(el.cardData.currentHp || el.cardData.hp || 0);
+    let newVal = Math.max(0, current + amt);
     el.cardData.currentHp = newVal;
-    document.getElementById('zoom-hp-val').innerText = `HP ${newVal}`;
-    document.getElementById(`hp-display-${id}`).innerText = newVal;
-    socket.emit('updateHp', { id: id, currentHp: newVal });
-};
-
-window.discardFromZoom = (id) => { 
-    if (myRole === 'spectator') return;
-    const el = document.getElementById(id); if (!el) return;
-    el.classList.remove('rotated', 'face-down'); el.classList.add('face-up'); el.dataset.zoneId = 'archive';
-    socket.emit('moveCard', { id: el.id, ...el.cardData, zoneId: 'archive', zIndex: 10, isRotated: false, isFaceUp: true });
-    zoomModal.style.display = 'none'; repositionCards(); 
+    const valDisplay = document.getElementById('zoom-hp-val');
+    if (valDisplay) valDisplay.innerText = `HP ${newVal}`;
+    const fieldHp = document.getElementById(`hp-display-${id}`);
+    if (fieldHp) fieldHp.innerText = newVal;
+    socket.emit('updateHp', { id, currentHp: newVal });
 };
 
 function returnToHand(card) {
@@ -213,9 +251,3 @@ function returnToHand(card) {
 }
 
 function canBloom(s, t) { if (s.type !== 'holomen' || t.type !== 'holomen' || s.name !== t.name) return false; return (t.bloom === 'Debut' && s.bloom === '1st') || (t.bloom === '1st' && (s.bloom === '2nd' || s.bloom === '1st')); }
-function canUseArt(cost, attached) {
-    const counts = attached.reduce((acc, c) => { for(let k in COLORS) if(c.name.includes(k)) acc[COLORS[k]] = (acc[COLORS[k]]||0)+1; return acc; }, {});
-    const req = cost.filter(c => c !== 'any'), any = cost.filter(c => c === 'any').length;
-    for (let r of req) { if (counts[r] > 0) counts[r]--; else return false; }
-    return Object.values(counts).reduce((a, b) => a + b, 0) >= any;
-}
