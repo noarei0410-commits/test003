@@ -65,7 +65,7 @@ body {
 .library-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; }
 .deck-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
 
-/* --- フィールド UI (画像に基づいたGrid形式) --- */
+/* --- フィールド UI ( Grid 構造 ) --- */
 #ui-layer { 
     width: 100%; padding: 5px 20px; display: flex; justify-content: space-between; 
     height: 35px; align-items: center; background: rgba(0,0,0,0.4); 
@@ -78,7 +78,6 @@ body {
 #field {
     display: grid;
     grid-template-columns: 130px 1fr 1fr 1fr 130px;
-    /* 上段:150px, バックエリア:220px(スロット150px+余白), 下段:150px */
     grid-template-rows: 150px 220px 150px;
     gap: 15px; padding: 20px; height: 100%;
 }
@@ -91,38 +90,38 @@ body {
 }
 .deck-zone { border-color: #00d2ff; color: #00d2ff; cursor: pointer; }
 
-/* --- 各エリア配置修正 --- */
+/* --- レイアウト個別修正 --- */
 
-/* 左エリア: ライフを大きく、エールを小さく */
 .field-left-area { grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 15px; }
 .life-zone-vertical { flex: 4; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; }
 #cheer-deck-zone { flex: 1; }
 
-/* 中央上段: コラボ, センター, 推し */
 .field-center-top { grid-column: 2 / span 3; grid-row: 1; display: flex; gap: 15px; }
-
-/* 右上: ホロパワー */
 .field-right-top { grid-column: 5; grid-row: 1; }
 
-/* バックステージ: スロットの高さをメインと統一 (150px) */
 .field-back-stage { 
     grid-column: 2 / span 3; grid-row: 2 / span 2; 
     border: 2px dashed rgba(255,255,255,0.2); border-radius: 15px;
     display: flex; flex-direction: column; padding: 15px; position: relative;
 }
-.back-slots-container { 
-    flex: 1; display: flex; justify-content: space-around; align-items: center; gap: 10px; 
-}
-/* 個別のバック枠を150pxに設定 */
-.back-slots-container .zone { 
-    height: 150px; 
-    max-width: 105px; 
-    border-style: dashed; 
-}
+.back-slots-container { flex: 1; display: flex; justify-content: space-around; align-items: center; gap: 10px; }
+.back-slots-container .zone { height: 150px; max-width: 105px; border-style: dashed; }
 
-/* 右下: デッキとアーカイブの高さを等しく設定 */
-.field-right-bottom { grid-column: 5; grid-row: 3; display: flex; flex-direction: column; gap: 15px; }
-#main-deck-zone, #archive { flex: 1; }
+/* 右側エリア修正: 上にずらし、アーカイブを大きく */
+.field-right-bottom { 
+    grid-column: 5; 
+    grid-row: 2 / span 2; /* 3段目から2段目へ移動 */
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
+#main-deck-zone { 
+    height: 110px; /* 高さを維持 */
+    flex: none; 
+}
+#archive { 
+    flex: 1; /* 余ったスペースをすべて使い、枠を大きくする */
+}
 
 /* --- カードデザイン --- */
 .card { 
@@ -145,11 +144,27 @@ body {
 .face-down * { display: none !important; }
 .card.rotated { transform: rotate(90deg); }
 
-/* --- 手札・ライブラリグリッド --- */
-#hand-container { width: 100vw; height: 130px; background: rgba(0,0,0,0.6); padding: 10px 20px; z-index: 5000; }
-#hand { display: flex; gap: 10px; overflow-x: auto; height: 100%; align-items: center; }
-.card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; justify-content: flex-start; overflow-y: auto; }
+/* --- 手札エリア修正: わかりやすい枠を追加 --- */
+#hand-container { 
+    width: 100vw; 
+    height: 130px; 
+    background: rgba(0,0,0,0.6); 
+    padding: 12px 20px; 
+    z-index: 5000; 
+}
+#hand { 
+    display: flex; 
+    gap: 10px; 
+    overflow-x: auto; 
+    height: 100%; 
+    align-items: center; 
+    /* カードが収まる場所としての枠線デザイン */
+    border: 2px dashed rgba(255, 255, 255, 0.2); 
+    border-radius: 12px; 
+    background: rgba(255, 255, 255, 0.03);
+    min-width: 300px;
+}
 
-/* --- 詳細/ズーム --- */
+/* --- ズーム・モーダル類 --- */
 #zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 50000; display: none; justify-content: center; align-items: center; }
 .zoom-container { background: white; color: black; width: 350px; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; }
