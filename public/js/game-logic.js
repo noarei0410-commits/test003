@@ -1,62 +1,30 @@
-/**
- * カードDOMの生成
- */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
-    
-    const nameSpan = document.createElement('span');
-    nameSpan.innerText = data.name || ""; 
-    el.appendChild(nameSpan);
-
+    const nameSpan = document.createElement('span'); nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
-
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
-        const hpDiv = document.createElement('div'); 
-        hpDiv.className = 'card-hp'; 
-        hpDiv.id = `hp-display-${data.id}`;
-        hpDiv.innerText = currentHp || data.life || ""; 
-        el.appendChild(hpDiv);
-
-        if (data.bloom) {
-            const blDiv = document.createElement('div'); blDiv.className = 'card-bloom'; 
-            blDiv.innerText = data.bloom.charAt(0); el.appendChild(blDiv);
-        }
-        if (data.color) {
-            const clDiv = document.createElement('div'); 
-            clDiv.className = 'card-color-icon'; 
-            const colorCode = COLORS[data.color] || 'white';
-            clDiv.style.background = colorCode;
-            el.appendChild(clDiv);
-        }
+        const hpDiv = document.createElement('div'); hpDiv.className = 'card-hp'; hpDiv.id = `hp-display-${data.id}`; hpDiv.innerText = currentHp || data.life || ""; el.appendChild(hpDiv);
+        if (data.bloom) { const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = data.bloom.charAt(0); el.appendChild(bl); }
+        if (data.color) { const cl = document.createElement('div'); cl.className = `card-color-icon`; cl.style.background = COLORS[data.color] || 'white'; el.appendChild(cl); }
         if (data.baton !== undefined) {
             const batonDiv = document.createElement('div'); batonDiv.className = 'card-baton';
-            for(let i=0; i<data.baton; i++) { 
-                const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); 
-            }
+            for(let i=0; i<data.baton; i++) { const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); }
             el.appendChild(batonDiv);
         }
     }
-
-    if (data.type === 'ayle') {
-        for (let k in COLORS) { if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); }
-    }
-
+    if (data.type === 'ayle') { for (let k in COLORS) { if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); } }
     el.cardData = data;
     if (withEvents) setupCardEvents(el);
     return el;
 }
 
-/**
- * フィールド再配置ロジック (スクロール考慮)
- */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
     const fRect = fieldEl.getBoundingClientRect();
     const counts = {};
-
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== fieldEl || currentStack.includes(card)) return;
         const zid = card.dataset.zoneId;
@@ -65,20 +33,11 @@ function repositionCards() {
             if (z) {
                 const zr = z.getBoundingClientRect();
                 if (!counts[zid]) counts[zid] = 0;
-                
-                // フィールド要素の左上からの相対位置を計算
                 let targetLeft = (zr.left - fRect.left) + (zr.width - 58) / 2;
                 let targetTop = (zr.top - fRect.top) + (zr.height - 82) / 2;
-                
-                if (zid === 'life-zone') {
-                    targetTop = (zr.top - fRect.top) + 15 + (counts[zid] * 30);
-                } else if (['holopower', 'archive'].includes(zid)) {
-                    targetLeft += counts[zid] * 2;
-                    targetTop += counts[zid] * 2;
-                }
-                
-                card.style.left = targetLeft + 'px';
-                card.style.top = targetTop + 'px';
+                if (zid === 'life-zone') targetTop = (zr.top - fRect.top) + 15 + (counts[zid] * 30);
+                else if (['holopower', 'archive'].includes(zid)) { targetLeft += counts[zid] * 2; targetTop += counts[zid] * 2; }
+                card.style.left = targetLeft + 'px'; card.style.top = targetTop + 'px';
                 counts[zid]++;
             }
         }
@@ -89,17 +48,11 @@ function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (myRole === 'spectator' || el.dataset.zoneId === 'archive') return;
-        
         isDragging = true; dragStarted = false; currentDragEl = el; el.setPointerCapture(e.pointerId);
         el.oldZoneId = el.dataset.zoneId || "";
-        
-        currentStack = (el.dataset.zoneId) 
-            ? Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === el.dataset.zoneId)
-            : [el];
-        currentStack.sort((a, b) => (parseInt(a.style.zIndex) || 0) - (parseInt(b.style.zIndex) || 0));
-        
-        const rect = el.getBoundingClientRect();
-        offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
+        currentStack = (el.dataset.zoneId) ? Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === el.dataset.zoneId) : [el];
+        currentStack.sort((a,b) => (parseInt(a.style.zIndex)||0)-(parseInt(b.style.zIndex)||0));
+        const rect = el.getBoundingClientRect(); offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         e.stopPropagation();
     };
 }
@@ -112,11 +65,8 @@ document.onpointermove = (e) => {
         currentStack.forEach(card => {
             maxZIndex++; card.style.zIndex = maxZIndex;
             if (card.parentElement !== field) {
-                const r = card.getBoundingClientRect();
-                const fRect = field.getBoundingClientRect();
-                card.style.position = 'absolute';
-                card.style.left = (r.left - fRect.left) + 'px'; 
-                card.style.top = (r.top - fRect.top) + 'px';
+                const r = card.getBoundingClientRect(), fr = field.getBoundingClientRect();
+                card.style.position = 'absolute'; card.style.left = (r.left - fr.left) + 'px'; card.style.top = (r.top - fr.top) + 'px';
                 field.appendChild(card);
             }
         });
@@ -125,12 +75,10 @@ document.onpointermove = (e) => {
         const fr = field.getBoundingClientRect();
         currentStack.forEach(card => {
             if (card === currentDragEl) {
-                card.style.left = (e.clientX - fr.left - offsetX) + 'px';
-                card.style.top = (e.clientY - fr.top - offsetY) + 'px';
+                card.style.left = (e.clientX - fr.left - offsetX) + 'px'; card.style.top = (e.clientY - fr.top - offsetY) + 'px';
             } else {
                 if (!card.dataset.stackOffset) {
-                    const lR = currentDragEl.getBoundingClientRect();
-                    const cR = card.getBoundingClientRect();
+                    const lR = currentDragEl.getBoundingClientRect(), cR = card.getBoundingClientRect();
                     card.dataset.stackOffset = JSON.stringify({ x: cR.left - lR.left, y: cR.top - lR.top });
                 }
                 const off = JSON.parse(card.dataset.stackOffset);
@@ -145,7 +93,6 @@ document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
     if (!isDragging || !currentDragEl) { isDragging = false; currentStack = []; return; }
-    
     if (dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
         if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
@@ -153,15 +100,13 @@ document.onpointerup = (e) => {
         } else {
             const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
-            
             if (target && target.parentElement === field) {
                 if (canBloom(currentDragEl.cardData, target.cardData)) {
                     const damage = parseInt(target.cardData.hp || 0) - parseInt(target.cardData.currentHp || target.cardData.hp || 0);
                     currentDragEl.cardData.currentHp = Math.max(0, parseInt(currentDragEl.cardData.hp) - damage);
                 }
                 currentStack.forEach(c => {
-                    c.style.left = target.style.left; c.style.top = target.style.top;
-                    c.dataset.zoneId = target.dataset.zoneId || "";
+                    c.style.left = target.style.left; c.style.top = target.style.top; c.dataset.zoneId = target.dataset.zoneId || "";
                     const isBase = ['holomen', 'oshi'].includes(c.cardData.type);
                     c.style.zIndex = isBase ? target.style.zIndex : parseInt(target.style.zIndex) - 1;
                     socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex, currentHp: c.cardData.currentHp });
@@ -169,8 +114,7 @@ document.onpointerup = (e) => {
             } else { normalSnapStack(e); }
         }
     }
-    currentStack.forEach(c => delete c.dataset.stackOffset);
-    isDragging = false; dragStarted = false; currentStack = []; repositionCards();
+    currentStack.forEach(c => delete c.dataset.stackOffset); isDragging = false; currentStack = []; repositionCards();
 };
 
 function normalSnapStack(e) {
@@ -181,10 +125,8 @@ function normalSnapStack(e) {
         const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y); if (d < minDist) { minDist = d; closest = z; }
     });
-
     if (closest) {
-        if (currentDragEl.oldZoneId && currentDragEl.oldZoneId.startsWith('back') && closest.id === 'collab') socket.emit('generateHoloPower');
-        
+        if (currentDragEl.oldZoneId.startsWith('back') && closest.id === 'collab') socket.emit('generateHoloPower');
         currentStack.forEach(c => {
             c.dataset.zoneId = closest.id; delete c.dataset.percentX;
             if (closest.id === 'archive') {
@@ -199,8 +141,7 @@ function normalSnapStack(e) {
     } else {
         const fr = field.getBoundingClientRect();
         currentStack.forEach(c => {
-            delete c.dataset.zoneId;
-            const px = (parseFloat(c.style.left)/fr.width)*100, py = (parseFloat(c.style.top)/fr.height)*100;
+            delete c.dataset.zoneId; const px = (parseFloat(c.style.left)/fr.width)*100, py = (parseFloat(c.style.top)/fr.height)*100;
             socket.emit('moveCard', { id: c.id, ...c.cardData, percentX: px, percentY: py, zIndex: c.style.zIndex });
         });
     }
@@ -210,7 +151,6 @@ function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
     const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen'), isSpec = (myRole === 'spectator');
-    
     let stackAyle = [], stackEquip = [];
     if (cardElement && (cardElement.parentElement === field || cardElement.parentElement === handDiv || cardElement.closest('#deck-card-grid'))) {
         const r = cardElement.getBoundingClientRect();
@@ -221,19 +161,17 @@ function openZoom(cardData, cardElement = null) {
         stackEquip = stack.filter(c => c.cardData.type === 'support');
     }
     const power = document.querySelectorAll('.card[data-zone-id="holopower"]').length;
-
     const skillsHtml = (cardData.skills || []).map((s, idx) => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
         let isReady = s.type === 'arts' ? canUseArt(s.cost, stackAyle.map(e => e.cardData)) : (power >= (s.cost || 0));
         let action = isReady ? ((s.type === 'arts' || isSpec) ? `<span class="ready-badge">READY</span>` : `<button class="btn-activate-skill" onclick="activateOshiSkill('${cardData.id}',${idx},${s.cost})">発動</button>`) : "";
         let cost = s.type === 'arts' ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${COLORS[c] || 'white'}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
-        return `<div class="skill-item"><div class="skill-header"><div class="skill-type-label label-${s.type}">${s.type.toUpperCase()}</div>${cost}<div class="skill-name-row"><span>${s.name}${action}</span>${s.damage ? `<span class="skill-damage">${s.damage}</span>` : ""}</div></div><div class="skill-text">${s.text || ""}</div></div>`;
+        return `<div class="skill-item"><div class="skill-header"><div class="skill-type-label label-${s.type}">${labelTxt}</div>${cost}<div class="skill-name-row"><span>${s.name}${action}</span>${s.damage ? `<span class="skill-damage">${s.damage}</span>` : ""}</div></div><div class="skill-text">${s.text || ''}</div></div>`;
     }).join('');
-
-    const hpHtml = isHolomen ? `<div class="zoom-hp-area"><div class="zoom-hp" id="zoom-hp-val">HP ${cardData.currentHp || cardData.hp}</div>${isSpec ? "" : `<div class="hp-control-btns"><button class="btn-hp" style="background:#e74c3c" onclick="changeHp('${cardData.id}',-10)">-</button><button class="btn-hp" style="background:#2ecc71" onclick="changeHp('${cardData.id}',10)">+</button></div>`}</div>` : (isOshi ? `<div class="zoom-life">LIFE ${cardData.life} <small>(Power:${power})</small></div>` : "");
-    const attachHtml = `<div class="zoom-attach-section">${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span>${isSpec ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button>`}</div>`).join('')}${stackEquip.map(e => `<div class="attach-item"><div class="attach-item-header"><span>■ ${e.cardData.name}</span>${isSpec ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button>`}</div><div class="attach-item-text">${e.cardData.text || ""}</div></div>`).join('')}</div>`;
-
-    container.innerHTML = `<div class="zoom-header"><div class="zoom-name">${cardData.name}</div>${hpHtml}</div>${cardData.text ? `<div class="zoom-effect-text">${cardData.text}</div>` : ""}<div class="zoom-skills-list">${skillsHtml}</div>${attachHtml}<div class="zoom-footer"><div class="zoom-tags">${(cardData.tags || []).map(t => `<span>${t}</span>`).join('')}</div><div class="zoom-baton-row"><span>バトン:</span><div class="baton-dots-container">${Array(cardData.baton || 0).fill('<div class="baton-dot"></div>').join('')}</div></div></div>`;
+    const effectTextHtml = cardData.text ? `<div class="zoom-effect-text">${cardData.text}</div>` : "";
+    let hpDisplayHtml = isHolomen ? `<div class="zoom-hp-area"><div class="zoom-hp" id="zoom-hp-val">HP ${cardData.currentHp || cardData.hp}</div>${isSpec ? "" : `<div class="hp-control-btns"><button class="btn-hp" style="background:#e74c3c" onclick="changeHp('${cardData.id}', -10)">-</button><button class="btn-hp" style="background:#2ecc71" onclick="changeHp('${cardData.id}', 10)">+</button></div>`}</div>` : (isOshi ? `<div class="zoom-life">LIFE ${cardData.life || 0} <span style="font-size:10px; color:#aaa; margin-left:5px;">(Power: ${power})</span></div>` : "");
+    let attachHtml = `<div class="zoom-attach-section">${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span>${isSpec ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button>`}</div>`).join('')}${stackEquip.map(e => `<div class="attach-item"><div class="attach-item-header"><span>■ ${e.cardData.name}</span>${isSpec ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button>`}</div><div class="attach-item-text">${e.cardData.text || ''}</div></div>`).join('')}</div>`;
+    container.innerHTML = `<div class="zoom-header"><div class="zoom-name">${cardData.name}</div>${hpDisplayHtml}</div>${effectTextHtml}<div class="zoom-skills-list">${skillsHtml}</div>${attachHtml}<div class="zoom-footer"><div class="zoom-tags">${(cardData.tags || []).map(t => `<span>${t}</span>`).join('')}</div><div class="zoom-baton-row"><span>バトン:</span><div class="baton-dots-container">${Array(cardData.baton || 0).fill('<div class="baton-dot"></div>').join('')}</div></div></div>`;
     zoomModal.style.display = 'flex'; zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
 }
 
@@ -242,12 +180,8 @@ window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
     const hpCards = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
     if (hpCards.length < cost) return alert("ホロパワーが足りません");
     if (!confirm(`ホロパワーを ${cost} 枚消費してスキルを発動しますか？`)) return;
-
     for (let i = 0; i < cost; i++) {
-        const c = hpCards[i];
-        c.dataset.zoneId = 'archive';
-        c.classList.remove('rotated', 'face-down');
-        c.classList.add('face-up');
+        const c = hpCards[i]; c.dataset.zoneId = 'archive'; c.classList.remove('rotated', 'face-down'); c.classList.add('face-up');
         socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: 'archive', isRotated: false, isFaceUp: true, zIndex: 10 });
     }
     zoomModal.style.display = 'none'; repositionCards();
@@ -267,7 +201,7 @@ window.discardFromZoom = (id) => {
     if (myRole === 'spectator') return;
     const el = document.getElementById(id); if (!el) return;
     el.classList.remove('rotated', 'face-down'); el.classList.add('face-up'); el.dataset.zoneId = 'archive';
-    socket.emit('moveCard', { id: zoneId = 'archive', zIndex: 10, isRotated: false, isFaceUp: true, ...el.cardData });
+    socket.emit('moveCard', { id: el.id, ...el.cardData, zoneId: 'archive', zIndex: 10, isRotated: false, isFaceUp: true });
     zoomModal.style.display = 'none'; repositionCards(); 
 };
 
