@@ -78,14 +78,10 @@ function repositionCards() {
     });
 }
 
-/**
- * イベント設定 (アーカイブ移動制限を追加)
- */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         
-        // 観戦者、またはアーカイブにあるカードはドラッグ不可
         if (myRole === 'spectator' || el.dataset.zoneId === 'archive') return;
         
         isDragging = true; dragStarted = false;
@@ -137,7 +133,6 @@ document.onpointermove = (e) => {
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    // アーカイブにあってもズーム（拡大表示）は可能にする
     if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
     
     if (myRole === 'spectator' || !isDragging || !currentDragEl) { isDragging = false; dragStarted = false; currentStack = []; return; }
@@ -242,10 +237,14 @@ function canUseArt(costReq, attachedAyles) {
     return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
+/**
+ * ズーム詳細 (観戦者用ボタン非表示対応)
+ */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
     const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen');
+    const isSpectator = (myRole === 'spectator');
     
     let stackAyle = [], stackEquip = [];
     if (cardElement && (cardElement.parentElement === field || cardElement.parentElement === handDiv || cardElement.closest('#deck-card-grid'))) {
@@ -270,9 +269,15 @@ function openZoom(cardData, cardElement = null) {
         if (s.type === 'arts') isReady = canUseArt(s.cost, stackAyle.map(e => e.cardData));
         else if (s.type === 'oshi' || s.type === 'sp_oshi') isReady = (holoPowerCount >= (s.cost || 0));
         
-        let actionBtn = (isReady && (s.type === 'oshi' || s.type === 'sp_oshi')) 
-            ? `<button class="btn-activate-skill" onclick="activateOshiSkill('${cardData.id}', ${idx}, ${s.cost})">発動</button>` 
-            : (isReady ? `<span class="ready-badge">READY</span>` : "");
+        // 観戦者の場合は「発動」ボタンを表示しない
+        let actionBtn = "";
+        if (isReady) {
+            if ((s.type === 'oshi' || s.type === 'sp_oshi')) {
+                actionBtn = isSpectator ? "" : `<button class="btn-activate-skill" onclick="activateOshiSkill('${cardData.id}', ${idx}, ${s.cost})">発動</button>`;
+            } else {
+                actionBtn = `<span class="ready-badge">READY</span>`;
+            }
+        }
 
         let costHtml = (s.type === 'arts') 
             ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` 
@@ -298,20 +303,37 @@ function openZoom(cardData, cardElement = null) {
         hpDisplayHtml = `
             <div class="zoom-hp-area">
                 <div class="zoom-hp" id="zoom-hp-val">HP ${currentHp}</div>
+                ${isSpectator ? "" : `
                 <div class="hp-control-btns">
                     <button class="btn-hp btn-hp-minus" onclick="changeHp('${cardData.id}', -10)">-</button>
                     <button class="btn-hp btn-hp-plus" onclick="changeHp('${cardData.id}', 10)">+</button>
-                </div>
+                </div>`}
             </div>`;
     } else if (isOshi) {
         hpDisplayHtml = `<div class="zoom-life">LIFE ${cardData.life || 0} <span style="font-size:10px; color:#aaa; margin-left:5px;">(Power: ${holoPowerCount})</span></div>`;
     }
 
     let attachHtml = "";
-    if(stackAyle.length) attachHtml += `<div class="zoom-attach-section"><span class="attach-title">装着エール</span>${stackAyle.map(a => `<div class="attach-item"><span>● ${a.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button></div>`).join('')}</div>`;
+    if(stackAyle.length) attachHtml += `
+        <div class="zoom-attach-section">
+            <span class="attach-title">装着エール</span>
+            ${stackAyle.map(a => `
+                <div class="attach-item">
+                    <span>● ${a.cardData.name}</span>
+                    ${isSpectator ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${a.id}')">破棄</button>`}
+                </div>`).join('')}
+        </div>`;
+
     if(stackEquip.length) attachHtml += `
         <div class="zoom-attach-section"><span class="attach-title">装備アイテム / サポート</span>
-            ${stackEquip.map(e => `<div class="attach-item"><div class="attach-item-header"><span>■ ${e.cardData.name}</span><button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button></div><div class="attach-item-text">${e.cardData.text || '(効果文なし)'}</div></div>`).join('')}
+            ${stackEquip.map(e => `
+                <div class="attach-item">
+                    <div class="attach-item-header">
+                        <span>■ ${e.cardData.name}</span>
+                        ${isSpectator ? "" : `<button class="btn-discard-small" onclick="discardFromZoom('${e.id}')">破棄</button>`}
+                    </div>
+                    <div class="attach-item-text">${e.cardData.text || '(効果文なし)'}</div>
+                </div>`).join('')}
         </div>`;
 
     container.innerHTML = `
@@ -326,6 +348,7 @@ function openZoom(cardData, cardElement = null) {
 }
 
 window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
+    if (myRole === 'spectator') return;
     const hpCards = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
     if (hpCards.length < cost) return alert("ホロパワーが足りません");
     if (!confirm(`ホロパワーを ${cost} 枚消費してスキルを発動しますか？`)) return;
@@ -344,6 +367,7 @@ window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
 };
 
 window.changeHp = (id, amount) => {
+    if (myRole === 'spectator') return;
     const el = document.getElementById(id);
     if (!el || !el.cardData) return;
     let current = parseInt(el.cardData.currentHp !== undefined ? el.cardData.currentHp : el.cardData.hp);
@@ -358,6 +382,7 @@ window.changeHp = (id, amount) => {
 };
 
 window.discardFromZoom = (id) => { 
+    if (myRole === 'spectator') return;
     const el = document.getElementById(id); if(!el) return;
     el.classList.remove('rotated', 'face-down');
     el.classList.add('face-up');
