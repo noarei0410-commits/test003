@@ -28,7 +28,8 @@ async function joinRoom(role) {
     if (role === 'player') {
         showPage('setup-modal');
     } else {
-        showPage(''); // フィールドへ
+        // フィールド画面を表示し、観戦者用クラスを付与
+        showPage(''); 
         document.body.classList.add('spectator-mode');
     }
 }
