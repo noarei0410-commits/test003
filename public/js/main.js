@@ -22,34 +22,20 @@ async function loadCardData() {
 
 async function joinRoom(role) {
     const rid = document.getElementById('roomIdInput').value.trim();
-    if (!rid) return alert("ルームIDを入力するか、リストから選択してください");
-    myRole = role; 
+    if (!rid) return alert("IDを入力してください");
+    socket.roomId = rid; myRole = role; 
     socket.emit('joinRoom', { roomId: rid, role });
-    if (role === 'player') {
-        showPage('setup-modal');
-    } else {
-        showPage(''); 
-        document.body.classList.add('spectator-mode');
-    }
+    if (role === 'player') showPage('setup-modal');
+    else { showPage(''); document.body.classList.add('spectator-mode'); }
 }
 
 function setupDeckClick(id, type) {
     const el = document.getElementById(id); if (!el) return;
-    let clickTimer = null;
+    let timer = null;
     el.onpointerdown = (e) => {
-        e.preventDefault();
-        clickTimer = setTimeout(() => {
-            if (myRole === 'player') socket.emit('inspectDeck', type);
-            clickTimer = null;
-        }, 500);
+        timer = setTimeout(() => { if (myRole === 'player') socket.emit('inspectDeck', type); timer = null; }, 500);
     };
-    el.onpointerup = () => {
-        if (clickTimer) {
-            clearTimeout(clickTimer);
-            if(myRole === 'player') socket.emit(type === 'main' ? 'drawMainCard' : 'drawCheerCard');
-            clickTimer = null;
-        }
-    };
+    el.onpointerup = () => { if (timer) { clearTimeout(timer); if(myRole === 'player') socket.emit(type === 'main' ? 'drawMainCard' : 'drawCheerCard'); } };
 }
 
 document.getElementById('joinPlayerBtn').onclick = () => joinRoom('player');
