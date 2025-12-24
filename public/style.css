@@ -22,11 +22,10 @@ body {
 }
 .room-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .room-item { 
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(0,210,255,0.3); 
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(0, 210, 255, 0.3); 
     padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; 
     align-items: center; cursor: pointer; transition: 0.2s; 
 }
-.room-item:hover { background: rgba(0,210,255,0.1); }
 #roomIdInput { 
     width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #00d2ff; 
     background: #04172b; color: white; text-align: center; font-size: 16px; 
@@ -36,22 +35,19 @@ body {
     flex: 1; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: bold; 
     transition: 0.2s; border: 2px solid #00d2ff; color: white; background: none; 
 }
-.player-btn { border-color: #ff5e5e; }
-.spectator-btn { border-color: #2ecc71; }
 
-/* --- デッキ構築画面 --- */
+/* --- デッキ構築画面 (修正済み) --- */
 #setup-modal .modal-content { 
     background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; 
     padding: 20px; width: 98vw; height: 96vh; display: flex; flex-direction: column; 
 }
-.builder-layout { display: flex; flex: 1; gap: 20px; overflow: hidden; }
+.builder-layout { 
+    display: flex !important; flex-direction: row !important; /* 横並びを強制 */
+    flex: 1; gap: 20px; overflow: hidden; 
+}
 .card-library { 
     flex: 1.2; display: flex; flex-direction: column; 
-    background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px; 
-}
-#searchInput { 
-    width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; 
-    border: 1px solid #00d2ff; background: #04172b; color: white; 
+    background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px; overflow: hidden;
 }
 #libraryList { flex: 1; overflow-y: auto; }
 .deck-lists-container { 
@@ -59,10 +55,10 @@ body {
 }
 .deck-section { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
 .section-header { font-weight: bold; color: #00d2ff; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-.library-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #222; }
-.deck-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.library-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; }
+.deck-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
 
-/* --- フィールド UI (新レイアウト) --- */
+/* --- フィールド UI (Grid形式) --- */
 #ui-layer { 
     width: 100%; padding: 5px 20px; display: flex; justify-content: space-between; 
     height: 35px; align-items: center; background: rgba(0,0,0,0.4); 
@@ -72,62 +68,33 @@ body {
     background: radial-gradient(ellipse at center, rgba(40, 80, 120, 0.3) 0%, rgba(4, 23, 43, 0.8) 100%);
     border-radius: 15px; border: 2px solid rgba(0, 210, 255, 0.3);
 }
-
 #field {
     display: grid;
-    /* 左(ライフ/エール), 中央3つ(コラボ/センター/推し), 右(パワー/デッキ) */
     grid-template-columns: 130px 1fr 1fr 1fr 130px;
-    /* 上段, バックステージエリア, 下段(デッキ) */
     grid-template-rows: 150px 1fr 150px;
-    gap: 15px;
-    padding: 20px;
-    height: 100%;
+    gap: 15px; padding: 20px; height: 100%;
 }
 
-/* ゾーン共通 */
 .zone { 
     border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(255,255,255,0.05); 
     border-radius: 12px; display: flex; justify-content: center; align-items: center; 
-    color: rgba(255,255,255,0.5); font-size: 12px; font-weight: bold; text-align: center; 
+    color: rgba(255,255,255,0.4); font-size: 11px; font-weight: bold; text-align: center; 
     width: 100%; height: 100%; position: relative;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
 }
-.deck-zone { border-color: #00d2ff; color: #00d2ff; cursor: pointer; background: rgba(0, 210, 255, 0.05); }
+.deck-zone { border-color: #00d2ff; color: #00d2ff; cursor: pointer; }
 
-/* --- 各エリア配置 --- */
-/* 左エリア */
+/* エリア配置 */
 .field-left-area { grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 15px; }
-.life-zone-vertical { flex: 2; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; } /* 縦書き */
-#cheer-deck-zone { flex: 1; }
-
-/* 中央上段 */
+.life-zone-vertical { flex: 2.5; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; }
 .field-center-top { grid-column: 2 / span 3; grid-row: 1; display: flex; gap: 15px; }
-
-/* 右上 */
 .field-right-top { grid-column: 5; grid-row: 1; }
-
-/* バックステージ (広いエリア) */
 .field-back-stage { 
     grid-column: 2 / span 3; grid-row: 2 / span 2; 
     border: 2px dashed rgba(255,255,255,0.2); border-radius: 15px;
-    display: flex; flex-direction: column; padding: 10px;
-    position: relative;
+    display: flex; flex-direction: column; padding: 10px; position: relative;
 }
-.back-stage-label { 
-    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-    background: #04172b; padding: 0 10px; color: rgba(255,255,255,0.5); font-size: 12px;
-}
-.back-slots-container {
-    flex: 1; display: flex; justify-content: space-around; align-items: center; gap: 10px;
-    margin-top: 10px;
-}
-.back-slots-container .zone { height: 100px; width: 70px; border-style: dashed; } /* スロットは少し小さく、点線に */
-
-/* 右下 */
+.back-slots-container { flex: 1; display: flex; justify-content: space-around; align-items: center; gap: 10px; margin-top: 10px; }
 .field-right-bottom { grid-column: 5; grid-row: 3; display: flex; flex-direction: column; gap: 15px; }
-#main-deck-zone { flex: 1; }
-#archive { flex: 1; }
-
 
 /* --- カードデザイン --- */
 .card { 
@@ -135,58 +102,28 @@ body {
     position: absolute; z-index: 1000; font-size: 8px; display: flex; 
     align-items: center; justify-content: center; text-align: center; 
     border: 1px solid #999; box-shadow: 2px 2px 6px rgba(0,0,0,0.4); 
-    transition: transform 0.2s;
 }
-/* リスト内・手札内では配置をリセット */
 #hand .card, .card-grid .card, #deck-card-grid .card { 
     position: relative !important; left: auto !important; top: auto !important; 
     flex-shrink: 0; transform: none !important; 
 }
-
 .card-hp { position: absolute; top: 12px; right: 5px; color: #e74c3c; font-weight: bold; font-size: 10px; }
 .card-bloom { position: absolute; top: 2px; left: 5px; color: #3498db; font-weight: bold; font-size: 9px; }
-.card-color-icon { position: absolute; top: 2px; right: 5px; width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
-.card-baton { 
-    position: absolute; bottom: 3px; right: 5px; 
-    display: flex; flex-direction: row; gap: 2px; 
-}
+.card-color-icon { position: absolute; top: 2px; right: 5px; width: 10px; height: 10px; border-radius: 50%; }
+.card-baton { position: absolute; bottom: 3px; right: 5px; display: flex; flex-direction: row; gap: 2px; }
 .baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
 
 .face-down { background: #16213e !important; border: 1.5px solid white !important; }
 .face-down * { display: none !important; }
 .card.rotated { transform: rotate(90deg); }
 
-/* エールカラー */
-.ayle-white { border: 2.5px solid #bdc3c7; }
-.ayle-green { border: 2.5px solid #2ecc71; }
-.ayle-red { border: 2.5px solid #e74c3c; }
-.ayle-blue { border: 2.5px solid #3498db; }
-.ayle-yellow { border: 2.5px solid #f1c40f; }
-.ayle-purple { border: 2.5px solid #9b59b6; }
-
-/* --- 手札 --- */
+/* --- 手札・ライブラリグリッド --- */
 #hand-container { width: 100vw; height: 130px; background: rgba(0,0,0,0.6); padding: 10px 20px; z-index: 5000; }
 #hand { display: flex; gap: 10px; overflow-x: auto; height: 100%; align-items: center; }
+.card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 15px; justify-content: flex-start; overflow-y: auto; }
 
-/* --- 詳細/ズーム --- */
-#zoom-modal { 
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-    background: rgba(0,0,0,0.85); z-index: 50000; display: none; 
-    justify-content: center; align-items: center; 
-}
-.zoom-container { 
-    background: white; color: black; width: 350px; border-radius: 20px; 
-    padding: 20px; display: flex; flex-direction: column; gap: 12px; 
-    max-height: 92vh; overflow-y: auto; position: relative; 
-}
-.zoom-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-.zoom-hp-area { display: flex; align-items: center; gap: 12px; }
-.zoom-hp { font-size: 22px; color: #e74c3c; font-weight: bold; }
-.btn-hp { width: 32px; height: 32px; border-radius: 50%; color: white; border: none; font-size: 18px; cursor: pointer; }
-.btn-activate-skill { background: #f1c40f; color: black; padding: 6px 15px; border-radius: 20px; font-weight: bold; }
-.zoom-footer { margin-top: auto; padding-top: 10px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 8px; }
-.zoom-baton-row { display: flex; align-items: center; gap: 8px; font-weight: bold; }
-.zoom-baton-row .baton-dot { width: 10px; height: 10px; }
-
-/* --- 観戦モード --- */
-body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.6; }
+/* --- ズーム --- */
+#zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 50000; display: none; justify-content: center; align-items: center; }
+.zoom-container { background: white; color: black; width: 350px; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; }
+.btn-activate-skill { background: #f1c40f; color: black; padding: 6px 15px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; }
+.zoom-effect-text { font-size: 13px; line-height: 1.4; color: #333; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid #00d2ff; }
