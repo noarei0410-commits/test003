@@ -53,6 +53,16 @@ body {
 
 .card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; justify-content: flex-start; align-content: flex-start; }
 
+/* デッキ/アーカイブ確認用グリッド */
+#deck-card-grid .card {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important; /* 強制的に縦向き */
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
 /* --- フィールド UI --- */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
 #field-container { width: 98vw; height: 60vh; max-height: 550px; border: 3px double #f0ffff; border-radius: 12px; background: rgba(255,255,255,0.02); padding: 6px; margin-top: 5px; }
@@ -154,7 +164,6 @@ body {
 .skill-name-row { display: flex; flex: 1; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
 .skill-damage { color: #e74c3c; font-size: 16px; margin-left: 10px; }
 
-/* スキル発動ボタン */
 .btn-activate-skill { background: #f1c40f; color: #000; border: none; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .btn-activate-skill:active { transform: translateY(1px); box-shadow: none; }
 
