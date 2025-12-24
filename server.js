@@ -28,8 +28,17 @@ io.on('connection', (socket) => {
             rooms[roomId] = { fieldState: {}, mainDeck: [], cheerDeck: [], players: [] };
         }
         if (role === 'player') rooms[roomId].players.push(socket.id);
-        socket.emit('init', { id: socket.id, role: role, fieldState: rooms[roomId].fieldState });
-        io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
+
+        // 【重要】参加した瞬間に現在の盤面状態とデッキ枚数を送信
+        socket.emit('init', { 
+            id: socket.id, 
+            role: role, 
+            fieldState: rooms[roomId].fieldState,
+            deckCount: { 
+                main: rooms[roomId].mainDeck.length, 
+                cheer: rooms[roomId].cheerDeck.length 
+            }
+        });
     });
 
     socket.on('setGame', (data) => {
@@ -97,7 +106,6 @@ io.on('connection', (socket) => {
     socket.on('moveCard', (data) => {
         const roomId = socket.roomId;
         if (rooms[roomId]) {
-            // 受信したデータを現在の状態にマージ
             rooms[roomId].fieldState[data.id] = { ...rooms[roomId].fieldState[data.id], ...data };
             socket.to(roomId).emit('cardMoved', data);
         }
