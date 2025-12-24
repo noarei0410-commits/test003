@@ -78,13 +78,20 @@ function repositionCards() {
     });
 }
 
+/**
+ * イベント設定 (アーカイブ移動制限を追加)
+ */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
-        if (myRole === 'spectator') return;
+        
+        // 観戦者、またはアーカイブにあるカードはドラッグ不可
+        if (myRole === 'spectator' || el.dataset.zoneId === 'archive') return;
+        
         isDragging = true; dragStarted = false;
         currentDragEl = el; el.setPointerCapture(e.pointerId);
         el.oldZoneId = el.dataset.zoneId || "";
+
         const rect = el.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         currentStack = (el.dataset.zoneId && el.dataset.zoneId !== "") 
@@ -130,8 +137,11 @@ document.onpointermove = (e) => {
 
 document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    // アーカイブにあってもズーム（拡大表示）は可能にする
     if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
+    
     if (myRole === 'spectator' || !isDragging || !currentDragEl) { isDragging = false; dragStarted = false; currentStack = []; return; }
+    
     if (dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
         if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
@@ -187,8 +197,6 @@ function normalSnapStack(e) {
 
         currentStack.forEach(c => {
             c.dataset.zoneId = closest.id; delete c.dataset.percentX;
-            
-            // --- アーカイブ送りの特殊処理 ---
             if (closest.id === 'archive') {
                 c.classList.remove('rotated', 'face-down');
                 c.classList.add('face-up');
@@ -234,16 +242,13 @@ function canUseArt(costReq, attachedAyles) {
     return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
-/**
- * ズーム詳細
- */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
     const isOshi = (cardData.type === 'oshi'), isHolomen = (cardData.type === 'holomen');
     
     let stackAyle = [], stackEquip = [];
-    if (cardElement && (cardElement.parentElement === field || cardElement.parentElement === handDiv)) {
+    if (cardElement && (cardElement.parentElement === field || cardElement.parentElement === handDiv || cardElement.closest('#deck-card-grid'))) {
         const r = cardElement.getBoundingClientRect();
         const stack = Array.from(document.querySelectorAll('.card')).filter(c => c !== cardElement).filter(c => {
             const cr = c.getBoundingClientRect(); return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
@@ -320,9 +325,6 @@ function openZoom(cardData, cardElement = null) {
     zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
 }
 
-/**
- * 推しスキル発動 (ホロパワーをアーカイブへ送る処理を修正)
- */
 window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
     const hpCards = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
     if (hpCards.length < cost) return alert("ホロパワーが足りません");
@@ -331,7 +333,6 @@ window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
     for (let i = 0; i < cost; i++) {
         const c = hpCards[i];
         c.dataset.zoneId = 'archive';
-        // 表向き・縦向きに設定して同期
         c.classList.remove('rotated', 'face-down');
         c.classList.add('face-up');
         socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: 'archive', isRotated: false, isFaceUp: true, zIndex: 10 });
@@ -358,7 +359,6 @@ window.changeHp = (id, amount) => {
 
 window.discardFromZoom = (id) => { 
     const el = document.getElementById(id); if(!el) return;
-    // 個別にアーカイブへ送る際も表向き・縦向きにする
     el.classList.remove('rotated', 'face-down');
     el.classList.add('face-up');
     socket.emit('moveCard', {id, zoneId:'archive', zIndex:10, isRotated: false, isFaceUp: true, ...el.cardData}); 
