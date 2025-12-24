@@ -1,0 +1,112 @@
+/* --- 推しホロメン枠線カラー (拡大前) --- */
+.card.oshi-card.border-white  { border: 2.5px solid #ffffff; box-shadow: 0 0 8px #fff; }
+.card.oshi-card.border-green  { border: 2.5px solid #00d25b; box-shadow: 0 0 8px #00d25b; }
+.card.oshi-card.border-red    { border: 2.5px solid #ff3333; box-shadow: 0 0 8px #ff3333; }
+.card.oshi-card.border-blue   { border: 2.5px solid #3399ff; box-shadow: 0 0 8px #3399ff; }
+.card.oshi-card.border-yellow { border: 2.5px solid #ffcc00; box-shadow: 0 0 8px #ffcc00; }
+.card.oshi-card.border-purple { border: 2.5px solid #aa66cc; box-shadow: 0 0 8px #aa66cc; }
+
+/* --- 拡大前のレイアウト --- */
+.card.oshi-card span {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    font-weight: bold;
+    font-size: 10px;
+}
+.card.oshi-card .card-color-icon {
+    top: auto; right: 3px; bottom: 3px; /* 右下へ */
+}
+
+/* --- 推しホロメン拡大表示 (oshi-zoom-layout) --- */
+.oshi-zoom-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 名前 (左下) */
+.zoom-oshi-name {
+    position: absolute;
+    bottom: 25px;
+    left: 25px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #000;
+}
+
+/* 右下グループ (ライフ + エールアイコン) */
+.zoom-oshi-right-bottom {
+    position: absolute;
+    bottom: 20px;
+    right: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.zoom-oshi-life {
+    font-size: 28px;
+    font-weight: 900;
+    color: #e74c3c;
+    line-height: 1;
+}
+
+.zoom-oshi-color-large {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* スキルセクション (画像に基づいた横長スタイル) */
+.oshi-skill-container {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.oshi-skill-bar {
+    background: #f0f4f8;
+    border-radius: 12px;
+    padding: 15px;
+    border-left: 8px solid #333; /* デフォルト黒 */
+}
+
+/* 推しスキルは金、SP推しスキルは虹色などのアクセントを付与可能 */
+.oshi-skill-bar.oshi-normal { border-left-color: #3498db; }
+.oshi-skill-bar.oshi-sp { border-left-color: #f1c40f; background: #fffcf0; }
+
+.oshi-skill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.oshi-skill-label {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.oshi-skill-cost {
+    display: flex;
+    gap: 4px;
+}
+
+.oshi-skill-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #444;
+}
+
+/* 拡大枠線の色 (ホロメンと同様だがクラスを統合) */
+.zoom-outer-container.oshi-zoom.border-white  { border: 6px solid #ffffff; box-shadow: 0 0 30px #fff; }
+.zoom-outer-container.oshi-zoom.border-green  { border: 6px solid #00d25b; box-shadow: 0 0 30px #00d25b; }
+.zoom-outer-container.oshi-zoom.border-red    { border: 6px solid #ff3333; box-shadow: 0 0 30px #ff3333; }
+.zoom-outer-container.oshi-zoom.border-blue   { border: 6px solid #3399ff; box-shadow: 0 0 30px #3399ff; }
+.zoom-outer-container.oshi-zoom.border-yellow { border: 6px solid #ffcc00; box-shadow: 0 0 30px #ffcc00; }
+.zoom-outer-container.oshi-zoom.border-purple { border: 6px solid #aa66cc; box-shadow: 0 0 30px #aa66cc; }
