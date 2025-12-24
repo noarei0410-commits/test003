@@ -1,45 +1,85 @@
 /**
  * カードDOMの生成
+ * エール色に応じた枠線クラスや、指定の位置へのパーツ配置を行います。
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
-    const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
+    const el = document.createElement('div'); 
+    el.id = data.id || ""; 
+    el.className = 'card';
     
+    // ホロメン・推しの場合、色に基づいたボーダークラスを追加 (border-blue等)
     if ((data.type === 'holomen' || data.type === 'oshi') && data.color) {
         const colorKey = COLORS[data.color] || 'white';
         el.classList.add('border-' + colorKey);
     }
 
-    const nameSpan = document.createElement('span'); nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
+    const nameSpan = document.createElement('span');
+    nameSpan.innerText = data.name || ""; 
+    el.appendChild(nameSpan);
+
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
+        
+        // Bloomランク (左上)
         if (data.bloom) {
-            const blDiv = document.createElement('div'); blDiv.className = 'card-bloom'; blDiv.innerText = data.bloom.charAt(0); el.appendChild(blDiv);
+            const blDiv = document.createElement('div'); 
+            blDiv.className = 'card-bloom'; 
+            blDiv.innerText = data.bloom.charAt(0); 
+            el.appendChild(blDiv);
         }
+
+        // エール色アイコン (右上)
         if (data.color) {
-            const clDiv = document.createElement('div'); clDiv.className = 'card-color-icon'; 
-            const colorCode = COLORS[data.color] || 'white'; clDiv.style.background = colorCode; el.appendChild(clDiv);
+            const clDiv = document.createElement('div'); 
+            clDiv.className = 'card-color-icon'; 
+            const colorCode = COLORS[data.color] || 'white';
+            clDiv.style.background = colorCode;
+            el.appendChild(clDiv);
         }
-        const hpDiv = document.createElement('div'); hpDiv.className = 'card-hp'; hpDiv.id = `hp-display-${data.id}`; hpDiv.innerText = currentHp || data.life || ""; el.appendChild(hpDiv);
+
+        // HP表示 (右側・アイコンの下)
+        const hpDiv = document.createElement('div'); 
+        hpDiv.className = 'card-hp'; 
+        hpDiv.id = `hp-display-${data.id}`;
+        hpDiv.innerText = currentHp || data.life || ""; 
+        el.appendChild(hpDiv);
+
+        // バトンタッチコスト (左下)
         if (data.baton !== undefined) {
-            const batonDiv = document.createElement('div'); batonDiv.className = 'card-baton';
-            for(let i=0; i<data.baton; i++) { const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); }
+            const batonDiv = document.createElement('div'); 
+            batonDiv.className = 'card-baton';
+            for(let i=0; i<data.baton; i++) { 
+                const dot = document.createElement('div'); 
+                dot.className = 'baton-dot'; 
+                batonDiv.appendChild(dot); 
+            }
             el.appendChild(batonDiv);
         }
     }
-    if (data.type === 'ayle') { for (let k in COLORS) { if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); } }
+
+    if (data.type === 'ayle') {
+        for (let k in COLORS) { 
+            if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); 
+        }
+    }
+
     el.cardData = data;
     if (withEvents) setupCardEvents(el);
     return el;
 }
 
+/**
+ * フィールド再配置
+ */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
     const fRect = fieldEl.getBoundingClientRect();
     const counts = {};
+
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== fieldEl || currentStack.includes(card)) return;
         const zid = card.dataset.zoneId;
@@ -59,6 +99,9 @@ function repositionCards() {
     });
 }
 
+/**
+ * カードイベント設定
+ */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
@@ -134,7 +177,7 @@ function canUseArt(costArray, attachedAyles) {
 }
 
 /**
- * 拡大表示 (Gridレイアウトとコストアイコン描画を修正)
+ * 拡大表示 (説明文「なし」の非表示対応)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -176,16 +219,18 @@ function openZoom(cardData, cardElement = null) {
             leftContent = `<div class="effect-label label-collab-effect">C コラボエフェクト</div>`;
         } else {
             showDamage = true;
-            // コストアイコンの描画を確実にCOLORSから引くように修正
             const costIcons = (s.cost || []).map(c => {
                 const colorCode = c === 'any' ? '#ddd' : (COLORS[c] || c);
                 return `<div class="cost-dot-small" style="background: ${colorCode};"></div>`;
             }).join('');
-            leftContent = costIcons;
+            leftContent = `<div class="skill-label-container">${costIcons}</div>`;
         }
 
         const isReady = (s.type === 'arts' || !s.type) && canUseArt(s.cost, attachedAyles);
         const readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
+
+        // 説明文が「なし」の場合は表示しない
+        const skillText = (s.text === "なし" || !s.text) ? "" : s.text;
 
         return `
             <div class="skill-box">
@@ -196,7 +241,7 @@ function openZoom(cardData, cardElement = null) {
                     </div>
                     <div class="skill-damage-text">${showDamage ? (s.damage || "") : ""}</div>
                 </div>
-                <div class="skill-text-detail">${s.text || ""}</div>
+                ${skillText ? `<div class="skill-text-detail">${skillText}</div>` : ""}
             </div>`;
     }).join('');
 
