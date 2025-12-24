@@ -1,12 +1,9 @@
 /**
- * カードDOMの生成
- * ホロメンカードにはエール色に応じたボーダークラス(border-white等)を付与します。
+ * カードDOMの生成 (エール色に応じた枠線クラス付与)
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
-    const el = document.createElement('div'); 
-    el.id = data.id || ""; 
-    el.className = 'card';
+    const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
     // ホロメン・推しの場合、色に基づいたボーダークラスを追加
     if ((data.type === 'holomen' || data.type === 'oshi') && data.color) {
@@ -115,7 +112,6 @@ document.onpointermove = (e) => {
     if (!isDragging || !currentDragEl) return;
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     
-    // ドラッグ開始の遊びを10pxに設定
     if (!dragStarted && dist > 10) {
         dragStarted = true;
         currentStack.forEach(card => {
@@ -146,13 +142,11 @@ document.onpointermove = (e) => {
 };
 
 document.onpointerup = (e) => {
-    // 1. まずクリック（拡大）の判定を行う
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (potentialZoomTarget && dist < 10) {
         openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
     }
     
-    // 2. ドラッグ終了処理
     if (isDragging && currentDragEl && dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
         if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
@@ -175,16 +169,8 @@ document.onpointerup = (e) => {
         }
     }
 
-    // 3. 全てのドラッグ状態を確実にリセット（くっつき防止）
-    if (currentDragEl) {
-        currentStack.forEach(c => delete c.dataset.stackOffset);
-        if (e.pointerId !== undefined) currentDragEl.releasePointerCapture(e.pointerId);
-    }
-    isDragging = false; 
-    dragStarted = false; 
-    currentDragEl = null;
-    currentStack = []; 
-    repositionCards();
+    if (currentDragEl && e.pointerId !== undefined) currentDragEl.releasePointerCapture(e.pointerId);
+    isDragging = false; dragStarted = false; currentDragEl = null; currentStack = []; repositionCards();
 };
 
 function normalSnapStack(e) {
@@ -218,7 +204,7 @@ function normalSnapStack(e) {
 }
 
 /**
- * 拡大表示 (修正済み)
+ * 拡大表示 (最新レイアウト反映)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -230,7 +216,7 @@ function openZoom(cardData, cardElement = null) {
     const isSpec = (myRole === 'spectator');
     
     // エール色に基づいた縁取りクラスを外枠に付与
-    zoomOuter.className = 'zoom-outer-container'; // クラスリセット
+    zoomOuter.className = 'zoom-outer-container';
     if (cardData.color) {
         zoomOuter.classList.add('border-' + (COLORS[cardData.color] || 'white'));
     }
@@ -248,24 +234,22 @@ function openZoom(cardData, cardElement = null) {
 
     const skillsHtml = (cardData.skills || []).map((s) => {
         const costIconsHtml = (s.cost || []).map(c => {
-            let bgColor = c;
-            if (c === 'any') bgColor = '#ddd';
-            // COLORSオブジェクト内の名称と一致する場合はその色コードを使用
-            for(let key in COLORS) { if(COLORS[key] === c) bgColor = COLORS[key]; }
-            return `<div class="cost-dot-small" style="background: ${bgColor};"></div>`;
+            const colorCode = c === 'any' ? '#ddd' : (COLORS[c] || c);
+            return `<div class="cost-dot-small" style="background: ${colorCode};"></div>`;
         }).join('');
         const isReady = canUseArt(s.cost, attachedAyles);
         const readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
+
         return `
             <div class="skill-box">
-                <div class="skill-cost-container">${costIconsHtml}</div>
-                <div class="skill-info-body">
-                    <div class="skill-header-row">
-                        <span class="skill-name-text">${s.name}${readyBadge}</span>
-                        <span class="skill-damage-text">${s.damage || ""}</span>
+                <div class="skill-top-row">
+                    <div class="skill-cost-container-row">${costIconsHtml}</div>
+                    <div class="skill-name-container-center">
+                        <span class="skill-name-text">${s.name}</span>${readyBadge}
                     </div>
-                    <div class="skill-text-detail">${s.text || ""}</div>
+                    <div class="skill-damage-text">${s.damage || ""}</div>
                 </div>
+                <div class="skill-text-detail">${s.text || ""}</div>
             </div>`;
     }).join('');
 
