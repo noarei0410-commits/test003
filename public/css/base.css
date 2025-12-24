@@ -1,0 +1,39 @@
+* { box-sizing: border-box; }
+body { 
+    margin: 0; overflow: hidden; background-color: #04172b; 
+    font-family: 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; 
+    display: flex; flex-direction: column; align-items: center; 
+    height: 100vh; color: white; user-select: none; touch-action: none; 
+}
+.full-page { 
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+    display: none; justify-content: center; align-items: center; 
+    z-index: 10000; background: #04172b; 
+}
+.modal-content { 
+    background: #04172b; border: 2px solid #00d2ff; border-radius: 20px; 
+    padding: 20px; width: 98vw; height: 96vh; display: flex; flex-direction: column; 
+}
+
+/* --- カードデザイン --- */
+.card { 
+    width: 58px; height: 82px; background: white; color: black; border-radius: 6px; 
+    position: absolute; z-index: 1000; font-size: 8px; display: flex; 
+    align-items: center; justify-content: center; text-align: center; 
+    border: 1px solid #999; box-shadow: 2px 2px 6px rgba(0,0,0,0.4); 
+}
+#hand .card, .card-grid .card, #deck-card-grid .card { 
+    position: relative !important; left: auto !important; top: auto !important; 
+    flex-shrink: 0; transform: none !important; 
+}
+.card-hp { position: absolute; top: 12px; right: 5px; color: #e74c3c; font-weight: bold; font-size: 10px; }
+.card-bloom { position: absolute; top: 2px; left: 5px; color: #3498db; font-weight: bold; font-size: 9px; }
+.card-baton { position: absolute; bottom: 3px; right: 5px; display: flex; flex-direction: row; gap: 2px; }
+.baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
+.face-down { background: #16213e !important; border: 1.5px solid white !important; }
+.card.rotated { transform: rotate(90deg); }
+
+/* --- ズーム --- */
+#zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 50000; display: none; justify-content: center; align-items: center; }
+.zoom-container { background: white; color: black; width: 350px; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; }
+.card-grid { display: flex !important; flex-wrap: wrap !important; gap: 15px; padding: 20px; overflow-y: auto; flex: 1; }
