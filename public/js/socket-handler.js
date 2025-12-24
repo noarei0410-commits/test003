@@ -13,39 +13,18 @@ socket.on('init', (d) => {
     document.getElementById('room-info').innerText = `Room: ${socket.roomId} (${d.role})`;
 });
 
-socket.on('gameStarted', (d) => { 
-    field.querySelectorAll('.card').forEach(c => c.remove()); 
-    handDiv.innerHTML = ""; 
-    for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); 
-    repositionCards(); 
-});
-
-socket.on('receiveCard', (d) => { 
-    const el = createCardElement({ ...d, isFaceUp: true }); 
-    el.style.position = 'relative'; handDiv.appendChild(el); 
-});
-
+socket.on('gameStarted', (d) => { field.querySelectorAll('.card').forEach(c => c.remove()); handDiv.innerHTML = ""; for (const id in d.fieldState) restoreCard(id, d.fieldState[id]); repositionCards(); });
+socket.on('receiveCard', (d) => { const el = createCardElement({ ...d, isFaceUp: true }); el.style.position = 'relative'; handDiv.appendChild(el); });
 socket.on('cardMoved', (d) => { 
     let el = document.getElementById(d.id); if (!el) return restoreCard(d.id, d);
     el.dataset.zoneId = d.zoneId || ""; el.style.zIndex = d.zIndex;
     if (d.isFaceUp !== undefined) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); }
     if (d.isRotated !== undefined) el.classList.toggle('rotated', d.isRotated);
-    if (d.currentHp !== undefined) { 
-        el.cardData.currentHp = d.currentHp; 
-        const fhp = document.getElementById(`hp-display-${d.id}`); if (fhp) fhp.innerText = d.currentHp; 
-    }
-    if (el.parentElement !== field) field.appendChild(el); 
-    repositionCards();
+    if (d.currentHp !== undefined) { el.cardData.currentHp = d.currentHp; const fhp = document.getElementById(`hp-display-${d.id}`); if (fhp) fhp.innerText = d.currentHp; }
+    if (el.parentElement !== field) field.appendChild(el); repositionCards();
 });
 
-socket.on('hpUpdated', (d) => { 
-    const el = document.getElementById(d.id); 
-    if (el && el.cardData) { 
-        el.cardData.currentHp = d.currentHp; 
-        const fhp = document.getElementById(`hp-display-${d.id}`); if (fhp) fhp.innerText = d.currentHp; 
-    } 
-});
-
+socket.on('hpUpdated', (d) => { const el = document.getElementById(d.id); if (el && el.cardData) { el.cardData.currentHp = d.currentHp; const fhp = document.getElementById(`hp-display-${d.id}`); if (fhp) fhp.innerText = d.currentHp; } });
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
 socket.on('deckCount', (c) => { document.getElementById('mainCount').innerText = c.main; document.getElementById('cheerCount').innerText = c.cheer; });
 
