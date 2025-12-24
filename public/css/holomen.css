@@ -22,7 +22,7 @@
 }
 .zoom-outer-container {
     background: white; color: #333;
-    width: 420px; max-height: 90vh;
+    width: 440px; max-height: 90vh;
     border-radius: 25px; padding: 25px;
     position: relative; overflow-y: auto;
     cursor: default;
@@ -53,47 +53,67 @@
 .btn-zoom-hp-inline.minus { background: #e74c3c; }
 .btn-zoom-hp-inline.plus { background: #2ecc71; }
 
-/* 中央：スキルエリア */
+/* 中央：スキルエリア (重なり防止Grid) */
 .zoom-main-content { margin: 20px 0; display: flex; flex-direction: column; gap: 15px; }
 .skill-box {
     background: #f8f9fa; border-radius: 10px; padding: 12px;
     display: flex; flex-direction: column; gap: 10px;
     border: 1px solid #eee; position: relative;
 }
+
+/* スキル上段：3カラムGridで重なりを物理的に防ぐ */
 .skill-top-row {
-    display: flex; align-items: center; justify-content: space-between;
-    width: 100%; position: relative; min-height: 28px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; /* 左(コスト/ラベル)・中(名前)・右(ダメージ) */
+    align-items: center;
+    width: 100%;
+    min-height: 28px;
+    gap: 10px;
 }
 
-/* 左側：コストまたはエフェクトラベル */
+/* 左側：コスト・ラベルコンテナ */
 .skill-label-container {
-    display: flex; flex-direction: row; gap: 4px; align-items: center; flex-shrink: 0; z-index: 2;
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+    justify-self: start; /* 左寄せ */
 }
 
 /* G, B, C 専用バッジスタイル */
 .effect-label {
-    padding: 2px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 11px; white-space: nowrap;
+    padding: 3px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 11px; white-space: nowrap;
 }
 .label-gift { background: rgba(0,123,67,1); }
 .label-bloom-effect { background: rgba(76,108,179,1); }
 .label-collab-effect { background: rgba(183,40,46,1); }
 
+/* コストドット */
+.cost-dot-small { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
+
 /* 中央：スキル名 */
 .skill-name-container-center {
-    position: absolute; left: 50%; transform: translateX(-50%);
-    text-align: center; white-space: nowrap; display: flex; align-items: center; justify-content: center;
-    width: auto; max-width: 55%; z-index: 1;
+    text-align: center;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: center; /* Gridセル内中央 */
 }
 .skill-name-text { font-weight: bold; font-size: 16px; color: #2c3e50; }
 .ready-badge { background: #2ecc71; color: white; font-size: 10px; padding: 2px 6px; border-radius: 5px; margin-left: 6px; }
 
 /* 右側：ダメージ */
-.skill-damage-text { font-weight: bold; color: #e74c3c; font-size: 18px; flex-shrink: 0; text-align: right; z-index: 2; }
+.skill-damage-text {
+    font-weight: bold; color: #e74c3c; font-size: 18px;
+    text-align: right;
+    justify-self: end; /* 右寄せ */
+}
 
 /* 説明文 */
 .skill-text-detail { font-size: 13px; line-height: 1.5; color: #555; padding-top: 5px; border-top: 1px dashed #eee; }
 
-/* 下部 */
+/* 下部：タグ・バトン・エクストラ */
 .zoom-bottom-left-group { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; }
 .zoom-tags-row { font-size: 13px; color: #3498db; font-weight: bold; display: flex; flex-wrap: wrap; gap: 8px; }
 .zoom-baton-row { font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; color: #444; }
