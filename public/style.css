@@ -12,7 +12,7 @@ body {
     z-index: 10000; background: #04172b; 
 }
 
-/* --- ハブ/ロビー画面 (スタイル刷新) --- */
+/* --- ハブ/ロビー画面 --- */
 #hub-page { display: flex; background: radial-gradient(circle, #0a2d4d, #04172b); }
 .hub-container { width: 90%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; text-align: center; }
 .hub-title { color: #00d2ff; font-size: 32px; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,210,255,0.6); margin-bottom: 10px; }
@@ -72,7 +72,7 @@ body {
 .deck-section { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
 .section-header { font-weight: bold; color: #00d2ff; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
 
-/* --- フィールド UI (Grid形式復元) --- */
+/* --- フィールド UI --- */
 #ui-layer { width: 100%; padding: 5px 20px; display: flex; justify-content: space-between; height: 35px; align-items: center; background: rgba(0,0,0,0.4); }
 #field-container { width: 98vw; flex: 1; margin-top: 5px; position: relative; background: radial-gradient(ellipse at center, rgba(40, 80, 120, 0.3) 0%, rgba(4, 23, 43, 0.8) 100%); border-radius: 15px; border: 2px solid rgba(0, 210, 255, 0.3); overflow: auto; }
 #field { display: grid; grid-template-columns: 130px 1fr 1fr 1fr 130px; grid-template-rows: 150px 220px 150px; gap: 15px; padding: 20px; height: 100%; min-width: 1100px; }
@@ -81,8 +81,13 @@ body {
 
 /* レイアウト配置 */
 .field-left-area { grid-column: 1; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 15px; }
-.life-zone-vertical { flex: 4; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; }
+/* ライフゾーンを残りのスペース全体に広げる */
+.life-zone-vertical { flex: 1; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px; min-height: 0; }
+/* エールデッキを固定の高さにして小さくする */
+#cheer-deck-zone { flex: none; height: 110px; }
+
 .field-center-top { grid-column: 2 / span 3; grid-row: 1; display: flex; gap: 15px; }
+.field-right-top { grid-column: 5; grid-row: 1; }
 .field-back-stage { grid-column: 2 / span 3; grid-row: 2 / span 2; border: 2px dashed rgba(255,255,255,0.2); border-radius: 15px; display: flex; flex-direction: column; padding: 15px; position: relative; }
 .back-slots-container { flex: 1; display: flex; justify-content: space-around; align-items: center; gap: 10px; }
 .back-slots-container .zone { height: 150px; max-width: 105px; border-style: dashed; }
@@ -97,6 +102,8 @@ body {
 .card-bloom { position: absolute; top: 2px; left: 5px; color: #3498db; font-weight: bold; font-size: 9px; }
 .card-baton { position: absolute; bottom: 3px; right: 5px; display: flex; flex-direction: row; gap: 2px; }
 .baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
+.face-down { background: #16213e !important; border: 1.5px solid white !important; }
+.card.rotated { transform: rotate(90deg); }
 
 /* --- 手札エリア --- */
 #hand-container { width: 100vw; height: 130px; background: rgba(0,0,0,0.6); padding: 12px 20px; z-index: 5000; }
