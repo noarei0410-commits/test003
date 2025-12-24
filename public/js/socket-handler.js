@@ -10,29 +10,54 @@ function restoreCard(id, info) {
     if (info.isRotated !== undefined) {
         el.classList.toggle('rotated', info.isRotated);
     }
-
-    if (info.percentX) { 
-        el.dataset.percentX = info.percentX; 
-        el.dataset.percentY = info.percentY; 
-    }
+    if (info.percentX) { el.dataset.percentX = info.percentX; el.dataset.percentY = info.percentY; }
     
     field.appendChild(el); 
     repositionCards(); 
 }
 
+/**
+ * ロビー画面でのルームリスト更新
+ */
+socket.on('roomListUpdate', (list) => {
+    const listEl = document.getElementById('roomList');
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    
+    if (list.length === 0) {
+        listEl.innerHTML = '<p class="no-rooms">現在稼働中のルームはありません</p>';
+        return;
+    }
+
+    list.forEach(room => {
+        const item = document.createElement('div');
+        item.className = 'room-item';
+        item.innerHTML = `
+            <span class="room-id">${room.id}</span>
+            <div class="room-stats">
+                <span>Player: <span class="stat-val">${room.playerCount}</span></span>
+                <span>Spectator: <span class="stat-val">${room.spectatorCount}</span></span>
+            </div>
+        `;
+        item.onclick = () => {
+            document.getElementById('roomIdInput').value = room.id;
+        };
+        listEl.appendChild(item);
+    });
+});
+
 socket.on('init', (d) => {
     myRole = d.role;
     field.querySelectorAll('.card').forEach(c => c.remove());
     if (d.fieldState) {
-        for (const id in d.fieldState) {
-            restoreCard(id, d.fieldState[id]);
-        }
+        for (const id in d.fieldState) restoreCard(id, d.fieldState[id]);
     }
     if (d.deckCount) {
         const m = document.getElementById('mainCount'), ch = document.getElementById('cheerCount');
         if(m) m.innerText = d.deckCount.main;
         if(ch) ch.innerText = d.deckCount.cheer;
     }
+    document.getElementById('room-info').innerText = `Room: ${socket.roomId} (${d.role})`;
 });
 
 socket.on('gameStarted', (d) => { 
@@ -52,26 +77,16 @@ socket.on('receiveCard', (d) => {
 socket.on('cardMoved', (d) => { 
     let el = document.getElementById(d.id);
     if (!el) return restoreCard(d.id, d);
-    
     el.dataset.zoneId = d.zoneId || "";
     el.style.zIndex = d.zIndex;
-    
-    if (d.isFaceUp !== undefined) {
-        el.classList.toggle('face-up', d.isFaceUp);
-        el.classList.toggle('face-down', !d.isFaceUp);
-    }
-    if (d.isRotated !== undefined) {
-        el.classList.toggle('rotated', d.isRotated);
-    }
-
+    if (d.isFaceUp !== undefined) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); }
+    if (d.isRotated !== undefined) { el.classList.toggle('rotated', d.isRotated); }
     if (d.currentHp !== undefined) {
         el.cardData.currentHp = d.currentHp;
         const fieldHp = document.getElementById(`hp-display-${d.id}`);
         if (fieldHp) fieldHp.innerText = d.currentHp;
     }
-
     if (el.parentElement !== field) field.appendChild(el);
-    if (d.percentX) { el.dataset.percentX = d.percentX; el.dataset.percentY = d.percentY; } else { delete el.dataset.percentX; }
     repositionCards();
 });
 
@@ -81,16 +96,10 @@ socket.on('hpUpdated', (d) => {
         el.cardData.currentHp = d.currentHp;
         const fieldHp = document.getElementById(`hp-display-${d.id}`);
         if (fieldHp) fieldHp.innerText = d.currentHp;
-        const zoomHp = document.getElementById('zoom-hp-val');
-        if (zoomHp && zoomModal.style.display === 'flex') zoomHp.innerText = `HP ${d.currentHp}`;
     }
 });
 
 socket.on('cardRemoved', (d) => { const el = document.getElementById(d.id); if (el) el.remove(); });
-socket.on('cardFlipped', (d) => { 
-    const el = document.getElementById(d.id); 
-    if (el) { el.classList.toggle('face-up', d.isFaceUp); el.classList.toggle('face-down', !d.isFaceUp); } 
-});
 
 socket.on('deckCount', (c) => { 
     const m = document.getElementById('mainCount'), ch = document.getElementById('cheerCount');
@@ -106,16 +115,12 @@ socket.on('deckInspectionResult', (data) => {
         const container = document.createElement('div'); container.className = "library-item";
         const el = createCardElement({...card, isRotated: false, isFaceUp: true}, false);
         el.onclick = () => openZoom(card, el);
-        
         container.appendChild(el);
-        
-        // 観戦者以外なら手札へ入れるボタンを表示
         if (!isSpectator) {
             const pickBtn = document.createElement('button'); pickBtn.className = "btn-recover"; pickBtn.innerText = "手札へ";
             pickBtn.onclick = () => { socket.emit('pickCardFromDeck', { type, cardId: card.id }); deckModal.style.display = 'none'; };
             container.appendChild(pickBtn);
         }
-        
         deckGrid.appendChild(container);
     });
     deckModal.style.display = 'flex';
@@ -130,19 +135,14 @@ function openArchive() {
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
     archiveCards.forEach(card => {
         const container = document.createElement('div'); container.className = "library-item";
-        const previewData = { ...card.cardData, isRotated: false, isFaceUp: true };
-        const el = createCardElement(previewData, false);
+        const el = createCardElement({ ...card.cardData, isRotated: false, isFaceUp: true }, false);
         el.onclick = () => openZoom(card.cardData, el);
-        
         container.appendChild(el);
-
-        // 観戦者以外なら回収ボタンを表示
         if (!isSpectator) {
             const recoverBtn = document.createElement('button'); recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
             recoverBtn.onclick = () => { returnToHand(card); deckModal.style.display = 'none'; };
             container.appendChild(recoverBtn);
         }
-
         deckGrid.appendChild(container);
     });
     deckModal.style.display = 'flex';
