@@ -27,10 +27,10 @@
     flex-direction: column;
     height: 100%;
     position: relative;
-    padding-bottom: 110px; /* ステータスエリア用の余白を確保 */
+    padding-bottom: 110px; /* ステータスエリア用の余白 */
 }
 
-/* スキルコンテナ：スクロール可能にし、下部と被らないようにする */
+/* スキルコンテナ：スクロール可能 */
 .oshi-skill-container {
     flex: 1;
     overflow-y: auto;
@@ -41,8 +41,18 @@
     padding-right: 5px;
 }
 
-/* --- 仕切り線とステータスエリア --- */
-/* 名前の背景に境界線を作成 */
+/* 仕切り線（擬似要素） */
+.oshi-zoom-layout::after {
+    content: "";
+    position: absolute;
+    bottom: 95px; 
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #ddd, transparent);
+}
+
+/* 名前（左下） */
 .zoom-oshi-name {
     position: absolute;
     bottom: 20px;
@@ -53,40 +63,51 @@
     z-index: 10;
 }
 
-/* ステータスエリア全体の境界線（擬似要素で作成） */
-.oshi-zoom-layout::after {
-    content: "";
-    position: absolute;
-    bottom: 90px; /* スキルとステータスの間 */
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(to right, transparent, #ddd, transparent);
-}
-
-/* 右下グループ */
+/* 右下ステータスグループ */
 .zoom-oshi-right-bottom {
     position: absolute;
     bottom: 15px;
     right: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end; /* 右揃え */
     gap: 5px;
     z-index: 10;
 }
 
-.zoom-oshi-life-label { font-size: 11px; font-weight: bold; color: #666; margin-bottom: -5px; }
-.zoom-oshi-life { font-size: 36px; font-weight: 900; color: #e74c3c; line-height: 1; }
-.zoom-oshi-color-large { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
+/* ライフ横並びコンテナ */
+.zoom-oshi-life-container {
+    display: flex;
+    align-items: baseline; /* 文字の下端を揃える */
+    gap: 8px;
+}
 
-/* スキルバーの装飾 */
+.zoom-oshi-life-label { 
+    font-size: 11px; 
+    font-weight: bold; 
+    color: #666; 
+}
+
+.zoom-oshi-life { 
+    font-size: 38px; 
+    font-weight: 900; 
+    color: #e74c3c; 
+    line-height: 1; 
+}
+
+.zoom-oshi-color-large { 
+    width: 38px; 
+    height: 38px; 
+    border-radius: 50%; 
+    border: 1px solid rgba(0,0,0,0.1); 
+}
+
+/* スキルバー装飾 */
 .oshi-skill-bar {
     background: #f4f7f9;
     border-radius: 12px;
     padding: 15px;
     border-left: 10px solid #333;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.02);
 }
 .oshi-skill-bar.oshi-normal { border-left-color: #f06292; }
 .oshi-skill-bar.oshi-sp { border-left-color: #9575cd; background: #f6f3ff; }
@@ -97,4 +118,9 @@
 .oshi-skill-text { font-size: 13px; line-height: 1.5; color: #444; }
 
 /* 拡大枠線の強化 */
-.zoom-outer-container.oshi-zoom { border-width: 6px !important; }
+.zoom-outer-container.oshi-zoom { 
+    border-width: 6px !important; 
+}
+.zoom-outer-container.oshi-zoom.border-blue { border-color: #3399ff; box-shadow: 0 0 30px #3399ff; }
+.zoom-outer-container.oshi-zoom.border-red  { border-color: #ff3333; box-shadow: 0 0 30px #ff3333; }
+.zoom-outer-container.oshi-zoom.border-white { border-color: #ffffff; box-shadow: 0 0 30px #ffffff; }
