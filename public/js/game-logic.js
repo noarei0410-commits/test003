@@ -11,6 +11,7 @@ function createCardElement(data, withEvents = true) {
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
+    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); 
@@ -84,8 +85,6 @@ function setupCardEvents(el) {
         
         isDragging = true; dragStarted = false;
         currentDragEl = el; el.setPointerCapture(e.pointerId);
-        
-        // 移動前のゾーンを保存
         el.oldZoneId = el.dataset.zoneId || "";
 
         const rect = el.getBoundingClientRect();
@@ -145,7 +144,6 @@ document.onpointerup = (e) => {
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
             
             if (target && target.parentElement === field) {
-                // Bloom（進化）
                 if (canBloom(currentDragEl.cardData, target.cardData)) {
                     const prevMax = parseInt(target.cardData.hp || 0);
                     const prevCurrent = parseInt(target.cardData.currentHp !== undefined ? target.cardData.currentHp : prevMax);
@@ -167,7 +165,6 @@ document.onpointerup = (e) => {
             }
         }
     }
-    
     currentStack.forEach(c => delete c.dataset.stackOffset);
     isDragging = false; dragStarted = false; currentStack = []; repositionCards();
 };
@@ -189,12 +186,9 @@ function normalSnapStack(e) {
                 currentStack.forEach(c => returnToHand(c)); return;
             }
         }
-
-        // --- ホロパワー生成判定: バックからコラボへ移動した場合 ---
         if (currentDragEl.oldZoneId && currentDragEl.oldZoneId.startsWith('back') && closest.id === 'collab') {
             socket.emit('generateHoloPower');
         }
-
         currentStack.forEach(c => {
             c.dataset.zoneId = closest.id; delete c.dataset.percentX;
             const rotate = (closest.id === 'life-zone' || closest.id === 'holopower'); 
@@ -236,6 +230,9 @@ function canUseArt(costReq, attachedAyles) {
     return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
+/**
+ * ズーム詳細 (推しスキルREADY判定機能追加)
+ */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
@@ -251,6 +248,9 @@ function openZoom(cardData, cardElement = null) {
         stackEquip = stack.filter(c => c.cardData.type === 'support');
     }
 
+    // ホロパワーの枚数をカウント
+    const holoPowerCount = document.querySelectorAll('.card[data-zone-id="holopower"]').length;
+
     const tagsHtml = (cardData.tags && cardData.tags.length) 
         ? `<div class="zoom-tags">${cardData.tags.map(t => `<span class="zoom-tag-item">${t}</span>`).join('')}</div>` : "";
     const batonHtml = (cardData.baton !== undefined)
@@ -258,15 +258,31 @@ function openZoom(cardData, cardElement = null) {
 
     const skillsHtml = (cardData.skills || []).map(s => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
-        let ready = (s.type === 'arts' && canUseArt(s.cost, stackAyle.map(e => e.cardData))) ? `<span class="ready-badge">READY</span>` : "";
-        let costHtml = (s.type === 'arts') ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` : `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
+        
+        // スキル発動判定ロジック
+        let isReady = false;
+        if (s.type === 'arts') {
+            isReady = canUseArt(s.cost, stackAyle.map(e => e.cardData));
+        } else if (s.type === 'oshi' || s.type === 'sp_oshi') {
+            isReady = (holoPowerCount >= (s.cost || 0));
+        }
+        let readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
+
+        // コスト表示の分岐
+        let costHtml = "";
+        if (s.type === 'arts') {
+            costHtml = `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>`;
+        } else {
+            costHtml = `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
+        }
+
         let damageHtml = s.damage ? `<span class="skill-damage">${s.damage}</span>` : "";
         return `
             <div class="skill-item">
                 <div class="skill-header">
                     <div class="skill-type-label label-${s.type}">${labelTxt}</div>
                     ${costHtml}
-                    <div class="skill-name-row"><span>${s.name}${ready}</span>${damageHtml}</div>
+                    <div class="skill-name-row"><span>${s.name}${readyBadge}</span>${damageHtml}</div>
                 </div>
                 <div class="skill-text">${s.text || ''}</div>
             </div>`;
@@ -286,7 +302,7 @@ function openZoom(cardData, cardElement = null) {
                 </div>
             </div>`;
     } else if (isOshi) {
-        hpDisplayHtml = `<div class="zoom-life">LIFE ${cardData.life || 0}</div>`;
+        hpDisplayHtml = `<div class="zoom-life">LIFE ${cardData.life || 0} <span style="font-size:10px; color:#aaa; margin-left:5px;">(Power: ${holoPowerCount})</span></div>`;
     }
 
     let attachHtml = "";
