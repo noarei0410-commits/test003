@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>hololive OCG Simulator</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -53,51 +53,46 @@
         </div>
     </div>
 
-    <div id="ui-layer">
-        <div id="room-info">Room: -</div>
-        <div class="deck-counts">
-            Main: <span id="mainCount">0</span> | Cheer: <span id="cheerCount">0</span>
+    <div id="game-main-wrapper" style="display:none;">
+        <div id="ui-layer">
+            <div id="room-info">Room: -</div>
+            <div class="deck-counts">
+                Main: <span id="mainCount">0</span> | Cheer: <span id="cheerCount">0</span>
+            </div>
+            <button onclick="openArchive()">Archive</button>
         </div>
-        <button onclick="openArchive()">Archive</button>
-    </div>
 
-    <div id="field-container">
-        <div id="field">
-            <div class="field-left-area">
-                <div id="life-zone" class="zone life-zone-vertical">ライフ</div>
-                <div id="cheer-deck-zone" class="zone deck-zone">エールデッキ</div>
-            </div>
-
-            <div class="field-center-top">
-                <div id="collab" class="zone">コラボ</div>
-                <div id="center" class="zone">センター</div>
-                <div id="oshi" class="zone">推し</div>
-            </div>
-
-            <div class="field-right-top">
-                <div id="holopower" class="zone">ホロパワー</div>
-            </div>
-
-            <div class="field-back-stage">
-                <div class="back-stage-label">バックポジション</div>
-                <div class="back-slots-container">
+        <div id="field-container">
+            <div id="field">
+                <div class="field-left-area">
+                    <div id="life-zone" class="zone life-zone-vertical">ライフ</div>
+                    <div id="cheer-deck-zone" class="zone deck-zone">エールデッキ</div>
+                </div>
+                <div class="field-center-top">
+                    <div id="collab" class="zone">コラボ</div>
+                    <div id="center" class="zone">センター</div>
+                    <div id="oshi" class="zone">推し</div>
+                </div>
+                <div class="field-right-top">
+                    <div id="holopower" class="zone">ホロパワー</div>
+                </div>
+                <div class="field-back-stage">
                     <div id="back1" class="zone"></div>
                     <div id="back2" class="zone"></div>
                     <div id="back3" class="zone"></div>
                     <div id="back4" class="zone"></div>
                     <div id="back5" class="zone"></div>
                 </div>
-            </div>
-
-            <div class="field-right-bottom">
-                <div id="main-deck-zone" class="zone deck-zone">デッキ</div>
-                <div id="archive" class="zone">アーカイブ</div>
+                <div class="field-right-bottom">
+                    <div id="main-deck-zone" class="zone deck-zone">デッキ</div>
+                    <div id="archive" class="zone">アーカイブ</div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="hand-container">
-        <div id="hand"></div>
+        <div id="hand-container">
+            <div id="hand"></div>
+        </div>
     </div>
 
     <div id="zoom-modal"><div class="zoom-container"></div></div>
@@ -106,18 +101,6 @@
             <h2 id="inspection-title"></h2>
             <div id="deck-card-grid"></div>
             <button class="btn-close-gray" onclick="closeDeckInspection()">閉じる</button>
-        </div>
-    </div>
-    <div id="card-list-page" class="full-page">
-        <div class="modal-content">
-            <div class="filter-bar">
-                <button class="filter-btn active" onclick="filterLibrary('all')">すべて</button>
-                <button class="filter-btn" onclick="filterLibrary('holomen')">ホロメン</button>
-                <button class="filter-btn" onclick="filterLibrary('support')">サポート</button>
-                <button class="filter-btn" onclick="filterLibrary('oshi')">推し</button>
-            </div>
-            <div id="global-card-grid" class="card-grid"></div>
-            <button class="btn-close-gray" onclick="showPage('hub-page')">閉じる</button>
         </div>
     </div>
 
