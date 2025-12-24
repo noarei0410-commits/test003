@@ -11,7 +11,6 @@ function createCardElement(data, withEvents = true) {
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
-    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); 
@@ -64,7 +63,10 @@ function repositionCards() {
                 if (!zoneCounts[zid]) zoneCounts[zid] = 0;
                 let targetLeft = (zr.left - fRect.left) + (zr.width - cr.width) / 2;
                 let targetTop = (zr.top - fRect.top) + (zr.height - cr.height) / 2;
-                if (zid === 'life-zone') { const offset = zoneCounts[zid] * 18; targetTop = (zr.top - fRect.top) + 5 + offset; }
+                if (zid === 'life-zone' || zid === 'holopower') { 
+                    const offset = zoneCounts[zid] * 18; 
+                    targetTop = (zr.top - fRect.top) + 5 + offset; 
+                }
                 card.style.left = targetLeft + 'px'; card.style.top = targetTop + 'px';
                 zoneCounts[zid]++;
             }
@@ -79,8 +81,13 @@ function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (myRole === 'spectator') return;
+        
         isDragging = true; dragStarted = false;
         currentDragEl = el; el.setPointerCapture(e.pointerId);
+        
+        // 移動前のゾーンを保存
+        el.oldZoneId = el.dataset.zoneId || "";
+
         const rect = el.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         currentStack = (el.dataset.zoneId && el.dataset.zoneId !== "") 
@@ -138,35 +145,29 @@ document.onpointerup = (e) => {
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
             
             if (target && target.parentElement === field) {
-                // Bloom（進化）のダメージ引き継ぎロジック
+                // Bloom（進化）
                 if (canBloom(currentDragEl.cardData, target.cardData)) {
-                    // ダメージ計算: 最大HP - 現在HP
                     const prevMax = parseInt(target.cardData.hp || 0);
                     const prevCurrent = parseInt(target.cardData.currentHp !== undefined ? target.cardData.currentHp : prevMax);
                     const damageTaken = prevMax - prevCurrent;
-
-                    // 新しいHP = 進化後の最大HP - ダメージ
                     const nextMax = parseInt(currentDragEl.cardData.hp || 0);
                     currentDragEl.cardData.currentHp = Math.max(0, nextMax - damageTaken);
-
-                    // 表示更新
                     const hpDisplay = document.getElementById(`hp-display-${currentDragEl.id}`);
                     if (hpDisplay) hpDisplay.innerText = currentDragEl.cardData.currentHp;
                 }
-
                 currentStack.forEach(c => {
                     c.style.left = target.style.left; c.style.top = target.style.top;
                     c.dataset.zoneId = target.dataset.zoneId || "";
                     const isBase = (c.cardData.type === 'holomen' || c.cardData.type === 'oshi');
                     c.style.zIndex = isBase ? target.style.zIndex : parseInt(target.style.zIndex) - 1;
-                    // ダメージ情報を乗せた状態で同期
-                    socket.emit('moveCard', { 
-                        id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex, currentHp: c.cardData.currentHp 
-                    });
+                    socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex, currentHp: c.cardData.currentHp });
                 });
-            } else { normalSnapStack(e); }
+            } else { 
+                normalSnapStack(e); 
+            }
         }
     }
+    
     currentStack.forEach(c => delete c.dataset.stackOffset);
     isDragging = false; dragStarted = false; currentStack = []; repositionCards();
 };
@@ -175,10 +176,12 @@ function normalSnapStack(e) {
     const zones = document.querySelectorAll('.zone');
     let closest = null, minDist = 40;
     const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+
     zones.forEach(z => {
         const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y); if (d < minDist) { minDist = d; closest = z; }
     });
+
     if (closest) {
         if (STAGE_ZONES.includes(closest.id)) {
             const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && !currentStack.includes(c));
@@ -186,9 +189,16 @@ function normalSnapStack(e) {
                 currentStack.forEach(c => returnToHand(c)); return;
             }
         }
+
+        // --- ホロパワー生成判定: バックからコラボへ移動した場合 ---
+        if (currentDragEl.oldZoneId && currentDragEl.oldZoneId.startsWith('back') && closest.id === 'collab') {
+            socket.emit('generateHoloPower');
+        }
+
         currentStack.forEach(c => {
             c.dataset.zoneId = closest.id; delete c.dataset.percentX;
-            const rotate = (closest.id === 'life-zone'); c.classList.toggle('rotated', rotate);
+            const rotate = (closest.id === 'life-zone' || closest.id === 'holopower'); 
+            c.classList.toggle('rotated', rotate);
             socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: closest.id, isRotated: rotate, zIndex: c.style.zIndex });
         });
     } else {
@@ -226,9 +236,6 @@ function canUseArt(costReq, attachedAyles) {
     return Object.values(available).reduce((a, b) => a + b, 0) >= anyCount;
 }
 
-/**
- * ズーム詳細
- */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
