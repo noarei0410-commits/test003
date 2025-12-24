@@ -1,12 +1,8 @@
-/**
- * フィールドへのカード復元
- */
 function restoreCard(id, info) { 
     const el = createCardElement({ id, ...info }); 
     el.dataset.zoneId = info.zoneId || ""; 
     el.style.zIndex = info.zIndex || 100;
     
-    // 回転と向きの状態を適用
     if (info.isFaceUp !== undefined) {
         el.classList.toggle('face-up', info.isFaceUp);
         el.classList.toggle('face-down', !info.isFaceUp);
@@ -24,18 +20,14 @@ function restoreCard(id, info) {
     repositionCards(); 
 }
 
-// 【新設】初期参加時のデータ受信
 socket.on('init', (d) => {
     myRole = d.role;
-    // 既存の盤面をクリア
     field.querySelectorAll('.card').forEach(c => c.remove());
-    // サーバーから送られてきたフィールド状態を復元
     if (d.fieldState) {
         for (const id in d.fieldState) {
             restoreCard(id, d.fieldState[id]);
         }
     }
-    // デッキ枚数の同期
     if (d.deckCount) {
         const m = document.getElementById('mainCount'), ch = document.getElementById('cheerCount');
         if(m) m.innerText = d.deckCount.main;
@@ -107,15 +99,24 @@ socket.on('deckCount', (c) => {
 
 socket.on('deckInspectionResult', (data) => {
     const { type, cards } = data;
+    const isSpectator = (myRole === 'spectator');
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
     cards.forEach(card => {
         const container = document.createElement('div'); container.className = "library-item";
         const el = createCardElement({...card, isRotated: false, isFaceUp: true}, false);
         el.onclick = () => openZoom(card, el);
-        const pickBtn = document.createElement('button'); pickBtn.className = "btn-recover"; pickBtn.innerText = "手札へ";
-        pickBtn.onclick = () => { socket.emit('pickCardFromDeck', { type, cardId: card.id }); deckModal.style.display = 'none'; };
-        container.appendChild(el); container.appendChild(pickBtn); deckGrid.appendChild(container);
+        
+        container.appendChild(el);
+        
+        // 観戦者以外なら手札へ入れるボタンを表示
+        if (!isSpectator) {
+            const pickBtn = document.createElement('button'); pickBtn.className = "btn-recover"; pickBtn.innerText = "手札へ";
+            pickBtn.onclick = () => { socket.emit('pickCardFromDeck', { type, cardId: card.id }); deckModal.style.display = 'none'; };
+            container.appendChild(pickBtn);
+        }
+        
+        deckGrid.appendChild(container);
     });
     deckModal.style.display = 'flex';
 });
@@ -124,6 +125,7 @@ function closeDeckInspection() { deckModal.style.display = 'none'; }
 
 function openArchive() {
     deckGrid.innerHTML = "";
+    const isSpectator = (myRole === 'spectator');
     document.getElementById('inspection-title').innerText = "Archive (確認)";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
     archiveCards.forEach(card => {
@@ -131,9 +133,17 @@ function openArchive() {
         const previewData = { ...card.cardData, isRotated: false, isFaceUp: true };
         const el = createCardElement(previewData, false);
         el.onclick = () => openZoom(card.cardData, el);
-        const recoverBtn = document.createElement('button'); recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
-        recoverBtn.onclick = () => { returnToHand(card); deckModal.style.display = 'none'; };
-        container.appendChild(el); container.appendChild(recoverBtn); deckGrid.appendChild(container);
+        
+        container.appendChild(el);
+
+        // 観戦者以外なら回収ボタンを表示
+        if (!isSpectator) {
+            const recoverBtn = document.createElement('button'); recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
+            recoverBtn.onclick = () => { returnToHand(card); deckModal.style.display = 'none'; };
+            container.appendChild(recoverBtn);
+        }
+
+        deckGrid.appendChild(container);
     });
     deckModal.style.display = 'flex';
 }
