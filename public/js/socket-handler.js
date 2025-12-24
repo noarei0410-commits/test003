@@ -1,11 +1,47 @@
+/**
+ * フィールドへのカード復元
+ */
 function restoreCard(id, info) { 
     const el = createCardElement({ id, ...info }); 
     el.dataset.zoneId = info.zoneId || ""; 
     el.style.zIndex = info.zIndex || 100;
-    if (info.percentX) { el.dataset.percentX = info.percentX; el.dataset.percentY = info.percentY; }
+    
+    // 回転と向きの状態を適用
+    if (info.isFaceUp !== undefined) {
+        el.classList.toggle('face-up', info.isFaceUp);
+        el.classList.toggle('face-down', !info.isFaceUp);
+    }
+    if (info.isRotated !== undefined) {
+        el.classList.toggle('rotated', info.isRotated);
+    }
+
+    if (info.percentX) { 
+        el.dataset.percentX = info.percentX; 
+        el.dataset.percentY = info.percentY; 
+    }
+    
     field.appendChild(el); 
     repositionCards(); 
 }
+
+// 【新設】初期参加時のデータ受信
+socket.on('init', (d) => {
+    myRole = d.role;
+    // 既存の盤面をクリア
+    field.querySelectorAll('.card').forEach(c => c.remove());
+    // サーバーから送られてきたフィールド状態を復元
+    if (d.fieldState) {
+        for (const id in d.fieldState) {
+            restoreCard(id, d.fieldState[id]);
+        }
+    }
+    // デッキ枚数の同期
+    if (d.deckCount) {
+        const m = document.getElementById('mainCount'), ch = document.getElementById('cheerCount');
+        if(m) m.innerText = d.deckCount.main;
+        if(ch) ch.innerText = d.deckCount.cheer;
+    }
+});
 
 socket.on('gameStarted', (d) => { 
     field.querySelectorAll('.card').forEach(c => c.remove()); 
