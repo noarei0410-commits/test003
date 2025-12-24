@@ -11,6 +11,7 @@ function createCardElement(data, withEvents = true) {
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
+    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); 
@@ -63,7 +64,7 @@ function repositionCards() {
                 if (!zoneCounts[zid]) zoneCounts[zid] = 0;
                 let targetLeft = (zr.left - fRect.left) + (zr.width - cr.width) / 2;
                 let targetTop = (zr.top - fRect.top) + (zr.height - cr.height) / 2;
-                if (zid === 'life-zone' || zid === 'holopower') { 
+                if (zid === 'life-zone' || zid === 'holopower' || zid === 'archive') { 
                     const offset = zoneCounts[zid] * 18; 
                     targetTop = (zr.top - fRect.top) + 5 + offset; 
                 }
@@ -138,6 +139,7 @@ document.onpointerup = (e) => {
         } else {
             const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
+            
             if (target && target.parentElement === field) {
                 if (canBloom(currentDragEl.cardData, target.cardData)) {
                     const prevMax = parseInt(target.cardData.hp || 0);
@@ -166,10 +168,12 @@ function normalSnapStack(e) {
     const zones = document.querySelectorAll('.zone');
     let closest = null, minDist = 40;
     const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
+
     zones.forEach(z => {
         const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y); if (d < minDist) { minDist = d; closest = z; }
     });
+
     if (closest) {
         if (STAGE_ZONES.includes(closest.id)) {
             const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && !currentStack.includes(c));
@@ -180,11 +184,20 @@ function normalSnapStack(e) {
         if (currentDragEl.oldZoneId && currentDragEl.oldZoneId.startsWith('back') && closest.id === 'collab') {
             socket.emit('generateHoloPower');
         }
+
         currentStack.forEach(c => {
             c.dataset.zoneId = closest.id; delete c.dataset.percentX;
-            const rotate = (closest.id === 'life-zone' || closest.id === 'holopower'); 
-            c.classList.toggle('rotated', rotate);
-            socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: closest.id, isRotated: rotate, zIndex: c.style.zIndex });
+            
+            // --- アーカイブ送りの特殊処理 ---
+            if (closest.id === 'archive') {
+                c.classList.remove('rotated', 'face-down');
+                c.classList.add('face-up');
+                socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: closest.id, isRotated: false, isFaceUp: true, zIndex: 10 });
+            } else {
+                const rotate = (closest.id === 'life-zone' || closest.id === 'holopower'); 
+                c.classList.toggle('rotated', rotate);
+                socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: closest.id, isRotated: rotate, zIndex: c.style.zIndex });
+            }
         });
     } else {
         const fr = field.getBoundingClientRect();
@@ -222,7 +235,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (推しスキル発動ボタン追加)
+ * ズーム詳細
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -248,15 +261,10 @@ function openZoom(cardData, cardElement = null) {
 
     const skillsHtml = (cardData.skills || []).map((s, idx) => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
-        
         let isReady = false;
-        if (s.type === 'arts') {
-            isReady = canUseArt(s.cost, stackAyle.map(e => e.cardData));
-        } else if (s.type === 'oshi' || s.type === 'sp_oshi') {
-            isReady = (holoPowerCount >= (s.cost || 0));
-        }
+        if (s.type === 'arts') isReady = canUseArt(s.cost, stackAyle.map(e => e.cardData));
+        else if (s.type === 'oshi' || s.type === 'sp_oshi') isReady = (holoPowerCount >= (s.cost || 0));
         
-        // 推しスキルの場合のみ、発動ボタンを表示
         let actionBtn = (isReady && (s.type === 'oshi' || s.type === 'sp_oshi')) 
             ? `<button class="btn-activate-skill" onclick="activateOshiSkill('${cardData.id}', ${idx}, ${s.cost})">発動</button>` 
             : (isReady ? `<span class="ready-badge">READY</span>` : "");
@@ -313,23 +321,23 @@ function openZoom(cardData, cardElement = null) {
 }
 
 /**
- * 推しスキル発動 (ホロパワー消費ロジック)
+ * 推しスキル発動 (ホロパワーをアーカイブへ送る処理を修正)
  */
 window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
-    // ホロパワーゾーンのカードを取得
     const hpCards = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
     if (hpCards.length < cost) return alert("ホロパワーが足りません");
-
     if (!confirm(`ホロパワーを ${cost} 枚消費してスキルを発動しますか？`)) return;
 
-    // コスト分だけアーカイブへ送る
     for (let i = 0; i < cost; i++) {
         const c = hpCards[i];
         c.dataset.zoneId = 'archive';
-        socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: 'archive', isRotated: false, zIndex: 10 });
+        // 表向き・縦向きに設定して同期
+        c.classList.remove('rotated', 'face-down');
+        c.classList.add('face-up');
+        socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: 'archive', isRotated: false, isFaceUp: true, zIndex: 10 });
     }
 
-    alert("スキルを発動しました！効果を盤面に反映させてください。");
+    alert("スキルを発動しました！");
     zoomModal.style.display = 'none';
     repositionCards();
 };
@@ -350,6 +358,9 @@ window.changeHp = (id, amount) => {
 
 window.discardFromZoom = (id) => { 
     const el = document.getElementById(id); if(!el) return;
-    socket.emit('moveCard', {id, zoneId:'archive', zIndex:10, ...el.cardData}); 
+    // 個別にアーカイブへ送る際も表向き・縦向きにする
+    el.classList.remove('rotated', 'face-down');
+    el.classList.add('face-up');
+    socket.emit('moveCard', {id, zoneId:'archive', zIndex:10, isRotated: false, isFaceUp: true, ...el.cardData}); 
     el.dataset.zoneId='archive'; repositionCards(); zoomModal.style.display='none'; 
 };
