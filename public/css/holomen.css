@@ -32,7 +32,8 @@
 /* --- カード内部レイアウト --- */
 .zoom-name-center {
     width: 100%; text-align: center; font-size: 22px; font-weight: bold;
-    margin-bottom: 25px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 10px;
+    /* 下部余白を広げてラインの位置を下げる */
+    margin-bottom: 25px; color: #000; border-bottom: 1px solid #eee; padding-bottom: 25px; 
 }
 
 .zoom-bloom-rank {
@@ -43,95 +44,75 @@
 
 .zoom-top-right-group {
     position: absolute; top: 20px; right: 25px;
-    display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
 }
 
 .zoom-color-icon-large { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
-.zoom-hp-display { font-size: 24px; font-weight: 900; color: #e74c3c; }
+
+/* --- HP表示と操作ボタンの新しいレイアウト --- */
+.zoom-hp-container-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zoom-hp-display { font-size: 24px; font-weight: 900; color: #e74c3c; line-height: 1; }
+
+.zoom-hp-controls-inline {
+    display: flex;
+    gap: 4px;
+}
+
+/* インラインボタンのスタイル (HP表示の大きさに合わせる) */
+.btn-zoom-hp-inline {
+    width: 26px; height: 26px;
+    border-radius: 5px;
+    border: none; color: white;
+    font-size: 16px; font-weight: bold; line-height: 1;
+    cursor: pointer; transition: 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.btn-zoom-hp-inline.minus { background: #e74c3c; }
+.btn-zoom-hp-inline.plus { background: #2ecc71; }
+.btn-zoom-hp-inline:active { transform: scale(0.9); }
+
 
 /* 中央：スキル (アーツ名中央配置レイアウト) */
 .zoom-main-content { margin: 20px 0; display: flex; flex-direction: column; gap: 15px; }
 
 .skill-box {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    border: 1px solid #eee;
-    position: relative;
+    background: #f8f9fa; border-radius: 10px; padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+    border: 1px solid #eee; position: relative;
 }
 
 .skill-top-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    position: relative;
-    min-height: 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; position: relative; min-height: 24px;
 }
 
-/* コストコンテナ (左側・横並び) */
 .skill-cost-container-row {
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
-    align-items: center;
-    flex-shrink: 0;
-    z-index: 2;
+    display: flex; flex-direction: row; gap: 4px; align-items: center; flex-shrink: 0; z-index: 2;
 }
 .cost-dot-small { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
 
-/* アーツ名コンテナ (中央寄せ) */
 .skill-name-container-center {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: auto;
-    max-width: 55%;
-    z-index: 1;
+    position: absolute; left: 50%; transform: translateX(-50%);
+    text-align: center; white-space: nowrap; display: flex; align-items: center; justify-content: center;
+    width: auto; max-width: 55%; z-index: 1;
 }
 
 .skill-name-text { font-weight: bold; font-size: 16px; color: #2c3e50; }
 .ready-badge { background: #2ecc71; color: white; font-size: 10px; padding: 2px 6px; border-radius: 5px; margin-left: 6px; }
 
-/* ダメージテキスト (右側) */
-.skill-damage-text {
-    font-weight: bold;
-    color: #e74c3c;
-    font-size: 18px;
-    flex-shrink: 0;
-    text-align: right;
-    z-index: 2;
-}
+.skill-damage-text { font-weight: bold; color: #e74c3c; font-size: 18px; flex-shrink: 0; text-align: right; z-index: 2; }
+.skill-text-detail { font-size: 13px; line-height: 1.5; color: #555; padding-top: 5px; border-top: 1px dashed #eee; }
 
-/* スキル説明文 */
-.skill-text-detail {
-    font-size: 13px;
-    line-height: 1.5;
-    color: #555;
-    padding-top: 5px;
-    border-top: 1px dashed #eee;
-}
-
-/* 下部：タグ・バトン */
+/* 下部：タグ・バトン・エクストラ */
 .zoom-bottom-left-group { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; }
 .zoom-tags-row { font-size: 13px; color: #3498db; font-weight: bold; display: flex; flex-wrap: wrap; gap: 8px; }
 .zoom-baton-row { font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 8px; color: #444; }
 .baton-icon-list { display: flex; gap: 3px; }
 .baton-dot-large { width: 10px; height: 10px; background: #95a5a6; border-radius: 50%; }
-
-/* 右下：エクストラ */
 .zoom-extra-area { margin-top: 15px; text-align: right; font-size: 13px; background: #fff9e6; border: 1px solid #f1c40f; padding: 8px 15px; border-radius: 10px; line-height: 1.4; }
 .extra-label { font-weight: bold; color: #d35400; }
-
-/* HP操作 */
-.zoom-hp-controls { margin-top: 20px; display: flex; justify-content: center; gap: 20px; border-top: 1px solid #eee; padding-top: 15px; }
-.btn-zoom-hp { width: 45px; height: 45px; border-radius: 50%; border: none; color: white; font-size: 22px; cursor: pointer; transition: 0.2s; }
-.btn-zoom-hp:active { transform: scale(0.9); }
