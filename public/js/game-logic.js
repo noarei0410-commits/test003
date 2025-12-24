@@ -2,10 +2,8 @@ function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     const nameSpan = document.createElement('span'); nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
-
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
-
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); hpDiv.className = 'card-hp'; hpDiv.id = `hp-display-${data.id}`; hpDiv.innerText = currentHp || data.life || ""; el.appendChild(hpDiv);
@@ -22,7 +20,6 @@ function createCardElement(data, withEvents = true) {
         }
     }
     if (data.type === 'ayle') { for (let k in COLORS) { if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); } }
-
     el.cardData = data;
     if (withEvents) setupCardEvents(el);
     return el;
@@ -133,7 +130,7 @@ function normalSnapStack(e) {
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y); if (d < minDist) { minDist = d; closest = z; }
     });
     if (closest) {
-        if (currentDragEl.oldZoneId.startsWith('back') && closest.id === 'collab') socket.emit('generateHoloPower');
+        if (currentDragEl.oldZoneId && currentDragEl.oldZoneId.startsWith('back') && closest.id === 'collab') socket.emit('generateHoloPower');
         currentStack.forEach(c => {
             c.dataset.zoneId = closest.id; delete c.dataset.percentX;
             if (closest.id === 'archive') {
@@ -155,38 +152,89 @@ function normalSnapStack(e) {
 }
 
 /**
- * 拡大表示 (新しい指示レイアウトを適用)
+ * 使用可能判定ロジック (修復)
+ */
+function canUseArt(costArray, attachedAyles) {
+    if (!costArray || costArray.length === 0) return true;
+    
+    // 現在装着されているエールの色をカウント
+    let available = attachedAyles.reduce((acc, c) => {
+        for (let kanji in COLORS) {
+            if (c.name && c.name.includes(kanji)) {
+                acc[COLORS[kanji]] = (acc[COLORS[kanji]] || 0) + 1;
+                break;
+            }
+        }
+        return acc;
+    }, {});
+
+    // コストの要求を満たせるかチェック
+    let reqSpecific = costArray.filter(c => c !== 'any');
+    let reqAny = costArray.filter(c => c === 'any').length;
+
+    for (let color of reqSpecific) {
+        if (available[color] && available[color] > 0) {
+            available[color]--;
+        } else {
+            return false; // 特定色が足りない
+        }
+    }
+
+    // 残りのエール合計が 'any' (無色) の要求を満たしているか
+    let totalLeft = Object.values(available).reduce((sum, v) => sum + v, 0);
+    return totalLeft >= reqAny;
+}
+
+/**
+ * 拡大表示 (アーツ判定・コスト表示を修復)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     const container = document.querySelector('.zoom-container');
     const isSpec = (myRole === 'spectator');
     
-    // スキルHTMLの生成
+    // 装着されているカードを取得 (同じ座標に重なっているカード)
+    let attachedAyles = [];
+    if (cardElement && cardElement.parentElement === field) {
+        const r = cardElement.getBoundingClientRect();
+        attachedAyles = Array.from(document.querySelectorAll('.card'))
+            .filter(c => c !== cardElement && c.cardData.type === 'ayle')
+            .filter(c => {
+                const cr = c.getBoundingClientRect();
+                return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
+            })
+            .map(c => c.cardData);
+    }
+
+    // スキルHTMLの生成 (コストアイコン & READY判定)
     const skillsHtml = (cardData.skills || []).map((s) => {
+        // コストアイコンの生成
+        const costIconsHtml = (s.cost || []).map(c => {
+            const colorCode = c === 'any' ? '#ccc' : (COLORS_REVERSE ? COLORS_REVERSE[c] : c); // 簡易色
+            return `<div class="cost-dot-small" style="background: ${c === 'any' ? '#ddd' : c};"></div>`;
+        }).join('');
+
+        // 発動可能かどうかのチェック
+        const isReady = canUseArt(s.cost, attachedAyles);
+        const readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
+
         return `
             <div class="skill-box">
-                <div class="skill-header-row">
-                    <span>${s.name}</span>
-                    <span>${s.damage || ""}</span>
+                <div class="skill-cost-container">${costIconsHtml}</div>
+                <div class="skill-info-body">
+                    <div class="skill-header-row">
+                        <span class="skill-name-text">${s.name}${readyBadge}</span>
+                        <span class="skill-damage-text">${s.damage || ""}</span>
+                    </div>
+                    <div class="skill-text-detail">${s.text || ""}</div>
                 </div>
-                <div class="skill-text-detail">${s.text || ""}</div>
             </div>`;
     }).join('');
 
-    // バトンタッチアイコンの生成
-    const batonIcons = Array(cardData.baton || 0).fill('<div class="baton-dot-large"></div>').join('');
-
-    // エクストラの生成 (ある場合のみ)
-    const extraHtml = cardData.extra ? `
-        <div class="zoom-extra-area">
-            <span class="extra-label">エクストラ：</span>${cardData.extra}
-        </div>` : "";
-
-    // カラーアイコンの取得
     const colorCode = COLORS[cardData.color] || 'white';
+    const batonIcons = Array(cardData.baton || 0).fill('<div class="baton-dot-large"></div>').join('');
+    const extraHtml = cardData.extra ? `<div class="zoom-extra-area"><span class="extra-label">エクストラ：</span>${cardData.extra}</div>` : "";
 
-    // 全体レイアウトの組み立て
     container.innerHTML = `
         <div class="zoom-bloom-rank">${cardData.bloom || ""}</div>
         <div class="zoom-name-center">${cardData.name}</div>
@@ -222,14 +270,6 @@ function openZoom(cardData, cardElement = null) {
     zoomModal.style.display = 'flex';
     zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.closest('.zoom-outer-container') === null) zoomModal.style.display = 'none'; };
 }
-
-window.activateOshiSkill = (id, idx, cost) => {
-    const hp = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
-    if (hp.length < cost) return alert("パワー不足");
-    if (!confirm("発動しますか？")) return;
-    for(let i=0; i<cost; i++){ const c=hp[i]; c.dataset.zoneId='archive'; c.classList.remove('rotated','face-down'); c.classList.add('face-up'); socket.emit('moveCard', {id:c.id, ...c.cardData, zoneId:'archive', isRotated:false, isFaceUp:true, zIndex:10}); }
-    zoomModal.style.display='none'; repositionCards();
-};
 
 window.changeHp = (id, amt) => {
     const el = document.getElementById(id); if(!el) return;
