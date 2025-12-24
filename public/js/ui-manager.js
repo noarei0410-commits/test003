@@ -11,15 +11,11 @@ function showPage(pageId) {
     }
 }
 
-/**
- * 構築画面のライブラリ描画
- */
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
     const search = f.toLowerCase();
     const all = [...OSHI_LIST, ...MASTER_CARDS.filter(c => c.type !== 'ayle')];
-    
     all.filter(c => c.name.toLowerCase().includes(search)).forEach(card => {
         const div = document.createElement('div');
         div.className = "library-item";
@@ -67,6 +63,8 @@ function renderDecks() {
         div.querySelectorAll('button')[1].onclick = () => { if(cheerDeckList.length<20) { cheerDeckList.push({...c, type:'ayle'}); renderDecks(); } };
         cSum.appendChild(div);
     });
+    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
+    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
     document.getElementById('startGameBtn').disabled = (!selectedOshi || mainDeckList.length === 0 || cheerDeckList.length !== 20);
 }
 
