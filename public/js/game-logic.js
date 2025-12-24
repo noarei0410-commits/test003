@@ -1,25 +1,56 @@
+/**
+ * カードDOMの生成 (エール色に応じた枠線クラスを付与)
+ */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
-    const nameSpan = document.createElement('span'); nameSpan.innerText = data.name || ""; el.appendChild(nameSpan);
+    
+    // ホロメン・推しの場合、色に基づいたボーダークラスを追加
+    if ((data.type === 'holomen' || data.type === 'oshi') && data.color) {
+        const colorClass = 'border-' + (COLORS[data.color] || 'white');
+        el.classList.add(colorClass);
+    }
+
+    const nameSpan = document.createElement('span');
+    nameSpan.innerText = data.name || ""; 
+    el.appendChild(nameSpan);
+
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
+
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
-        const hpDiv = document.createElement('div'); hpDiv.className = 'card-hp'; hpDiv.id = `hp-display-${data.id}`; hpDiv.innerText = currentHp || data.life || ""; el.appendChild(hpDiv);
-        if (data.bloom) { const bl = document.createElement('div'); bl.className = 'card-bloom'; bl.innerText = data.bloom.charAt(0); el.appendChild(bl); }
-        if (data.color) { 
+        const hpDiv = document.createElement('div'); 
+        hpDiv.className = 'card-hp'; 
+        hpDiv.id = `hp-display-${data.id}`;
+        hpDiv.innerText = currentHp || data.life || ""; 
+        el.appendChild(hpDiv);
+
+        if (data.bloom) {
+            const blDiv = document.createElement('div'); blDiv.className = 'card-bloom'; 
+            blDiv.innerText = data.bloom.charAt(0); el.appendChild(blDiv);
+        }
+        if (data.color) {
+            const clDiv = document.createElement('div'); 
+            clDiv.className = 'card-color-icon'; 
             const colorCode = COLORS[data.color] || 'white';
-            const cl = document.createElement('div'); cl.className = `card-color-icon`; 
-            cl.style.background = colorCode; el.appendChild(cl); 
+            clDiv.style.background = colorCode;
+            el.appendChild(clDiv);
         }
         if (data.baton !== undefined) {
-            const batonDiv = document.createElement('div'); batonDiv.className = 'card-baton';
-            for(let i=0; i<data.baton; i++) { const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); }
+            const batonDiv = document.createElement('div'); 
+            batonDiv.className = 'card-baton';
+            for(let i=0; i<data.baton; i++) { 
+                const dot = document.createElement('div'); dot.className='baton-dot'; batonDiv.appendChild(dot); 
+            }
             el.appendChild(batonDiv);
         }
     }
-    if (data.type === 'ayle') { for (let k in COLORS) { if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); } }
+
+    if (data.type === 'ayle') {
+        for (let k in COLORS) { if (data.name.includes(k)) el.classList.add(`ayle-${COLORS[k]}`); }
+    }
+
     el.cardData = data;
     if (withEvents) setupCardEvents(el);
     return el;
@@ -29,6 +60,7 @@ function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
     const fRect = fieldEl.getBoundingClientRect();
     const counts = {};
+
     document.querySelectorAll('.card').forEach(card => {
         if (card.parentElement !== fieldEl || currentStack.includes(card)) return;
         const zid = card.dataset.zoneId;
@@ -151,49 +183,33 @@ function normalSnapStack(e) {
     }
 }
 
-/**
- * 使用可能判定ロジック (修復)
- */
 function canUseArt(costArray, attachedAyles) {
     if (!costArray || costArray.length === 0) return true;
-    
-    // 現在装着されているエールの色をカウント
     let available = attachedAyles.reduce((acc, c) => {
-        for (let kanji in COLORS) {
-            if (c.name && c.name.includes(kanji)) {
-                acc[COLORS[kanji]] = (acc[COLORS[kanji]] || 0) + 1;
-                break;
-            }
-        }
+        for (let kanji in COLORS) { if (c.name && c.name.includes(kanji)) { acc[COLORS[kanji]] = (acc[COLORS[kanji]] || 0) + 1; break; } }
         return acc;
     }, {});
-
-    // コストの要求を満たせるかチェック
-    let reqSpecific = costArray.filter(c => c !== 'any');
-    let reqAny = costArray.filter(c => c === 'any').length;
-
-    for (let color of reqSpecific) {
-        if (available[color] && available[color] > 0) {
-            available[color]--;
-        } else {
-            return false; // 特定色が足りない
-        }
-    }
-
-    // 残りのエール合計が 'any' (無色) の要求を満たしているか
-    let totalLeft = Object.values(available).reduce((sum, v) => sum + v, 0);
-    return totalLeft >= reqAny;
+    let reqSpecific = costArray.filter(c => c !== 'any'), reqAny = costArray.filter(c => c === 'any').length;
+    for (let color of reqSpecific) { if (available[color] && available[color] > 0) available[color]--; else return false; }
+    return Object.values(available).reduce((sum, v) => sum + v, 0) >= reqAny;
 }
 
 /**
- * 拡大表示 (アーツ判定・コスト表示を修復)
+ * 拡大表示 (ボーダークラスの付与と構造の修正)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
-    const container = document.querySelector('.zoom-container');
+    
+    const zoomOuter = document.getElementById('zoom-outer');
+    const contentInner = document.querySelector('.zoom-content-inner');
     const isSpec = (myRole === 'spectator');
     
-    // 装着されているカードを取得 (同じ座標に重なっているカード)
+    // エール色に基づいた縁取りクラスを外枠に付与
+    zoomOuter.className = 'zoom-outer-container'; // 一旦リセット
+    if (cardData.color) {
+        zoomOuter.classList.add('border-' + (COLORS[cardData.color] || 'white'));
+    }
+
     let attachedAyles = [];
     if (cardElement && cardElement.parentElement === field) {
         const r = cardElement.getBoundingClientRect();
@@ -202,22 +218,16 @@ function openZoom(cardData, cardElement = null) {
             .filter(c => {
                 const cr = c.getBoundingClientRect();
                 return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
-            })
-            .map(c => c.cardData);
+            }).map(c => c.cardData);
     }
 
-    // スキルHTMLの生成 (コストアイコン & READY判定)
     const skillsHtml = (cardData.skills || []).map((s) => {
-        // コストアイコンの生成
         const costIconsHtml = (s.cost || []).map(c => {
-            const colorCode = c === 'any' ? '#ccc' : (COLORS_REVERSE ? COLORS_REVERSE[c] : c); // 簡易色
-            return `<div class="cost-dot-small" style="background: ${c === 'any' ? '#ddd' : c};"></div>`;
+            const colorCode = c === 'any' ? '#ddd' : (COLORS_REVERSE ? COLORS_REVERSE[c] : c);
+            return `<div class="cost-dot-small" style="background: ${colorCode};"></div>`;
         }).join('');
-
-        // 発動可能かどうかのチェック
         const isReady = canUseArt(s.cost, attachedAyles);
         const readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
-
         return `
             <div class="skill-box">
                 <div class="skill-cost-container">${costIconsHtml}</div>
@@ -235,31 +245,19 @@ function openZoom(cardData, cardElement = null) {
     const batonIcons = Array(cardData.baton || 0).fill('<div class="baton-dot-large"></div>').join('');
     const extraHtml = cardData.extra ? `<div class="zoom-extra-area"><span class="extra-label">エクストラ：</span>${cardData.extra}</div>` : "";
 
-    container.innerHTML = `
+    contentInner.innerHTML = `
         <div class="zoom-bloom-rank">${cardData.bloom || ""}</div>
         <div class="zoom-name-center">${cardData.name}</div>
-        
         <div class="zoom-top-right-group">
             <div class="zoom-color-icon-large" style="background: ${colorCode};"></div>
             <div class="zoom-hp-display" id="zoom-hp-val">HP ${cardData.currentHp || cardData.hp || cardData.life || 0}</div>
         </div>
-
-        <div class="zoom-main-content">
-            ${skillsHtml}
-        </div>
-
+        <div class="zoom-main-content">${skillsHtml}</div>
         <div class="zoom-bottom-left-group">
-            <div class="zoom-tags-row">
-                ${(cardData.tags || []).map(t => `<span>#${t}</span>`).join(' ')}
-            </div>
-            <div class="zoom-baton-row">
-                <span>バトンタッチ:</span>
-                <div class="baton-icon-list">${batonIcons}</div>
-            </div>
+            <div class="zoom-tags-row">${(cardData.tags || []).map(t => `<span>#${t}</span>`).join(' ')}</div>
+            <div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-icon-list">${batonIcons}</div></div>
         </div>
-
         ${extraHtml}
-
         ${(!isSpec && (cardData.type === 'holomen')) ? `
             <div class="zoom-hp-controls">
                 <button class="btn-zoom-hp" style="background:#e74c3c" onclick="changeHp('${cardData.id}', -10)">-</button>
@@ -268,7 +266,12 @@ function openZoom(cardData, cardElement = null) {
     `;
 
     zoomModal.style.display = 'flex';
-    zoomModal.onclick = (e) => { if (e.target === zoomModal || e.target.closest('.zoom-outer-container') === null) zoomModal.style.display = 'none'; };
+    // モーダル背景をクリックしたら閉じる、ただしカード本体(zoomOuter)クリックでは閉じない
+    zoomModal.onclick = (e) => { 
+        if (e.target === zoomModal) {
+            zoomModal.style.display = 'none'; 
+        }
+    };
 }
 
 window.changeHp = (id, amt) => {
