@@ -12,181 +12,77 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
 
-/**
- * ロビーにいる全員に最新のルームリストを送信
- */
 function broadcastRoomList() {
     const list = Object.keys(rooms).map(id => ({
-        id: id,
-        playerCount: rooms[id].players.length,
-        spectatorCount: rooms[id].spectators.length
+        id, playerCount: rooms[id].players.length, spectatorCount: rooms[id].spectators.length
     }));
     io.emit('roomListUpdate', list);
 }
 
-const shuffleArray = (array) => {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-};
-
 io.on('connection', (socket) => {
-    // 接続時に最新リストを送る
     broadcastRoomList();
 
     socket.on('joinRoom', ({ roomId, role }) => {
-        socket.join(roomId);
-        socket.roomId = roomId;
-        socket.role = role;
-
-        if (!rooms[roomId]) {
-            rooms[roomId] = { fieldState: {}, mainDeck: [], cheerDeck: [], players: [], spectators: [] };
-        }
-
-        if (role === 'player') {
-            rooms[roomId].players.push(socket.id);
-        } else {
-            rooms[roomId].spectators.push(socket.id);
-        }
-
-        socket.emit('init', { 
-            id: socket.id, 
-            role: role, 
-            fieldState: rooms[roomId].fieldState,
-            deckCount: { 
-                main: rooms[roomId].mainDeck.length, 
-                cheer: rooms[roomId].cheerDeck.length 
-            }
-        });
-
+        socket.join(roomId); socket.roomId = roomId;
+        if (!rooms[roomId]) rooms[roomId] = { fieldState: {}, mainDeck: [], cheerDeck: [], players: [], spectators: [] };
+        if (role === 'player') rooms[roomId].players.push(socket.id);
+        else rooms[roomId].spectators.push(socket.id);
+        
+        socket.emit('init', { id: socket.id, role, fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
         broadcastRoomList();
     });
 
     socket.on('setGame', (data) => {
-        const roomId = socket.roomId;
-        if (!rooms[roomId] || socket.role !== 'player') return;
-        
-        rooms[roomId].fieldState = {}; 
-        rooms[roomId].mainDeck = data.main.map(card => ({ ...card, id: uuidv4(), currentHp: card.hp }));
-        rooms[roomId].cheerDeck = data.cheer.map(card => ({ ...card, id: uuidv4(), type: 'ayle' }));
-        
-        shuffleArray(rooms[roomId].mainDeck);
-        shuffleArray(rooms[roomId].cheerDeck);
+        const rid = socket.roomId; if (!rooms[rid]) return;
+        rooms[rid].fieldState = {}; 
+        rooms[rid].mainDeck = data.main.map(c => ({ ...c, id: uuidv4(), currentHp: c.hp }));
+        rooms[rid].cheerDeck = data.cheer.map(c => ({ ...c, id: uuidv4(), type: 'ayle' }));
+        [rooms[rid].mainDeck, rooms[rid].cheerDeck].forEach(d => { for(let i=d.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]]; } });
 
-        const oshiId = uuidv4();
-        rooms[roomId].fieldState[oshiId] = { 
-            ...data.oshi, id: oshiId, type: 'oshi', zoneId: 'oshi', zIndex: 100, isFaceUp: true 
-        };
-
-        const lifeCount = data.oshi.life || 0;
-        for (let i = 0; i < lifeCount; i++) {
-            if (rooms[roomId].cheerDeck.length > 0) {
-                const lifeCard = rooms[roomId].cheerDeck.pop();
-                rooms[roomId].fieldState[lifeCard.id] = { 
-                    ...lifeCard, zoneId: 'life-zone', isFaceUp: false, isRotated: true, zIndex: 10 + i 
-                };
+        const oId = uuidv4(); rooms[rid].fieldState[oId] = { ...data.oshi, id: oId, type: 'oshi', zoneId: 'oshi', zIndex: 100, isFaceUp: true };
+        const lc = data.oshi.life || 0;
+        for (let i = 0; i < lc; i++) {
+            if (rooms[rid].cheerDeck.length > 0) {
+                const c = rooms[rid].cheerDeck.pop();
+                rooms[rid].fieldState[c.id] = { ...c, zoneId: 'life-zone', isFaceUp: false, isRotated: true, zIndex: 10 + i };
             }
         }
-        io.to(roomId).emit('gameStarted', { fieldState: rooms[roomId].fieldState, deckCount: { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length } });
+        io.to(rid).emit('gameStarted', { fieldState: rooms[rid].fieldState, deckCount: { main: rooms[rid].mainDeck.length, cheer: rooms[rid].cheerDeck.length } });
     });
 
     socket.on('drawMainCard', () => {
-        const roomId = socket.roomId;
-        if (rooms[roomId] && rooms[roomId].mainDeck.length > 0) {
-            socket.emit('receiveCard', rooms[roomId].mainDeck.pop());
-            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
-        }
+        const r = rooms[socket.roomId];
+        if (r && r.mainDeck.length > 0) { socket.emit('receiveCard', r.mainDeck.pop()); io.to(socket.roomId).emit('deckCount', { main: r.mainDeck.length, cheer: r.cheerDeck.length }); }
     });
 
     socket.on('drawCheerCard', () => {
-        const roomId = socket.roomId;
-        if (rooms[roomId] && rooms[roomId].cheerDeck.length > 0) {
-            socket.emit('receiveCard', rooms[roomId].cheerDeck.pop());
-            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
-        }
+        const r = rooms[socket.roomId];
+        if (r && r.cheerDeck.length > 0) { socket.emit('receiveCard', r.cheerDeck.pop()); io.to(socket.roomId).emit('deckCount', { main: r.mainDeck.length, cheer: r.cheerDeck.length }); }
     });
 
     socket.on('generateHoloPower', () => {
-        const roomId = socket.roomId;
-        if (rooms[roomId] && rooms[roomId].mainDeck.length > 0) {
-            const card = rooms[roomId].mainDeck.pop();
-            const powerCard = {
-                ...card,
-                id: uuidv4(),
-                zoneId: 'holopower',
-                isFaceUp: false,
-                isRotated: true,
-                zIndex: 200 + Object.keys(rooms[roomId].fieldState).length
-            };
-            rooms[roomId].fieldState[powerCard.id] = powerCard;
-            io.to(roomId).emit('cardMoved', powerCard);
-            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
+        const r = rooms[socket.roomId];
+        if (r && r.mainDeck.length > 0) {
+            const c = r.mainDeck.pop(); const pc = { ...c, id: uuidv4(), zoneId: 'holopower', isFaceUp: false, isRotated: true, zIndex: 200 + Object.keys(r.fieldState).length };
+            r.fieldState[pc.id] = pc; io.to(socket.roomId).emit('cardMoved', pc); io.to(socket.roomId).emit('deckCount', { main: r.mainDeck.length, cheer: r.cheerDeck.length });
         }
     });
 
-    socket.on('moveCard', (data) => {
-        const roomId = socket.roomId;
-        if (rooms[roomId]) {
-            rooms[roomId].fieldState[data.id] = { ...rooms[roomId].fieldState[data.id], ...data };
-            socket.to(roomId).emit('cardMoved', data);
-        }
-    });
-
-    socket.on('updateHp', (data) => {
-        const roomId = socket.roomId;
-        if (rooms[roomId] && rooms[roomId].fieldState[data.id]) {
-            rooms[roomId].fieldState[data.id].currentHp = data.currentHp;
-            io.to(roomId).emit('hpUpdated', data);
-        }
-    });
-
-    socket.on('returnToHand', (data) => {
-        const roomId = socket.roomId;
-        if (rooms[roomId]) { delete rooms[roomId].fieldState[data.id]; socket.to(roomId).emit('cardRemoved', { id: data.id }); }
-    });
-
-    socket.on('flipCard', (data) => {
-        const roomId = socket.roomId;
-        if (rooms[roomId] && rooms[roomId].fieldState[data.id]) {
-            rooms[roomId].fieldState[data.id].isFaceUp = data.isFaceUp;
-            socket.to(roomId).emit('cardFlipped', data);
-        }
-    });
-
-    socket.on('inspectDeck', (type) => {
-        const roomId = socket.roomId;
-        if (!rooms[roomId]) return;
-        const cards = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
-        socket.emit('deckInspectionResult', { type, cards });
-    });
-
+    socket.on('moveCard', (data) => { if (rooms[socket.roomId]) { rooms[socket.roomId].fieldState[data.id] = { ...rooms[socket.roomId].fieldState[data.id], ...data }; socket.to(socket.roomId).emit('cardMoved', data); } });
+    socket.on('updateHp', (d) => { if (rooms[socket.roomId] && rooms[socket.roomId].fieldState[d.id]) { rooms[socket.roomId].fieldState[d.id].currentHp = d.currentHp; io.to(socket.roomId).emit('hpUpdated', d); } });
+    socket.on('returnToHand', (d) => { if (rooms[socket.roomId]) { delete rooms[socket.roomId].fieldState[d.id]; socket.to(roomId).emit('cardRemoved', { id: d.id }); } });
+    socket.on('flipCard', (d) => { if (rooms[socket.roomId] && rooms[socket.roomId].fieldState[d.id]) { rooms[socket.roomId].fieldState[d.id].isFaceUp = d.isFaceUp; socket.to(socket.roomId).emit('cardFlipped', d); } });
+    socket.on('inspectDeck', (type) => { const r = rooms[socket.roomId]; if (r) socket.emit('deckInspectionResult', { type, cards: type === 'main' ? r.mainDeck : r.cheerDeck }); });
     socket.on('pickCardFromDeck', ({ type, cardId }) => {
-        const roomId = socket.roomId;
-        if (!rooms[roomId] || socket.role !== 'player') return;
-        let deck = type === 'main' ? rooms[roomId].mainDeck : rooms[roomId].cheerDeck;
-        const cardIdx = deck.findIndex(c => c.id === cardId);
-        if (cardIdx !== -1) {
-            const card = deck.splice(cardIdx, 1)[0];
-            shuffleArray(deck);
-            socket.emit('receiveCard', card);
-            io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
-        }
+        const r = rooms[socket.roomId]; let deck = type === 'main' ? r.mainDeck : r.cheerDeck;
+        const idx = deck.findIndex(c => c.id === cardId);
+        if (idx !== -1) { const c = deck.splice(idx, 1)[0]; deck.sort(() => Math.random() - 0.5); socket.emit('receiveCard', c); io.to(socket.roomId).emit('deckCount', { main: r.mainDeck.length, cheer: r.cheerDeck.length }); }
     });
 
     socket.on('disconnect', () => {
-        const roomId = socket.roomId;
-        if (rooms[roomId]) {
-            rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
-            rooms[roomId].spectators = rooms[roomId].spectators.filter(id => id !== socket.id);
-            // 誰もいなくなったら部屋を消す（任意）
-            if (rooms[roomId].players.length === 0 && rooms[roomId].spectators.length === 0) {
-                delete rooms[roomId];
-            }
-            broadcastRoomList();
-        }
+        const r = rooms[socket.roomId];
+        if (r) { r.players = r.players.filter(id => id !== socket.id); r.spectators = r.spectators.filter(id => id !== socket.id); if (r.players.length === 0 && r.spectators.length === 0) delete rooms[socket.roomId]; broadcastRoomList(); }
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
+server.listen(3000, () => console.log('Server running on port 3000'));
