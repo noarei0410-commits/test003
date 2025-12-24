@@ -21,14 +21,13 @@ async function loadCardData() {
 }
 
 async function joinRoom(role) {
-    const rid = document.getElementById('roomIdInput').value;
-    if (!rid) return alert("ルームIDを入力してください");
+    const rid = document.getElementById('roomIdInput').value.trim();
+    if (!rid) return alert("ルームIDを入力するか、リストから選択してください");
     myRole = role; 
     socket.emit('joinRoom', { roomId: rid, role });
     if (role === 'player') {
         showPage('setup-modal');
     } else {
-        // フィールド画面を表示し、観戦者用クラスを付与
         showPage(''); 
         document.body.classList.add('spectator-mode');
     }
