@@ -17,25 +17,42 @@ body {
     z-index: 10000; background: #04172b;
 }
 
-/* --- ハブ画面 --- */
+/* --- ハブ画面 (新ルームリスト対応) --- */
 #hub-page { display: flex; background: radial-gradient(circle, #0a2d4d, #04172b); z-index: 11000; }
-.hub-container { text-align: center; width: 85%; max-width: 400px; }
-.hub-title { color: #00d2ff; font-size: 36px; margin-bottom: 50px; letter-spacing: 3px; text-shadow: 0 0 15px rgba(0,210,255,0.6); }
-.hub-menu { display: flex; flex-direction: column; gap: 25px; width: 100%; }
-.hub-btn { 
-    background: rgba(255,255,255,0.05); border: 2px solid #00d2ff; 
-    padding: 40px 20px; border-radius: 20px; color: white; 
-    display: flex; flex-direction: column; align-items: center; gap: 15px; 
-    transition: 0.2s; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;
-}
-.hub-btn:active { background: rgba(0,210,255,0.2); transform: scale(0.96); }
+.hub-container { text-align: center; width: 90%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; }
+.hub-title { color: #00d2ff; font-size: 32px; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,210,255,0.6); margin: 20px 0; }
 
-/* --- ルーム選択 --- */
-.room-content { 
-    width: 320px !important; height: auto !important; padding: 30px !important; 
-    border: 2px solid #00d2ff !important; border-radius: 25px !important; 
-    background: #04172b !important; text-align: center; display: flex; flex-direction: column; gap: 20px;
+.room-list-container {
+    background: rgba(0, 0, 0, 0.4); border: 1px solid #00d2ff; border-radius: 15px; padding: 15px; height: 200px;
+    display: flex; flex-direction: column;
 }
+.room-list-container h3 { margin-top: 0; font-size: 14px; color: #00d2ff; text-align: left; }
+.room-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.room-item {
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 210, 255, 0.3); padding: 10px 15px;
+    border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s;
+}
+.room-item:hover { background: rgba(0, 210, 255, 0.2); border-color: #00d2ff; }
+.room-id { font-weight: bold; color: #fff; font-size: 14px; }
+.room-stats { font-size: 11px; color: #aaa; display: flex; gap: 10px; }
+.stat-val { color: #00d2ff; font-weight: bold; }
+.no-rooms { font-size: 12px; color: #666; margin-top: 40px; }
+
+.hub-form { display: flex; flex-direction: column; gap: 15px; }
+#roomIdInput { width: 100%; padding: 15px; border-radius: 10px; border: 2px solid #00d2ff; background: #04172b; color: white; text-align: center; font-size: 18px; }
+
+.hub-join-btns { display: flex; gap: 10px; }
+.hub-btn { 
+    flex: 1; background: rgba(255,255,255,0.05); border: 2px solid #00d2ff; 
+    padding: 20px 10px; border-radius: 15px; color: white; 
+    display: flex; flex-direction: column; align-items: center; gap: 8px; 
+    transition: 0.2s; cursor: pointer;
+}
+.hub-btn:hover { background: rgba(0,210,255,0.1); }
+.player-btn { border-color: #ff5e5e; }
+.player-btn .hub-icon { color: #ff5e5e; }
+.spectator-btn { border-color: #2ecc71; }
+.spectator-btn .hub-icon { color: #2ecc71; }
 
 /* --- デッキ構築 & リスト --- */
 .modal-content { 
@@ -44,24 +61,10 @@ body {
 }
 .builder-layout { display: flex; flex: 1; gap: 15px; overflow: hidden; }
 .card-library { flex: 1.2; display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
-#searchInput { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00d2ff; background: #04172b; color: white; margin-bottom: 10px; }
 #libraryList, .card-grid { flex: 1; overflow-y: auto; }
 
-.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
-.filter-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 16px; font-size: 12px; white-space: nowrap; border-radius: 6px; flex-shrink: 0; }
-.filter-btn.active { background: #00d2ff; color: #04172b; border-color: #00d2ff; font-weight: bold; }
-
 .card-grid { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; justify-content: flex-start; align-content: flex-start; }
-
-/* デッキ/アーカイブ確認用グリッド */
-#deck-card-grid .card {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    transform: none !important; /* 強制的に縦向き */
-    flex-shrink: 0;
-    cursor: pointer;
-}
+#deck-card-grid .card { position: relative !important; left: auto !important; top: auto !important; transform: none !important; flex-shrink: 0; cursor: pointer; }
 
 /* --- フィールド UI --- */
 #ui-layer { width: 100%; padding: 5px 15px; display: flex; justify-content: space-between; font-size: 10px; height: 25px; align-items: center; color: rgba(240, 255, 255, 0.8); }
@@ -70,12 +73,6 @@ body {
 .column { display: flex; flex-direction: column; gap: 6px; height: 100%; }
 .center-column { justify-content: flex-start; gap: 8px; }
 .zone { border: 1.5px solid rgba(240, 255, 255, 0.3); background: rgba(255,255,255,0.03); border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 7px; text-align: center; color: rgba(255,255,255,0.4); position: relative; width: 100%; height: 100%; }
-.stage-label-bar { width: 100%; text-align: center; border-bottom: 1px solid #f0ffff; font-size: 12px; color: #f0ffff; height: 20px; }
-.stage-top-row { display: flex; gap: 10px; width: 100%; height: 35%; justify-content: center; }
-.stage-top-row .zone { width: 22%; }
-.stage-bottom-row { width: 100%; height: 35%; display: flex; justify-content: center; }
-.back-position-container { width: 90%; height: 100%; border: 2px dashed rgba(240, 255, 255, 0.2); border-radius: 10px; display: flex; gap: 5px; padding: 5px; justify-content: center; position: relative; }
-.life-zone { height: 60%; }
 .deck-zone { border: 2px solid #00d2ff; background: linear-gradient(135deg, #16213e, #04172b); color: #00d2ff; cursor: pointer; }
 
 /* --- 手札 --- */
@@ -83,109 +80,46 @@ body {
 #hand { height: 100%; border: 2px dashed rgba(0, 210, 255, 0.4); border-radius: 12px; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px 15px; background: rgba(4, 23, 43, 0.95); overflow-x: auto; align-items: center; }
 
 /* ==========================================
-   2. カード基本デザイン
+   2. カードデザイン
    ========================================== */
-.card {
-    width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-    position: absolute; z-index: 1000; touch-action: none; padding: 4px;
-    box-sizing: border-box; overflow: hidden; transition: transform 0.2s, left 0.1s, top 0.1s;
-    border: 1px solid #ccc;
-}
+.card { width: 52px; height: 74px; background: #fff; color: #000; font-size: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: absolute; z-index: 1000; touch-action: none; padding: 4px; box-sizing: border-box; overflow: hidden; transition: transform 0.2s, left 0.1s, top 0.1s; border: 1px solid #ccc; }
 #hand .card, .card-grid .card { position: relative !important; left: auto !important; top: auto !important; flex-shrink: 0; }
-
 .card-hp { position: absolute; top: 12px; right: 4px; font-weight: bold; color: #e74c3c; font-size: 9px; }
 .card-bloom { position: absolute; top: 2px; left: 4px; font-weight: bold; color: #3498db; font-size: 8px; }
 .card-color-icon { position: absolute; top: 2px; right: 4px; width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
-.card-tags { display: none; }
 .card-baton { position: absolute; bottom: 2px; right: 4px; font-size: 6px; display: flex; flex-direction: row; align-items: center; gap: 1px; color: #444; }
 .baton-dot { width: 5px; height: 5px; background: #95a5a6; border-radius: 50%; }
-
-.ayle-red { background-color: #ffcccc; border: 2px solid #ff4500; }
-.ayle-blue { background-color: #cce5ff; border: 2px solid #1e90ff; }
-.ayle-green { background-color: #d4edda; border: 2px solid #2ecc71; }
-.ayle-yellow { background-color: #fff3cd; border: 2px solid #f1c40f; }
-.ayle-purple { background-color: #f3e5f5; border: 2px solid #9b59b6; }
-.ayle-white { background-color: #ffffff; border: 2px solid #95a5a6; }
-
-.color-red { background-color: #ff4500; }
-.color-blue { background-color: #1e90ff; }
-.color-green { background-color: #2ecc71; }
-.color-yellow { background-color: #f1c40f; }
-.color-purple { background-color: #9b59b6; }
-.color-white { background-color: #ffffff; border: 1px solid #ccc; }
 
 .face-down { background: #16213e !important; color: transparent !important; border: 1.5px solid white !important; }
 .face-down * { display: none !important; }
 .card.rotated { transform: rotate(90deg); }
 
 /* ==========================================
-   3. 詳細表示 (Zoom Modal)
+   3. ズーム画面
    ========================================== */
-#zoom-modal {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.9); z-index: 50000; display: none;
-    flex-direction: column; justify-content: center; align-items: center; cursor: pointer; gap: 10px;
-}
-.zoom-container {
-    background: #fff; color: #000; width: 340px; max-height: 85vh;
-    border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; cursor: default;
-    position: relative;
-}
+#zoom-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 50000; display: none; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; gap: 10px; }
+.zoom-container { background: #fff; color: #000; width: 340px; max-height: 85vh; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; cursor: default; position: relative; }
 .zoom-header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 8px; align-items: center; }
-.zoom-name { font-size: 20px; font-weight: bold; }
-
 .zoom-hp-area { display: flex; align-items: center; gap: 10px; }
 .zoom-hp { font-size: 20px; color: #e74c3c; font-weight: bold; }
 .hp-control-btns { display: flex; gap: 5px; }
 .btn-hp { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; border: none; cursor: pointer; }
 .btn-hp-minus { background: #e74c3c; }
 .btn-hp-plus { background: #2ecc71; }
-
-.zoom-life { font-size: 18px; color: #f39c12; font-weight: bold; }
-.zoom-effect-text { font-size: 14px; line-height: 1.5; color: #333; background: #f9f9f9; padding: 10px; border-radius: 8px; border-left: 4px solid #00d2ff; }
-
-.zoom-footer { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid #eee; margin-top: auto; }
-.zoom-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.zoom-tag-item { font-size: 12px; color: #3498db; font-weight: bold; }
-
-.zoom-baton-row { display: flex !important; flex-direction: row !important; align-items: center; gap: 10px; font-size: 14px; font-weight: bold; color: #444; }
-.baton-dots-container { display: flex !important; flex-direction: row !important; gap: 4px; }
-.zoom-container .baton-dot { width: 10px; height: 10px; background: #95a5a6; border-radius: 50%; }
-
 .skill-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 8px; }
 .skill-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .skill-type-label { font-size: 8px; padding: 2px 5px; border-radius: 3px; color: #fff; font-weight: bold; text-transform: uppercase; }
 .label-arts { background: #e74c3c; }
 .label-oshi { background: #f39c12; }
 .label-sp_oshi { background: #e67e22; }
-
-.skill-name-row { display: flex; flex: 1; justify-content: space-between; align-items: center; font-weight: bold; font-size: 14px; }
-.skill-damage { color: #e74c3c; font-size: 16px; margin-left: 10px; }
-
-.btn-activate-skill { background: #f1c40f; color: #000; border: none; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-.btn-activate-skill:active { transform: translateY(1px); box-shadow: none; }
-
-.cost-container { display: flex; gap: 2px; }
-.cost-icon { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
-.skill-cost-hp { font-size: 11px; font-weight: bold; color: #e67e22; }
+.btn-activate-skill { background: #f1c40f; color: #000; border: none; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 10px; }
 .ready-badge { background: #2ecc71; color: #fff; font-size: 8px; padding: 2px 6px; border-radius: 10px; font-weight: bold; margin-left: 5px; }
 
-.zoom-attach-section { background: #f0f7ff; border-radius: 10px; padding: 8px; border: 1px solid #d0e4ff; margin-bottom: 5px; }
-.attach-title { font-size: 10px; font-weight: bold; color: #2980b9; margin-bottom: 5px; display: block; border-bottom: 1px solid #d0e4ff; }
-.attach-item { font-size: 12px; padding: 4px 0; border-bottom: 1px dashed #d0e4ff; margin-bottom: 4px; }
-.attach-item:last-child { border-bottom: none; }
-.attach-item-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 2px; }
-.attach-item-text { font-size: 10px; color: #555; font-style: italic; line-height: 1.3; }
-.btn-discard-small { background: #ff5e5e; color: white; border: none; font-size: 8px; padding: 2px 5px; border-radius: 4px; cursor: pointer; }
-
+/* 汎用ボタン */
 button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; transition: 0.1s; }
-.btn-add { background: #00d2ff; color: #04172b; padding: 8px 15px; }
-.btn-minus { background: #ff5e5e; color: white; padding: 2px 8px; }
-.btn-plus { background: #2ecc71; color: white; padding: 2px 8px; }
-.btn-close-gray { background: #444; color: white; padding: 10px; }
-#startGameBtn { padding: 15px; background: #00d2ff; width: 100%; font-size: 18px; margin-bottom: 10px; }
+.btn-secondary { background: rgba(255,255,255,0.1); color: #fff; padding: 10px; width: 100%; border: 1px solid #444; }
+.btn-back { background: transparent; color: #666; font-size: 12px; margin-top: 10px; text-decoration: underline; }
+#startGameBtn { padding: 15px; background: #00d2ff; width: 100%; font-size: 18px; }
 #startGameBtn:disabled { background: #333; color: #666; cursor: not-allowed; }
 
 body.spectator-mode .deck-zone { pointer-events: none; opacity: 0.6; }
