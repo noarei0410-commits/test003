@@ -11,7 +11,6 @@ function createCardElement(data, withEvents = true) {
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
-    // ホロメン・推しの装飾
     if (data.type === 'holomen' || data.type === 'oshi') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); 
@@ -82,11 +81,9 @@ function setupCardEvents(el) {
     el.onpointerdown = (e) => {
         startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
         if (myRole === 'spectator') return;
-        
         isDragging = true; dragStarted = false;
         currentDragEl = el; el.setPointerCapture(e.pointerId);
         el.oldZoneId = el.dataset.zoneId || "";
-
         const rect = el.getBoundingClientRect();
         offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
         currentStack = (el.dataset.zoneId && el.dataset.zoneId !== "") 
@@ -134,7 +131,6 @@ document.onpointerup = (e) => {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
     if (myRole === 'spectator' || !isDragging || !currentDragEl) { isDragging = false; dragStarted = false; currentStack = []; return; }
-    
     if (dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
         if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
@@ -142,7 +138,6 @@ document.onpointerup = (e) => {
         } else {
             const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
-            
             if (target && target.parentElement === field) {
                 if (canBloom(currentDragEl.cardData, target.cardData)) {
                     const prevMax = parseInt(target.cardData.hp || 0);
@@ -160,9 +155,7 @@ document.onpointerup = (e) => {
                     c.style.zIndex = isBase ? target.style.zIndex : parseInt(target.style.zIndex) - 1;
                     socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex, currentHp: c.cardData.currentHp });
                 });
-            } else { 
-                normalSnapStack(e); 
-            }
+            } else { normalSnapStack(e); }
         }
     }
     currentStack.forEach(c => delete c.dataset.stackOffset);
@@ -173,12 +166,10 @@ function normalSnapStack(e) {
     const zones = document.querySelectorAll('.zone');
     let closest = null, minDist = 40;
     const cr = currentDragEl.getBoundingClientRect(), cc = { x: cr.left + cr.width/2, y: cr.top + cr.height/2 };
-
     zones.forEach(z => {
         const zr = z.getBoundingClientRect(), zc = { x: zr.left + zr.width/2, y: zr.top + zr.height/2 };
         const d = Math.hypot(cc.x - zc.x, cc.y - zc.y); if (d < minDist) { minDist = d; closest = z; }
     });
-
     if (closest) {
         if (STAGE_ZONES.includes(closest.id)) {
             const cardsInZone = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === closest.id && !currentStack.includes(c));
@@ -231,7 +222,7 @@ function canUseArt(costReq, attachedAyles) {
 }
 
 /**
- * ズーム詳細 (推しスキルREADY判定機能追加)
+ * ズーム詳細 (推しスキル発動ボタン追加)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -248,7 +239,6 @@ function openZoom(cardData, cardElement = null) {
         stackEquip = stack.filter(c => c.cardData.type === 'support');
     }
 
-    // ホロパワーの枚数をカウント
     const holoPowerCount = document.querySelectorAll('.card[data-zone-id="holopower"]').length;
 
     const tagsHtml = (cardData.tags && cardData.tags.length) 
@@ -256,25 +246,24 @@ function openZoom(cardData, cardElement = null) {
     const batonHtml = (cardData.baton !== undefined)
         ? `<div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-dots-container">${Array(cardData.baton).fill('<div class="baton-dot"></div>').join('')}</div></div>` : "";
 
-    const skillsHtml = (cardData.skills || []).map(s => {
+    const skillsHtml = (cardData.skills || []).map((s, idx) => {
         let labelTxt = s.type === 'sp_oshi' ? 'SP OSHI' : s.type.toUpperCase();
         
-        // スキル発動判定ロジック
         let isReady = false;
         if (s.type === 'arts') {
             isReady = canUseArt(s.cost, stackAyle.map(e => e.cardData));
         } else if (s.type === 'oshi' || s.type === 'sp_oshi') {
             isReady = (holoPowerCount >= (s.cost || 0));
         }
-        let readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
+        
+        // 推しスキルの場合のみ、発動ボタンを表示
+        let actionBtn = (isReady && (s.type === 'oshi' || s.type === 'sp_oshi')) 
+            ? `<button class="btn-activate-skill" onclick="activateOshiSkill('${cardData.id}', ${idx}, ${s.cost})">発動</button>` 
+            : (isReady ? `<span class="ready-badge">READY</span>` : "");
 
-        // コスト表示の分岐
-        let costHtml = "";
-        if (s.type === 'arts') {
-            costHtml = `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>`;
-        } else {
-            costHtml = `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
-        }
+        let costHtml = (s.type === 'arts') 
+            ? `<div class="cost-container">${(s.cost || []).map(c => `<div class="cost-icon color-${c}"></div>`).join('')}</div>` 
+            : `<span class="skill-cost-hp">-${s.cost || 0}</span>`;
 
         let damageHtml = s.damage ? `<span class="skill-damage">${s.damage}</span>` : "";
         return `
@@ -282,7 +271,7 @@ function openZoom(cardData, cardElement = null) {
                 <div class="skill-header">
                     <div class="skill-type-label label-${s.type}">${labelTxt}</div>
                     ${costHtml}
-                    <div class="skill-name-row"><span>${s.name}${readyBadge}</span>${damageHtml}</div>
+                    <div class="skill-name-row"><span>${s.name}${actionBtn}</span>${damageHtml}</div>
                 </div>
                 <div class="skill-text">${s.text || ''}</div>
             </div>`;
@@ -322,6 +311,28 @@ function openZoom(cardData, cardElement = null) {
     zoomModal.style.display = 'flex';
     zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
 }
+
+/**
+ * 推しスキル発動 (ホロパワー消費ロジック)
+ */
+window.activateOshiSkill = (oshiCardId, skillIdx, cost) => {
+    // ホロパワーゾーンのカードを取得
+    const hpCards = Array.from(document.querySelectorAll('.card[data-zone-id="holopower"]'));
+    if (hpCards.length < cost) return alert("ホロパワーが足りません");
+
+    if (!confirm(`ホロパワーを ${cost} 枚消費してスキルを発動しますか？`)) return;
+
+    // コスト分だけアーカイブへ送る
+    for (let i = 0; i < cost; i++) {
+        const c = hpCards[i];
+        c.dataset.zoneId = 'archive';
+        socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: 'archive', isRotated: false, zIndex: 10 });
+    }
+
+    alert("スキルを発動しました！効果を盤面に反映させてください。");
+    zoomModal.style.display = 'none';
+    repositionCards();
+};
 
 window.changeHp = (id, amount) => {
     const el = document.getElementById(id);
