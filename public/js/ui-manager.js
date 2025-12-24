@@ -1,3 +1,6 @@
+/**
+ * ページ/モーダルの表示切り替え
+ */
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     const target = document.getElementById(pageId);
@@ -8,6 +11,9 @@ function showPage(pageId) {
     }
 }
 
+/**
+ * 構築画面のライブラリ描画
+ */
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
@@ -27,6 +33,9 @@ function updateLibrary(f = "") {
     });
 }
 
+/**
+ * 構築サマリーの描画
+ */
 function renderDecks() {
     document.getElementById('oshiSummary').innerHTML = selectedOshi ? `<div class="deck-item">${selectedOshi.name} <button onclick="selectedOshi=null;renderDecks()" style="color:red; background:none; border:none; cursor:pointer;">X</button></div>` : "<small style='color:#666;'>未設定</small>";
     const mSum = document.getElementById('mainDeckSummary'); mSum.innerHTML = "";
@@ -53,8 +62,25 @@ window.removeFromMain = (k) => { const idx = mainDeckList.findIndex(c => `${c.na
 window.addCheer = (n) => { if (cheerDeckList.length < 20) { cheerDeckList.push({ name: n, type: 'ayle' }); renderDecks(); } };
 window.removeCheer = (n) => { const idx = cheerDeckList.findIndex(x => x.name === n); if (idx !== -1) cheerDeckList.splice(idx, 1); renderDecks(); };
 
+/**
+ * ギャラリー（一覧）の描画 - 修正ポイント
+ */
 function filterLibrary(type) {
-    const grid = document.getElementById('global-card-grid'); grid.innerHTML = "";
+    const grid = document.getElementById('global-card-grid'); 
+    if (!grid) return;
+    grid.innerHTML = "";
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        const map = { all: 'すべて', holomen: 'ホロメン', support: 'サポート', oshi: '推し' };
+        btn.classList.toggle('active', btn.innerText === map[type]);
+    });
+
     let list = (type === 'all') ? [...OSHI_LIST, ...MASTER_CARDS] : (type === 'oshi' ? OSHI_LIST : MASTER_CARDS.filter(c => c.type === type));
-    list.forEach(card => { const el = createCardElement(card, false); el.onclick = () => openZoom(card, el); grid.appendChild(el); });
+    
+    list.forEach(card => { 
+        // 既存のルール：タイル表示用パーツとして生成
+        const el = createCardElement(card, false); 
+        el.onclick = () => openZoom(card, el); 
+        grid.appendChild(el); 
+    });
 }
