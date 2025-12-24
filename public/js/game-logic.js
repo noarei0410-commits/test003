@@ -51,7 +51,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * 拡大表示 (完全修復版)
+ * 拡大表示 (推しホロメン・ライフ配置修正版)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -85,8 +85,10 @@ function openZoom(cardData, cardElement = null) {
                 <div class="oshi-skill-container">${skillsHtml}</div>
                 <div class="zoom-oshi-name">${cardData.name}</div>
                 <div class="zoom-oshi-right-bottom">
-                    <div class="zoom-oshi-life-label">LIFE</div>
-                    <div class="zoom-oshi-life">${cardData.hp || 0}</div>
+                    <div class="zoom-oshi-life-container">
+                        <div class="zoom-oshi-life-label">LIFE</div>
+                        <div class="zoom-oshi-life">${cardData.hp || 0}</div>
+                    </div>
                     <div class="zoom-oshi-color-large" style="background: ${colorCode};"></div>
                 </div>
             </div>`;
@@ -151,7 +153,7 @@ function openZoom(cardData, cardElement = null) {
 }
 
 /**
- * カードイベント設定 (ドラッグ＆ドロップとクリックの判定)
+ * カードイベント設定
  */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
@@ -220,4 +222,75 @@ document.onpointerup = (e) => {
     isDragging = false; dragStarted = false; currentDragEl = null; currentStack = []; repositionCards();
 };
 
-// ... repositionCards, normalSnapStack, canUseArt, changeHp, returnToHand, canBloom 等は既存のまま
+function canUseArt(costArr, attachedAyles) {
+    if (!costArr || costArr.length === 0) return true;
+    let available = attachedAyles.map(a => a.name.replace('エール', ''));
+    let needed = [...costArr];
+    let anyCount = needed.filter(c => c === 'any').length;
+    let coloredNeeded = needed.filter(c => c !== 'any');
+    for (let c of coloredNeeded) {
+        let idx = available.indexOf(c);
+        if (idx !== -1) available.splice(idx, 1);
+        else return false;
+    }
+    return available.length >= anyCount;
+}
+
+function changeHp(id, delta) {
+    const el = document.getElementById(id);
+    if (el && el.cardData) {
+        el.cardData.currentHp = Math.max(0, (el.cardData.currentHp || el.cardData.hp || 0) + delta);
+        const fhp = document.getElementById(`hp-display-${id}`); if (fhp) fhp.innerText = el.cardData.currentHp;
+        const zhp = document.getElementById('zoom-hp-val'); if (zhp) zhp.innerText = `HP ${el.cardData.currentHp}`;
+        socket.emit('updateHp', { id, currentHp: el.cardData.currentHp });
+    }
+}
+
+function returnToHand(el) {
+    if (el.dataset.zoneId === 'life-zone') { if (!confirm("ライフを手札に戻しますか？")) return; }
+    socket.emit('returnToHand', { id: el.id });
+    el.dataset.zoneId = ""; el.style.position = 'relative'; el.style.left = 'auto'; el.style.top = 'auto'; el.style.zIndex = 'auto';
+    el.classList.remove('rotated'); el.classList.add('face-up'); el.classList.remove('face-down');
+    handDiv.appendChild(el); repositionCards();
+}
+
+function canBloom(dragCard, targetCard) {
+    if (!dragCard || !targetCard || dragCard.type !== 'holomen' || targetCard.type !== 'holomen') return false;
+    if (dragCard.name !== targetCard.name) return false;
+    const ranks = { 'Debut': 0, '1st': 1, '2nd': 2 };
+    return ranks[dragCard.bloom] === ranks[targetCard.bloom] + 1;
+}
+
+function repositionCards() {
+    const zones = document.querySelectorAll('.zone');
+    zones.forEach(zone => {
+        const cards = Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === zone.id);
+        if (cards.length === 0) return;
+        const rect = zone.getBoundingClientRect();
+        const fieldRect = field.getBoundingClientRect();
+        cards.forEach((card, i) => {
+            card.style.position = 'absolute';
+            card.style.left = (rect.left - fieldRect.left + (rect.width - 58)/2) + 'px';
+            card.style.top = (rect.top - fieldRect.top + (rect.height - 82)/2) + 'px';
+        });
+    });
+}
+
+function normalSnapStack(e) {
+    const zones = Array.from(document.querySelectorAll('.zone'));
+    const targetZone = zones.find(z => {
+        const r = z.getBoundingClientRect();
+        return e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom;
+    });
+    if (targetZone) {
+        currentStack.forEach(c => {
+            c.dataset.zoneId = targetZone.id;
+            socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex });
+        });
+    } else {
+        currentStack.forEach(c => {
+            c.dataset.zoneId = c.oldZoneId;
+            socket.emit('moveCard', { id: c.id, ...c.cardData, zoneId: c.dataset.zoneId, zIndex: c.style.zIndex });
+        });
+    }
+}
