@@ -28,7 +28,6 @@ socket.on('cardMoved', (d) => {
     el.dataset.zoneId = d.zoneId || "";
     el.style.zIndex = d.zIndex;
     
-    // 回転と向きの状態を同期
     if (d.isFaceUp !== undefined) {
         el.classList.toggle('face-up', d.isFaceUp);
         el.classList.toggle('face-down', !d.isFaceUp);
@@ -76,7 +75,9 @@ socket.on('deckInspectionResult', (data) => {
     document.getElementById('inspection-title').innerText = (type === 'main' ? 'Main Deck' : 'Cheer Deck') + ` (${cards.length})`;
     cards.forEach(card => {
         const container = document.createElement('div'); container.className = "library-item";
-        const el = createCardElement(card, false); el.classList.remove('face-down'); el.classList.add('face-up');
+        // 確認画面用: 強制的に縦向き、表向きで生成
+        const el = createCardElement({...card, isRotated: false, isFaceUp: true}, false);
+        el.onclick = () => openZoom(card, el); // 確認画面からも拡大可能に
         const pickBtn = document.createElement('button'); pickBtn.className = "btn-recover"; pickBtn.innerText = "手札へ";
         pickBtn.onclick = () => { socket.emit('pickCardFromDeck', { type, cardId: card.id }); deckModal.style.display = 'none'; };
         container.appendChild(el); container.appendChild(pickBtn); deckGrid.appendChild(container);
@@ -85,15 +86,26 @@ socket.on('deckInspectionResult', (data) => {
 });
 
 function closeDeckInspection() { deckModal.style.display = 'none'; }
+
+/**
+ * アーカイブ確認機能 (縦向き・拡大対応)
+ */
 function openArchive() {
     deckGrid.innerHTML = "";
     document.getElementById('inspection-title').innerText = "Archive (確認)";
     const archiveCards = Array.from(document.querySelectorAll('#field > .card')).filter(c => c.dataset.zoneId === 'archive');
     archiveCards.forEach(card => {
         const container = document.createElement('div'); container.className = "library-item";
-        const el = createCardElement(card.cardData, false); el.classList.remove('face-down'); el.classList.add('face-up');
+        // アーカイブ内のカードを強制的に縦向き(rotated: false)にして表示
+        const previewData = { ...card.cardData, isRotated: false, isFaceUp: true };
+        const el = createCardElement(previewData, false);
+        
+        // カードをクリックして拡大表示
+        el.onclick = () => openZoom(card.cardData, el);
+        
         const recoverBtn = document.createElement('button'); recoverBtn.className = "btn-recover"; recoverBtn.innerText = "手札へ";
         recoverBtn.onclick = () => { returnToHand(card); deckModal.style.display = 'none'; };
+        
         container.appendChild(el); container.appendChild(recoverBtn); deckGrid.appendChild(container);
     });
     deckModal.style.display = 'flex';
