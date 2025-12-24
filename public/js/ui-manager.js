@@ -1,6 +1,3 @@
-/**
- * ページ/モーダルの表示切り替え
- */
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => { p.style.display = 'none'; });
     const target = document.getElementById(pageId);
@@ -11,9 +8,6 @@ function showPage(pageId) {
     }
 }
 
-/**
- * 構築画面のライブラリ描画
- */
 function updateLibrary(f = "") {
     const list = document.getElementById('libraryList'); if(!list) return;
     list.innerHTML = "";
