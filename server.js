@@ -12,6 +12,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
 
+/**
+ * ロビーにいる全員に最新のルームリストを送信
+ */
+function broadcastRoomList() {
+    const list = Object.keys(rooms).map(id => ({
+        id: id,
+        playerCount: rooms[id].players.length,
+        spectatorCount: rooms[id].spectators.length
+    }));
+    io.emit('roomListUpdate', list);
+}
+
 const shuffleArray = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -20,16 +32,24 @@ const shuffleArray = (array) => {
 };
 
 io.on('connection', (socket) => {
+    // 接続時に最新リストを送る
+    broadcastRoomList();
+
     socket.on('joinRoom', ({ roomId, role }) => {
         socket.join(roomId);
         socket.roomId = roomId;
         socket.role = role;
-        if (!rooms[roomId]) {
-            rooms[roomId] = { fieldState: {}, mainDeck: [], cheerDeck: [], players: [] };
-        }
-        if (role === 'player') rooms[roomId].players.push(socket.id);
 
-        // 【重要】参加した瞬間に現在の盤面状態とデッキ枚数を送信
+        if (!rooms[roomId]) {
+            rooms[roomId] = { fieldState: {}, mainDeck: [], cheerDeck: [], players: [], spectators: [] };
+        }
+
+        if (role === 'player') {
+            rooms[roomId].players.push(socket.id);
+        } else {
+            rooms[roomId].spectators.push(socket.id);
+        }
+
         socket.emit('init', { 
             id: socket.id, 
             role: role, 
@@ -39,6 +59,8 @@ io.on('connection', (socket) => {
                 cheer: rooms[roomId].cheerDeck.length 
             }
         });
+
+        broadcastRoomList();
     });
 
     socket.on('setGame', (data) => {
@@ -154,7 +176,15 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const roomId = socket.roomId;
-        if (rooms[roomId]) rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
+        if (rooms[roomId]) {
+            rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
+            rooms[roomId].spectators = rooms[roomId].spectators.filter(id => id !== socket.id);
+            // 誰もいなくなったら部屋を消す（任意）
+            if (rooms[roomId].players.length === 0 && rooms[roomId].spectators.length === 0) {
+                delete rooms[roomId];
+            }
+            broadcastRoomList();
+        }
     });
 });
 
