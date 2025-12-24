@@ -1,95 +1,167 @@
 [
   {
+    "id": "sora-00",
     "name": "ときのそら",
     "type": "holomen",
-    "hp": "180",
+    "color": "青",
     "bloom": "Debut",
-    "color": "blue",
-    "tags": ["#ホロライブ", "#JP", "#0期生"],
+    "hp": 70,
     "baton": 1,
+    "tags": ["ホロライブ0期生", "アイドル"],
     "skills": [
       {
         "name": "そらともへの挨拶",
-        "type": "arts",
-        "cost": ["blue"],
-        "damage": "30",
-        "text": "相手のセンターに30ダメージ。"
-      },
+        "cost": ["any"],
+        "damage": 20,
+        "text": "このアーツを使った時、自分の山札を1枚引く。"
+      }
+    ]
+  },
+  {
+    "id": "sora-01",
+    "name": "ときのそら",
+    "type": "holomen",
+    "color": "青",
+    "bloom": "1st",
+    "hp": 140,
+    "baton": 1,
+    "tags": ["ホロライブ0期生", "アイドル"],
+    "skills": [
       {
         "name": "ドリームステージ",
-        "type": "arts",
-        "cost": ["blue", "any"],
-        "damage": "60+",
-        "text": "自分のエールの数だけダメージを+10する。"
+        "cost": ["青", "any"],
+        "damage": 50,
+        "text": "自分のバックポジションに「ときのそら」がいるなら、ダメージ+20。"
       }
     ]
   },
   {
+    "id": "sora-02",
     "name": "ときのそら",
     "type": "holomen",
-    "hp": "210",
-    "bloom": "1st",
-    "color": "blue",
-    "tags": ["#ホロライブ", "#JP", "#0期生"],
-    "baton": 1,
-    "skills": [
-      {
-        "name": "きみのためのメロディ",
-        "type": "arts",
-        "cost": ["blue", "any"],
-        "damage": "70",
-        "text": "相手のセンターに70ダメージ。"
-      },
-      {
-        "name": "スカイ・ハイ",
-        "type": "arts",
-        "cost": ["blue", "blue", "any"],
-        "damage": "100",
-        "text": "次の自分の番、このメンバーの与えるダメージを+20する。"
-      }
-    ]
-  },
-  {
-    "name": "ときのそら",
-    "type": "holomen",
-    "hp": "250",
+    "color": "青",
     "bloom": "2nd",
-    "color": "blue",
-    "tags": ["#ホロライブ", "#JP", "#0期生"],
+    "hp": 210,
     "baton": 2,
+    "tags": ["ホロライブ0期生", "アイドル"],
     "skills": [
       {
-        "name": "Dreaming!",
-        "type": "arts",
-        "cost": ["blue", "blue"],
-        "damage": "120",
-        "text": "相手のセンターに120ダメージ。自分の山札を2枚引く。"
-      },
+        "name": "Beyond the Stage",
+        "cost": ["青", "青", "any"],
+        "damage": 100,
+        "text": "相手のセンターホロメンを「まひ」状態にする。"
+      }
+    ],
+    "extra": "【常時】自分の場の青のホロメン全員の受けるダメージを-10する。"
+  },
+  {
+    "id": "miko-00",
+    "name": "さくらみこ",
+    "type": "holomen",
+    "color": "赤",
+    "bloom": "Debut",
+    "hp": 60,
+    "baton": 1,
+    "tags": ["ホロライブ0期生", "エリート"],
+    "skills": [
       {
-        "name": "Beyond the Blue",
-        "type": "arts",
-        "cost": ["blue", "blue", "any", "any"],
-        "damage": "180+",
-        "text": "相手のサイドの枚数が2枚以下なら、ダメージを+40する。"
+        "name": "にゃっはろー！",
+        "cost": ["any"],
+        "damage": 10,
+        "text": "コインを1回投げ、表なら20ダメージ追加。"
       }
     ]
   },
   {
+    "id": "miko-01",
+    "name": "さくらみこ",
+    "type": "holomen",
+    "color": "赤",
+    "bloom": "1st",
+    "hp": 130,
+    "baton": 2,
+    "tags": ["ホロライブ0期生", "エリート"],
+    "skills": [
+      {
+        "name": "エリートの輝き",
+        "cost": ["赤", "any"],
+        "damage": 40,
+        "text": "相手のバックポジションのホロメン1人に20ダメージ。"
+      }
+    ]
+  },
+  {
+    "id": "miko-02",
+    "name": "さくらみこ",
+    "type": "holomen",
+    "color": "赤",
+    "bloom": "2nd",
+    "hp": 190,
+    "baton": 2,
+    "tags": ["ホロライブ0期生", "エリート"],
+    "skills": [
+      {
+        "name": "サクラカゼ・バーニング",
+        "cost": ["赤", "赤", "any"],
+        "damage": 120,
+        "text": "自分のアーカイブにある赤のエールを2枚山札の下に戻す。"
+      }
+    ],
+    "extra": "【登場時】相手のセンターホロメンに付いているエールを1枚選び、アーカイブに送る。"
+  },
+  {
+    "id": "fubuki-00",
     "name": "白上フブキ",
     "type": "holomen",
-    "hp": "170",
+    "color": "白",
     "bloom": "Debut",
-    "color": "white",
-    "tags": ["#ホロライブ", "#JP", "#1期生", "#ゲーマーズ"],
+    "hp": 70,
     "baton": 1,
+    "tags": ["ホロライブ1期生", "ゲーマーズ", "キツネ"],
     "skills": [
       {
         "name": "こんこんきーつね！",
-        "type": "arts",
-        "cost": ["white"],
-        "damage": "20",
-        "text": "自分の山札を1枚引く。"
+        "cost": ["any"],
+        "damage": 10,
+        "text": "自分の山札の上から3枚を見て、好きな順番で山札の上に戻す。"
       }
     ]
+  },
+  {
+    "id": "fubuki-01",
+    "name": "白上フブキ",
+    "type": "holomen",
+    "color": "白",
+    "bloom": "1st",
+    "hp": 130,
+    "baton": 1,
+    "tags": ["ホロライブ1期生", "ゲーマーズ", "キツネ"],
+    "skills": [
+      {
+        "name": "おるやんけ！",
+        "cost": ["白", "any"],
+        "damage": 50,
+        "text": "このアーツを使った時、自分のバックポジションのホロメンを1人選んで回復する。"
+      }
+    ]
+  },
+  {
+    "id": "fubuki-02",
+    "name": "白上フブキ",
+    "type": "holomen",
+    "color": "白",
+    "bloom": "2nd",
+    "hp": 200,
+    "baton": 1,
+    "tags": ["ホロライブ1期生", "ゲーマーズ", "キツネ"],
+    "skills": [
+      {
+        "name": "Say!ファンファーレ!",
+        "cost": ["白", "白", "any"],
+        "damage": 80,
+        "text": "この番、すでに他のホロメンがアーツを使っていたなら、ダメージ+60。"
+      }
+    ],
+    "extra": "【常時】このホロメンは相手のアーツによる特殊状態（まひ・ねむり等）を受けない。"
   }
 ]
