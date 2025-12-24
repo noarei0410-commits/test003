@@ -1,14 +1,17 @@
 /**
- * カードDOMの生成 (エール色に応じた枠線クラスを付与)
+ * カードDOMの生成
+ * ホロメンカードにはエール色に応じたボーダークラス(border-white等)を付与します。
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
-    const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
+    const el = document.createElement('div'); 
+    el.id = data.id || ""; 
+    el.className = 'card';
     
     // ホロメン・推しの場合、色に基づいたボーダークラスを追加
     if ((data.type === 'holomen' || data.type === 'oshi') && data.color) {
-        const colorClass = 'border-' + (COLORS[data.color] || 'white');
-        el.classList.add(colorClass);
+        const colorKey = COLORS[data.color] || 'white';
+        el.classList.add('border-' + colorKey);
     }
 
     const nameSpan = document.createElement('span');
@@ -56,6 +59,9 @@ function createCardElement(data, withEvents = true) {
     return el;
 }
 
+/**
+ * フィールド再配置
+ */
 function repositionCards() {
     const fieldEl = document.getElementById('field'); if (!fieldEl) return;
     const fRect = fieldEl.getBoundingClientRect();
@@ -80,15 +86,27 @@ function repositionCards() {
     });
 }
 
+/**
+ * カードイベント設定
+ */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
-        startX = e.clientX; startY = e.clientY; potentialZoomTarget = el;
+        startX = e.clientX; startY = e.clientY; 
+        potentialZoomTarget = el;
+        
         if (myRole === 'spectator' || el.dataset.zoneId === 'archive') return;
-        isDragging = true; dragStarted = false; currentDragEl = el; el.setPointerCapture(e.pointerId);
+        
+        isDragging = true; dragStarted = false; 
+        currentDragEl = el; 
+        el.setPointerCapture(e.pointerId);
         el.oldZoneId = el.dataset.zoneId || "";
+        
         currentStack = (el.dataset.zoneId) ? Array.from(document.querySelectorAll('.card')).filter(c => c.dataset.zoneId === el.dataset.zoneId) : [el];
         currentStack.sort((a,b) => (parseInt(a.style.zIndex)||0)-(parseInt(b.style.zIndex)||0));
-        const rect = el.getBoundingClientRect(); offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
+        
+        const rect = el.getBoundingClientRect(); 
+        offsetX = e.clientX - rect.left; 
+        offsetY = e.clientY - rect.top;
         e.stopPropagation();
     };
 }
@@ -96,7 +114,9 @@ function setupCardEvents(el) {
 document.onpointermove = (e) => {
     if (!isDragging || !currentDragEl) return;
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (!dragStarted && dist > 5) {
+    
+    // ドラッグ開始の遊びを10pxに設定
+    if (!dragStarted && dist > 10) {
         dragStarted = true;
         currentStack.forEach(card => {
             maxZIndex++; card.style.zIndex = maxZIndex;
@@ -126,10 +146,14 @@ document.onpointermove = (e) => {
 };
 
 document.onpointerup = (e) => {
+    // 1. まずクリック（拡大）の判定を行う
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (potentialZoomTarget && dist < 10) openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
-    if (!isDragging || !currentDragEl) { isDragging = false; currentStack = []; return; }
-    if (dragStarted) {
+    if (potentialZoomTarget && dist < 10) {
+        openZoom(potentialZoomTarget.cardData, potentialZoomTarget);
+    }
+    
+    // 2. ドラッグ終了処理
+    if (isDragging && currentDragEl && dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
         if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) {
             currentStack.forEach(c => returnToHand(c));
@@ -150,7 +174,17 @@ document.onpointerup = (e) => {
             } else { normalSnapStack(e); }
         }
     }
-    currentStack.forEach(c => delete c.dataset.stackOffset); isDragging = false; currentStack = []; repositionCards();
+
+    // 3. 全てのドラッグ状態を確実にリセット（くっつき防止）
+    if (currentDragEl) {
+        currentStack.forEach(c => delete c.dataset.stackOffset);
+        if (e.pointerId !== undefined) currentDragEl.releasePointerCapture(e.pointerId);
+    }
+    isDragging = false; 
+    dragStarted = false; 
+    currentDragEl = null;
+    currentStack = []; 
+    repositionCards();
 };
 
 function normalSnapStack(e) {
@@ -183,29 +217,20 @@ function normalSnapStack(e) {
     }
 }
 
-function canUseArt(costArray, attachedAyles) {
-    if (!costArray || costArray.length === 0) return true;
-    let available = attachedAyles.reduce((acc, c) => {
-        for (let kanji in COLORS) { if (c.name && c.name.includes(kanji)) { acc[COLORS[kanji]] = (acc[COLORS[kanji]] || 0) + 1; break; } }
-        return acc;
-    }, {});
-    let reqSpecific = costArray.filter(c => c !== 'any'), reqAny = costArray.filter(c => c === 'any').length;
-    for (let color of reqSpecific) { if (available[color] && available[color] > 0) available[color]--; else return false; }
-    return Object.values(available).reduce((sum, v) => sum + v, 0) >= reqAny;
-}
-
 /**
- * 拡大表示 (ボーダークラスの付与と構造の修正)
+ * 拡大表示 (修正済み)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
     
     const zoomOuter = document.getElementById('zoom-outer');
     const contentInner = document.querySelector('.zoom-content-inner');
+    if (!zoomOuter || !contentInner) return;
+
     const isSpec = (myRole === 'spectator');
     
     // エール色に基づいた縁取りクラスを外枠に付与
-    zoomOuter.className = 'zoom-outer-container'; // 一旦リセット
+    zoomOuter.className = 'zoom-outer-container'; // クラスリセット
     if (cardData.color) {
         zoomOuter.classList.add('border-' + (COLORS[cardData.color] || 'white'));
     }
@@ -223,8 +248,11 @@ function openZoom(cardData, cardElement = null) {
 
     const skillsHtml = (cardData.skills || []).map((s) => {
         const costIconsHtml = (s.cost || []).map(c => {
-            const colorCode = c === 'any' ? '#ddd' : (COLORS_REVERSE ? COLORS_REVERSE[c] : c);
-            return `<div class="cost-dot-small" style="background: ${colorCode};"></div>`;
+            let bgColor = c;
+            if (c === 'any') bgColor = '#ddd';
+            // COLORSオブジェクト内の名称と一致する場合はその色コードを使用
+            for(let key in COLORS) { if(COLORS[key] === c) bgColor = COLORS[key]; }
+            return `<div class="cost-dot-small" style="background: ${bgColor};"></div>`;
         }).join('');
         const isReady = canUseArt(s.cost, attachedAyles);
         const readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
@@ -266,12 +294,18 @@ function openZoom(cardData, cardElement = null) {
     `;
 
     zoomModal.style.display = 'flex';
-    // モーダル背景をクリックしたら閉じる、ただしカード本体(zoomOuter)クリックでは閉じない
-    zoomModal.onclick = (e) => { 
-        if (e.target === zoomModal) {
-            zoomModal.style.display = 'none'; 
-        }
-    };
+    zoomModal.onclick = (e) => { if (e.target === zoomModal) zoomModal.style.display = 'none'; };
+}
+
+function canUseArt(costArray, attachedAyles) {
+    if (!costArray || costArray.length === 0) return true;
+    let available = attachedAyles.reduce((acc, c) => {
+        for (let kanji in COLORS) { if (c.name && c.name.includes(kanji)) { acc[COLORS[kanji]] = (acc[COLORS[kanji]] || 0) + 1; break; } }
+        return acc;
+    }, {});
+    let reqSpecific = costArray.filter(c => c !== 'any'), reqAny = costArray.filter(c => c === 'any').length;
+    for (let color of reqSpecific) { if (available[color] && available[color] > 0) available[color]--; else return false; }
+    return Object.values(available).reduce((sum, v) => sum + v, 0) >= reqAny;
 }
 
 window.changeHp = (id, amt) => {
