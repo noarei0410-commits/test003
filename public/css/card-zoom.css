@@ -1,0 +1,172 @@
+/* --- 拡大表示全体のコンテナ --- */
+#zoom-modal {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 50000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.zoom-outer-container {
+    background: white;
+    color: #333;
+    width: 380px;
+    min-height: 500px;
+    border-radius: 20px;
+    padding: 25px;
+    position: relative;
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.5);
+    cursor: default;
+    overflow: hidden;
+}
+
+/* --- カード名 (中央上部) --- */
+.zoom-name-center {
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #000;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+/* --- 左上: Bloomランク --- */
+.zoom-bloom-rank {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+/* --- 右上: カラー & HP --- */
+.zoom-top-right-group {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.zoom-color-icon-large {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.zoom-hp-display {
+    font-size: 22px;
+    font-weight: 900;
+    color: #e74c3c;
+}
+
+/* --- 中央: ギフト/アーツ説明 --- */
+.zoom-main-content {
+    margin: 20px 0;
+    flex: 1;
+}
+
+.skill-box {
+    background: #f8f9fa;
+    border-left: 5px solid #00d2ff;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+}
+
+.skill-header-row {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.skill-text-detail {
+    font-size: 13px;
+    line-height: 1.4;
+    color: #444;
+}
+
+/* --- 左下: ハッシュタグ & バトンタッチ --- */
+.zoom-bottom-left-group {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.zoom-tags-row {
+    font-size: 12px;
+    color: #3498db;
+    font-weight: bold;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.zoom-baton-row {
+    font-size: 13px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #555;
+}
+
+.baton-icon-list {
+    display: flex;
+    gap: 2px;
+}
+
+.baton-dot-large {
+    width: 8px;
+    height: 8px;
+    background: #95a5a6;
+    border-radius: 50%;
+}
+
+/* --- 右下: エクストラ --- */
+.zoom-extra-area {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    max-width: 150px;
+    text-align: right;
+    font-size: 12px;
+    background: #fff9e6;
+    border: 1px solid #f1c40f;
+    padding: 5px 8px;
+    border-radius: 8px;
+}
+
+.extra-label {
+    font-weight: bold;
+    color: #d35400;
+}
+
+/* 操作ボタン */
+.zoom-hp-controls {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.btn-zoom-hp {
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    color: white; font-size: 20px; cursor: pointer; font-weight: bold;
+}
