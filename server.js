@@ -76,7 +76,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // バック→コラボ移動時のホロパワー生成ロジック
     socket.on('generateHoloPower', () => {
         const roomId = socket.roomId;
         if (rooms[roomId] && rooms[roomId].mainDeck.length > 0) {
@@ -84,13 +83,13 @@ io.on('connection', (socket) => {
             const powerCard = {
                 ...card,
                 id: uuidv4(),
-                zoneId: 'holopower', // ホロパワーゾーンへ
-                isFaceUp: false,     // 裏向き
-                isRotated: true,     // 横向き
+                zoneId: 'holopower',
+                isFaceUp: false,
+                isRotated: true,
                 zIndex: 200 + Object.keys(rooms[roomId].fieldState).length
             };
             rooms[roomId].fieldState[powerCard.id] = powerCard;
-            io.to(roomId).emit('cardMoved', powerCard); // 全員に通知
+            io.to(roomId).emit('cardMoved', powerCard);
             io.to(roomId).emit('deckCount', { main: rooms[roomId].mainDeck.length, cheer: rooms[roomId].cheerDeck.length });
         }
     });
