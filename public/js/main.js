@@ -12,7 +12,7 @@ async function loadCardData() {
             fetch('/data/holomen.json').then(r => r.json()),
             fetch('/data/support.json').then(r => r.json()),
             fetch('/data/ayle.json').then(r => r.json()),
-            fetch('/data/oshi_holomen.json').then(r => r.json())
+            fetch('/data/oshi.json').then(r => r.json()) // oshi_holomen.json から修正
         ]);
         MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
         AYLE_MASTER = res[2];
