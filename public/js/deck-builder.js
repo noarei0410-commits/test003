@@ -1,12 +1,11 @@
 /**
  * デッキ構築マネージャー (構築画面専用)
- * 変数はここで一元管理し、他ファイルでの重複宣言を避けます [cite: 2025-12-24]。
  */
 let currentLibraryFilter = 'all';
 let builderSearchText = ''; 
-let mainDeckList = [];     // メインデッキ（50枚）
-let cheerDeckList = [];    // エールデッキ（20枚）
-let selectedOshi = null;   // 推しホロメン
+let mainDeckList = [];     
+let cheerDeckList = [];    
+let selectedOshi = null;   
 
 /**
  * 構築画面のフィルタ切り替え
@@ -27,14 +26,13 @@ function handleBuilderSearch() {
 }
 
 /**
- * 構築画面ライブラリのタイル描画 (エール以外)
+ * 構築画面ライブラリのタイル描画
  */
 function updateLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
     list.innerHTML = '';
     
-    // 全カードデータを取得
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     let pool = baseCards.filter(c => c.type !== 'ayle');
 
@@ -68,17 +66,27 @@ function updateLibrary() {
 }
 
 /**
- * デッキ操作・制限チェック
+ * メインデッキへのカード追加
+ * 制限ルールを「同名カード」から「同一IDのカード」に変更
  */
 function addToDeck(data) {
     if (mainDeckList.length >= 50) return alert("メインデッキは50枚上限です");
-    const sameNameCount = mainDeckList.filter(c => c.name === data.name).length;
-    if (data.id !== "sora-00" && sameNameCount >= 4) return alert("同名カードは4枚までです");
+    
+    // カード名ではなく、カードIDで重複枚数をチェックするように変更
+    const sameCardCount = mainDeckList.filter(c => c.id === data.id).length;
+    
+    // 特定のカード（ときのそらDebut等）を除き、完全に同じカードは4枚まで
+    if (data.id !== "sora-00" && sameCardCount >= 4) {
+        return alert("同じカードは4枚までです");
+    }
 
     mainDeckList.push({...data});
     updateDeckSummary();
 }
 
+/**
+ * エールデッキの増減処理
+ */
 function changeCheerQuantity(colorName, delta) {
     const colorLabel = colorName + "エール";
     if (delta > 0) {
@@ -115,17 +123,58 @@ function updateDeckSummary() {
     renderCheerDeckSection();
 }
 
+/**
+ * メインデッキセクションの描画
+ * IDごとに集計し、Bloomランク等の情報で個別に区別できるように修正
+ */
 function renderMainDeckSection() {
     const container = document.getElementById('mainDeckSummary');
     if (!container) return;
     container.innerHTML = '';
-    const summary = mainDeckList.reduce((acc, curr) => { acc[curr.name] = (acc[curr.name] || 0) + 1; return acc; }, {});
-    Object.keys(summary).forEach(name => {
+    
+    // IDごとに集計を行うことで、同名でも別カード（別ID）なら別枠で表示
+    const summary = mainDeckList.reduce((acc, curr) => {
+        if (!acc[curr.id]) {
+            acc[curr.id] = { 
+                name: curr.name, 
+                count: 0, 
+                bloom: curr.bloom,
+                type: curr.type
+            };
+        }
+        acc[curr.id].count++;
+        return acc;
+    }, {});
+
+    Object.keys(summary).forEach(id => {
+        const item = summary[id];
         const div = document.createElement('div');
         div.className = 'deck-item';
-        div.innerHTML = `<span>${name} x${summary[name]}</span><div class="deck-item-controls"><button class="btn-minus" onclick="changeMainQuantity('${name}', -1)">-</button></div>`;
+        
+        // ホロメンならBloomランクを表示に含めて、同名カードを区別しやすくする
+        let displayName = item.name;
+        if (item.type === 'holomen' && item.bloom) {
+            displayName += ` [${item.bloom}]`;
+        }
+        
+        div.innerHTML = `
+            <span>${displayName} x${item.count}</span>
+            <div class="deck-item-controls">
+                <button class="btn-minus" onclick="changeMainQuantityById('${id}', -1)">-</button>
+            </div>`;
         container.appendChild(div);
     });
+}
+
+/**
+ * ID指定でメインデッキの枚数を減らす
+ */
+function changeMainQuantityById(id, delta) {
+    if (delta < 0) {
+        const idx = mainDeckList.findLastIndex(c => c.id === id);
+        if (idx !== -1) mainDeckList.splice(idx, 1);
+    }
+    updateDeckSummary();
 }
 
 function renderCheerDeckSection() {
@@ -147,14 +196,6 @@ function renderCheerDeckSection() {
             </div>`;
         container.appendChild(div);
     });
-}
-
-function changeMainQuantity(name, delta) {
-    if (delta < 0) {
-        const idx = mainDeckList.findLastIndex(c => c.name === name);
-        if (idx !== -1) mainDeckList.splice(idx, 1);
-    }
-    updateDeckSummary();
 }
 
 function setOshi(data) { selectedOshi = data; updateDeckSummary(); }
