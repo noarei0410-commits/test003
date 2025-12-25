@@ -50,11 +50,24 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    /* gap は flexアイテム間の隙間ですが、念のため個別にマージンも設定します */
+    gap: 5px;
     background: rgba(255, 255, 255, 0.05);
     padding: 10px;
     border-radius: 8px;
     transition: 0.2s;
+    position: relative; /* 子要素の基準とするために相対配置を設定 */
+}
+
+/* 【追記部分】ライブラリリスト内のカード要素を強制的に通常のフローに戻す */
+.library-item-v2 > *:not(button) {
+    position: relative !important; /* 絶対配置を解除してフローに戻す */
+    top: auto !important;
+    left: auto !important;
+    transform: none !important; /* 必要に応じて位置調整の変形を解除 */
+    margin: 0 auto 10px auto !important; /* 上下左右のマージンを設定し、下に隙間を空ける */
+    flex-shrink: 0; /* Flexボックス内で勝手に縮小しないようにする */
+    z-index: 1; /* 重なり順を指定 */
 }
 
 .library-item-v2:hover {
@@ -71,8 +84,9 @@
     font-size: 11px;
     font-weight: bold;
     cursor: pointer;
+    z-index: 2; /* ボタンをカードより前面に表示 */
+    position: relative; /* ボタン自体もしっかりと配置 */
 }
-
 /* --- デッキセクション内のアイテム表示 --- */
 .deck-section { 
     background: rgba(255, 255, 255, 0.05); 
