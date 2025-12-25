@@ -20,7 +20,7 @@
 }
 
 /* カードグリッド表示エリア */
-#libraryList { 
+#libraryList, #global-card-grid { 
     flex: 1; 
     overflow-y: auto; 
     margin-top: 10px; 
@@ -45,13 +45,13 @@
     position: relative;
 }
 
-/* カード本体をフローに戻し、ボタンと重ならないように調整 */
+/* 【重要】カード本体をフローに戻し、ボタンと重ならないように調整 */
 .library-item-v2 > *:not(button) {
-    position: relative !important; /* 絶対配置を解除してフローに戻す */
+    position: relative !important; 
     top: auto !important;
     left: auto !important;
     transform: none !important;
-    margin: 0 auto 10px auto !important; /* カードの下に隙間を空ける */
+    margin: 0 auto 10px auto !important; 
     flex-shrink: 0;
     z-index: 1;
 }
@@ -70,7 +70,7 @@
     font-size: 11px;
     font-weight: bold;
     cursor: pointer;
-    z-index: 2; /* ボタンをカードより前面に */
+    z-index: 2; 
     position: relative;
 }
 
@@ -102,6 +102,7 @@
     padding-bottom: 4px; 
 }
 
+/* デッキ内アイテムの操作ボタン */
 .deck-item {
     display: flex;
     justify-content: space-between;
@@ -114,15 +115,6 @@
     color: #eee;
 }
 
-.cheer-item {
-    border-left: 5px solid currentColor;
-}
-
-.deck-item-controls {
-    display: flex;
-    gap: 6px;
-}
-
 .deck-item-controls button {
     width: 26px;
     height: 26px;
@@ -131,43 +123,65 @@
     color: white;
     font-weight: bold;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .btn-minus { background: #e74c3c; }
 .btn-plus { background: #2ecc71; }
-.btn-remove-oshi { background: transparent; color: #ff5e5e; border: none; cursor: pointer; font-size: 18px; }
 
-/* --- フィルター・検索バー --- */
-.filter-tabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+/* --- カードライブラリ（Global）専用：画像に基づくスタイル修正 --- */
 
-.filter-tab { 
-    flex: 1; padding: 8px 5px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05); color: #ccc;
-    font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;
+/* 「トップへ戻る」ボタンのスタイル */
+.top-back-btn {
+    background: #ffffff !important; /* 白背景 */
+    color: #333333 !important; /* 暗い文字色 */
+    border: 1px solid #ced4da !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    border-radius: 4px !important;
+    cursor: pointer;
+    margin-bottom: 15px;
 }
 
-.filter-tab.active { background: #00d2ff; color: #04172b; }
-
-#searchInput {
-    width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 210, 255, 0.3);
-    background: rgba(255,255,255,0.05); color: white; margin-bottom: 10px;
+/* フィルタータブのデザイン */
+.filter-bar, .filter-tabs { 
+    display: flex; 
+    gap: 8px; 
+    margin-bottom: 15px; 
+    flex-wrap: wrap; 
 }
 
-/* --- カードライブラリ（Global）専用：指定色適用版 --- */
-.filter-btn {
-    flex: 1; min-width: 90px; padding: 10px; border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    /* 指定の淡い青色を適用 [cite: 2025-12-24] */
+.filter-btn, .filter-tab {
+    flex: 1; 
+    min-width: 90px; 
+    padding: 10px 15px; 
+    border-radius: 20px; /* 画像のような丸みのあるデザイン */
+    border: none;
+    /* 指定の淡い青色をデフォルトに適用 */
     background: rgba(137, 195, 235, 0.8) !important;
-    color: #04172b !important; font-weight: bold; cursor: pointer; transition: 0.2s;
+    color: #04172b !important; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s;
 }
 
-.filter-btn.active { 
-    background: #00d2ff !important; 
+/* アクティブなタブの状態 */
+.filter-btn.active, .filter-tab.active { 
+    background: #00d2ff !important; /* 鮮やかな水色 */
+    color: #ffffff !important;
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); 
+}
+
+/* 検索バーのスタイル */
+#globalSearchInput, #searchInput {
+    width: 300px; /* 画像のような幅に固定 */
+    max-width: 100%;
+    padding: 10px; 
+    border-radius: 4px; 
+    border: 1px solid #ced4da;
+    background: #ffffff; 
+    color: #333; 
+    font-size: 14px;
+    margin-bottom: 20px;
 }
 
 /* --- フッターボタン --- */
