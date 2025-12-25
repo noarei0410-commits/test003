@@ -1,44 +1,54 @@
 /**
  * カードDOMの生成
- * ホロメン、推し、エールの各タイプに応じた要素を生成
+ * 各種カードタイプ（ホロメン、推し、エール、サポート）に応じた要素を構築します。
  */
 function createCardElement(data, withEvents = true) {
     if (!data) return document.createElement('div');
     const el = document.createElement('div'); el.id = data.id || ""; el.className = 'card';
     
-    // 属性色の取得（エールカードは名前に基づくかdata.colorから）
-    const colorVal = data.color || (data.type === 'ayle' ? data.name.charAt(0) : null);
-    const colorKey = COLORS[colorVal] || 'white';
-    el.classList.add('border-' + colorKey);
-
+    // 種別クラスの付与
     if (data.type === 'oshi') el.classList.add('oshi-card');
     if (data.type === 'ayle') el.classList.add('ayle-card');
+    if (data.type === 'support') el.classList.add('support-card');
 
-    // --- 種別ごとの内部要素生成 ---
+    // 属性色・枠線の適用（サポート以外は属性に基づく）
+    if (data.type !== 'support') {
+        const colorVal = data.color || (data.type === 'ayle' ? data.name.charAt(0) : null);
+        const colorKey = COLORS[colorVal] || 'white';
+        el.classList.add('border-' + colorKey);
+    }
+
+    // --- 内部表示の分岐判定 ---
     if (data.type === 'ayle') {
-        // エールカード：中央にアイコンのみ作成（名前やステータスは表示しない）
+        // エールカード：中央にアイコンのみを表示し、テキストやステータスは除外
         const centerIcon = document.createElement('div');
         centerIcon.className = 'ayle-center-icon';
-        centerIcon.style.background = COLORS[colorVal] || 'white';
+        centerIcon.style.background = COLORS[data.name.charAt(0)] || 'white';
         el.appendChild(centerIcon);
     } else {
-        // ホロメン・推し・サポート：名前を表示
+        // サポート・ホロメン・推し：カード名を表示
         const nameSpan = document.createElement('span');
         nameSpan.innerText = data.name || ""; 
         el.appendChild(nameSpan);
+
+        if (data.type === 'support' && data.category) {
+            // サポート：左上にカテゴリの頭文字を表示
+            const catDiv = document.createElement('div');
+            catDiv.className = 'card-support-category-initial';
+            catDiv.innerText = data.category.charAt(0).toUpperCase();
+            el.appendChild(catDiv);
+        }
     }
 
     el.classList.add(data.isFaceUp !== false ? 'face-up' : 'face-down');
     if (data.isRotated) el.classList.add('rotated');
 
-    // --- ホロメン専用のステータス表示 (HP, Bloom, Baton) ---
+    // --- ホロメン専用ステータス（HP, Bloomランク, バトン）の生成 ---
     if (data.type === 'holomen') {
         const currentHp = data.currentHp !== undefined ? data.currentHp : data.hp;
         const hpDiv = document.createElement('div'); 
-        hpDiv.className = 'card-hp'; 
-        hpDiv.id = `hp-display-${data.id}`;
-        hpDiv.innerText = currentHp || ""; 
-        el.appendChild(hpDiv);
+        hpDiv.className = 'card-hp'; hpDiv.id = `hp-display-${data.id}`;
+        hpDiv.innerText = currentHp || ""; el.appendChild(hpDiv);
 
         if (data.bloom) {
             const bl = document.createElement('div'); bl.className = 'card-bloom'; 
@@ -46,18 +56,16 @@ function createCardElement(data, withEvents = true) {
         }
         if (data.baton !== undefined) {
             const bDiv = document.createElement('div'); bDiv.className = 'card-baton';
-            for(let i=0; i<data.baton; i++) { 
-                const d=document.createElement('div'); d.className='baton-dot'; bDiv.appendChild(d); 
-            }
+            for(let i=0; i<data.baton; i++) { const d=document.createElement('div'); d.className='baton-dot'; bDiv.appendChild(d); }
             el.appendChild(bDiv);
         }
     }
 
-    // --- 属性アイコン表示（エール以外） ---
-    if ((data.type === 'holomen' || data.type === 'oshi') && colorVal) {
+    // 属性アイコン表示（エール・サポート以外）
+    if ((data.type === 'holomen' || data.type === 'oshi') && data.color) {
         const clDiv = document.createElement('div'); 
         clDiv.className = 'card-color-icon'; 
-        clDiv.style.background = COLORS[colorVal] || 'white';
+        clDiv.style.background = COLORS[data.color] || 'white';
         el.appendChild(clDiv);
     }
 
@@ -67,7 +75,7 @@ function createCardElement(data, withEvents = true) {
 }
 
 /**
- * 拡大表示 (推し・エールカード完全対応版)
+ * 拡大表示 (各カードタイプに応じた専用レイアウト)
  */
 function openZoom(cardData, cardElement = null) {
     if (!cardData || (cardElement && cardElement.classList.contains('face-down') && cardElement.dataset.zoneId === 'life-zone')) return;
@@ -76,24 +84,43 @@ function openZoom(cardData, cardElement = null) {
     const contentInner = document.querySelector('.zoom-content-inner');
     if (!zoomOuter || !contentInner) return;
 
-    const colorVal = cardData.color || (cardData.type === 'ayle' ? cardData.name.charAt(0) : null);
-    const colorKey = COLORS[colorVal] || 'white';
-    const colorCode = COLORS[colorVal] || 'white';
+    zoomOuter.className = 'zoom-outer-container';
 
-    zoomOuter.className = 'zoom-outer-container border-' + colorKey;
-
-    // --- 1. エールカード用レイアウト ---
-    if (cardData.type === 'ayle') {
+    // --- 1. サポートカード用レイアウト (画像デザイン準拠) ---
+    if (cardData.type === 'support') {
+        zoomOuter.classList.add('support-zoom');
+        const limitedHtml = cardData.limited ? `<div class="zoom-support-limited-bar">LIMITED：ターンに1枚しか使えない。</div>` : "";
+        const tagHtml = cardData.tag ? `<div class="zoom-support-tag">#${cardData.tag}</div>` : "";
+        
+        contentInner.innerHTML = `
+            <div class="support-zoom-layout">
+                <div class="zoom-support-header">
+                    <div class="zoom-support-label">サポート</div>
+                    <div class="zoom-support-category-ribbon">${cardData.category}</div>
+                </div>
+                ${limitedHtml}
+                <div class="zoom-support-name-box">${cardData.name}</div>
+                <div class="zoom-support-main-text">${cardData.text}</div>
+                ${tagHtml}
+            </div>`;
+    } 
+    // --- 2. エールカード用レイアウト (アイコン強調) ---
+    else if (cardData.type === 'ayle') {
         zoomOuter.classList.add('ayle-zoom');
+        const colorVal = cardData.color || cardData.name.charAt(0);
+        const colorCode = COLORS[colorVal] || 'white';
+        zoomOuter.classList.add('border-' + (COLORS[colorVal] || 'white'));
         contentInner.innerHTML = `
             <div class="ayle-zoom-layout">
                 <div class="zoom-ayle-icon-large" style="background: ${colorCode};"></div>
                 <div class="zoom-ayle-name-label">${cardData.name}</div>
             </div>`;
-    } 
-    // --- 2. 推しホロメン用レイアウト ---
+    }
+    // --- 3. 推しホロメン用レイアウト (ライフ・仕切り線修正版) ---
     else if (cardData.type === 'oshi') {
         zoomOuter.classList.add('oshi-zoom');
+        const colorCode = COLORS[cardData.color] || 'white';
+        zoomOuter.classList.add('border-' + (COLORS[cardData.color] || 'white'));
         const skillsHtml = (cardData.skills || []).map((s) => {
             const isSP = s.name.includes("SP");
             const costIcons = (s.cost || []).map(() => `<div class="cost-dot-small" style="background: #9b59b6;"></div>`).join('');
@@ -120,9 +147,12 @@ function openZoom(cardData, cardElement = null) {
                 </div>
             </div>`;
     } 
-    // --- 3. 通常ホロメン・サポート用レイアウト ---
+    // --- 4. 通常ホロメン用レイアウト ---
     else {
         const isSpec = (myRole === 'spectator');
+        const colorCode = COLORS[cardData.color] || 'white';
+        zoomOuter.classList.add('border-' + colorCode);
+        
         let attachedAyles = [];
         if (cardElement && cardElement.parentElement === field) {
             const r = cardElement.getBoundingClientRect();
@@ -133,12 +163,8 @@ function openZoom(cardData, cardElement = null) {
                     return Math.abs(cr.left - r.left) < 10 && Math.abs(cr.top - r.top) < 10;
                 }).map(c => c.cardData);
         }
-        
-        const hpControlsHtml = (!isSpec && cardData.type === 'holomen') 
-            ? `<div class="zoom-hp-controls-inline">
-                 <button class="btn-zoom-hp-inline minus" onclick="changeHp('${cardData.id}', -10)">-</button>
-                 <button class="btn-zoom-hp-inline plus" onclick="changeHp('${cardData.id}', 10)">+</button>
-               </div>` : "";
+
+        const hpControlsHtml = (!isSpec && cardData.type === 'holomen') ? `<div class="zoom-hp-controls-inline"><button class="btn-zoom-hp-inline minus" onclick="changeHp('${cardData.id}', -10)">-</button><button class="btn-zoom-hp-inline plus" onclick="changeHp('${cardData.id}', 10)">+</button></div>` : "";
         
         const skillsHtml = (cardData.skills || []).map((s) => {
             let leftContent = ""; let showDamage = false;
@@ -152,7 +178,6 @@ function openZoom(cardData, cardElement = null) {
             }
             const isReady = (s.type === 'arts' || !s.type) && canUseArt(s.cost, attachedAyles);
             const readyBadge = isReady ? `<span class="ready-badge">READY</span>` : "";
-            const skillText = (s.text === "なし" || !s.text) ? "" : s.text;
             return `
                 <div class="skill-box">
                     <div class="skill-top-row">
@@ -160,13 +185,10 @@ function openZoom(cardData, cardElement = null) {
                         <div class="skill-name-container-center"><span class="skill-name-text">${s.name}</span>${readyBadge}</div>
                         <div class="skill-damage-text">${showDamage ? (s.damage || "") : ""}</div>
                     </div>
-                    ${skillText ? `<div class="skill-text-detail">${skillText}</div>` : ""}
+                    ${s.text ? `<div class="skill-text-detail">${s.text}</div>` : ""}
                 </div>`;
         }).join('');
 
-        const batonIcons = Array(cardData.baton || 0).fill('<div class="baton-dot-large"></div>').join('');
-        const extraHtml = cardData.extra ? `<div class="zoom-extra-area"><span class="extra-label">エクストラ：</span>${cardData.extra}</div>` : "";
-        
         contentInner.innerHTML = `
             <div class="zoom-bloom-rank">${cardData.bloom || ""}</div>
             <div class="zoom-name-center">${cardData.name}</div>
@@ -180,9 +202,8 @@ function openZoom(cardData, cardElement = null) {
             <div class="zoom-main-content">${skillsHtml}</div>
             <div class="zoom-bottom-left-group">
                 <div class="zoom-tags-row">${(cardData.tags || []).map(t => `<span>#${t}</span>`).join(' ')}</div>
-                <div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-icon-list">${batonIcons}</div></div>
-            </div>
-            ${extraHtml}`;
+                <div class="zoom-baton-row"><span>バトンタッチ:</span><div class="baton-icon-list">${Array(cardData.baton || 0).fill('<div class="baton-dot-large"></div>').join('')}</div></div>
+            </div>`;
     }
 
     zoomModal.style.display = 'flex';
@@ -190,7 +211,7 @@ function openZoom(cardData, cardElement = null) {
 }
 
 /**
- * カードイベント設定 (ドラッグ＆ドロップ判定)
+ * カードイベント設定 (ドラッグ・クリック制御)
  */
 function setupCardEvents(el) {
     el.onpointerdown = (e) => {
@@ -224,13 +245,8 @@ document.onpointermove = (e) => {
         currentStack.forEach(card => {
             if (card === currentDragEl) { card.style.left = (e.clientX - fr.left - offsetX) + 'px'; card.style.top = (e.clientY - fr.top - offsetY) + 'px'; }
             else {
-                if (!card.dataset.stackOffset) { 
-                    const lR = currentDragEl.getBoundingClientRect(), cR = card.getBoundingClientRect(); 
-                    card.dataset.stackOffset = JSON.stringify({ x: cR.left - lR.left, y: cR.top - lR.top }); 
-                }
-                const off = JSON.parse(card.dataset.stackOffset); 
-                card.style.left = (parseFloat(currentDragEl.style.left) + off.x) + 'px'; 
-                card.style.top = (parseFloat(currentDragEl.style.top) + off.y) + 'px';
+                if (!card.dataset.stackOffset) { const lR = currentDragEl.getBoundingClientRect(), cR = card.getBoundingClientRect(); card.dataset.stackOffset = JSON.stringify({ x: cR.left - lR.left, y: cR.top - lR.top }); }
+                const off = JSON.parse(card.dataset.stackOffset); card.style.left = (parseFloat(currentDragEl.style.left) + off.x) + 'px'; card.style.top = (parseFloat(currentDragEl.style.top) + off.y) + 'px';
             }
         });
     }
@@ -242,13 +258,11 @@ document.onpointerup = (e) => {
     
     if (isDragging && currentDragEl && dragStarted) {
         const hRect = handDiv.getBoundingClientRect();
-        if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) { 
-            currentStack.forEach(c => returnToHand(c)); 
-        } else {
+        if (e.clientX > hRect.left && e.clientX < hRect.right && e.clientY > hRect.top && e.clientY < hRect.bottom) { currentStack.forEach(c => returnToHand(c)); }
+        else {
             const elementsUnder = document.elementsFromPoint(e.clientX, e.clientY);
             const target = elementsUnder.find(el => el.classList.contains('card') && !currentStack.includes(el));
             if (target && target.parentElement === field) {
-                // ブルーム判定
                 if (canBloom(currentDragEl.cardData, target.cardData)) {
                     const damage = parseInt(target.cardData.hp || 0) - parseInt(target.cardData.currentHp || target.cardData.hp || 0);
                     currentDragEl.cardData.currentHp = Math.max(0, parseInt(currentDragEl.cardData.hp) - damage);
@@ -267,7 +281,7 @@ document.onpointerup = (e) => {
 };
 
 /**
- * アーツ使用可否判定
+ * アーツ使用判定ロジック
  */
 function canUseArt(costArr, attachedAyles) {
     if (!costArr || costArr.length === 0) return true;
@@ -284,7 +298,7 @@ function canUseArt(costArr, attachedAyles) {
 }
 
 /**
- * HP変更処理
+ * HP変更・同期処理
  */
 function changeHp(id, delta) {
     const el = document.getElementById(id);
@@ -297,7 +311,7 @@ function changeHp(id, delta) {
 }
 
 /**
- * 手札に戻す処理
+ * 手札への返却処理
  */
 function returnToHand(el) {
     if (el.dataset.zoneId === 'life-zone') { if (!confirm("ライフを手札に戻しますか？")) return; }
@@ -308,7 +322,7 @@ function returnToHand(el) {
 }
 
 /**
- * ブルーム(進化)判定
+ * ブルーム判定処理
  */
 function canBloom(dragCard, targetCard) {
     if (!dragCard || !targetCard || dragCard.type !== 'holomen' || targetCard.type !== 'holomen') return false;
@@ -318,7 +332,7 @@ function canBloom(dragCard, targetCard) {
 }
 
 /**
- * ゾーンごとの自動再配置
+ * ゾーン再整列処理
  */
 function repositionCards() {
     const zones = document.querySelectorAll('.zone');
@@ -327,7 +341,7 @@ function repositionCards() {
         if (cards.length === 0) return;
         const rect = zone.getBoundingClientRect();
         const fieldRect = field.getBoundingClientRect();
-        cards.forEach((card, i) => {
+        cards.forEach((card) => {
             card.style.position = 'absolute';
             card.style.left = (rect.left - fieldRect.left + (rect.width - 58)/2) + 'px';
             card.style.top = (rect.top - fieldRect.top + (rect.height - 82)/2) + 'px';
