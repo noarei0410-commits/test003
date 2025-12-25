@@ -47,13 +47,13 @@
                         <button class="filter-tab" onclick="setLibraryFilter('oshi')">推し</button>
                         <button class="filter-tab" onclick="setLibraryFilter('ayle')">エール</button>
                     </div>
-                    <input type="text" id="searchInput" placeholder="カード名で検索..." oninput="updateLibrary()">
+                    <input type="text" id="searchInput" placeholder="カード名で検索..." oninput="handleBuilderSearch()">
                     <div id="libraryList"></div>
                 </div>
                 <div class="deck-lists-container">
                     <div class="deck-section">
                         <div class="section-header">推しホロメン</div>
-                        <div id="oshiSummary"></div>
+                        <div id="oshiSummary">未設定</div>
                     </div>
                     <div class="deck-section">
                         <div class="section-header">メインデッキ (<span id="mainBuildCount">0</span>/50)</div>
@@ -96,6 +96,7 @@
         <div class="deck-counts">Main: <span id="mainCount">0</span> | Cheer: <span id="cheerCount">0</span></div>
         <button onclick="openArchive()" class="btn-archive">Archive</button>
     </div>
+
     <div id="field-container">
         <div id="field">
             <div class="field-left-area">
@@ -107,10 +108,16 @@
                 <div id="center" class="zone">センター</div>
                 <div id="oshi" class="zone">推し</div>
             </div>
-            <div class="field-right-top"><div id="holopower" class="zone">ホロパワー</div></div>
+            <div class="field-right-top">
+                <div id="holopower" class="zone">ホロパワー</div>
+            </div>
             <div class="field-back-stage">
                 <div class="back-slots-container">
-                    <div id="back1" class="zone"></div><div id="back2" class="zone"></div><div id="back3" class="zone"></div><div id="back4" class="zone"></div><div id="back5" class="zone"></div>
+                    <div id="back1" class="zone"></div>
+                    <div id="back2" class="zone"></div>
+                    <div id="back3" class="zone"></div>
+                    <div id="back4" class="zone"></div>
+                    <div id="back5" class="zone"></div>
                 </div>
             </div>
             <div class="field-right-bottom">
@@ -119,8 +126,15 @@
             </div>
         </div>
     </div>
+
     <div id="hand-container"><div id="hand"></div></div>
-    <div id="zoom-modal"><div id="zoom-outer" class="zoom-outer-container"><div class="zoom-content-inner"></div></div></div>
+
+    <div id="zoom-modal">
+        <div id="zoom-outer" class="zoom-outer-container">
+            <div class="zoom-content-inner"></div>
+        </div>
+    </div>
+
     <div id="deck-inspection-modal" class="full-page">
         <div class="modal-content room-content" style="width: 80vw; max-width: 900px;">
             <h2 id="inspection-title" style="color: #00d2ff; margin-bottom: 15px;"></h2>
