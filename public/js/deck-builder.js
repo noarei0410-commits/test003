@@ -2,10 +2,10 @@
  * デッキ構築マネージャー (構築画面専用)
  */
 let currentLibraryFilter = 'all';
-let builderSearchText = ''; // 変数名の重複を避けるために変更
-let mainDeckList = [];
-let cheerDeckList = [];
-let selectedOshi = null;
+let builderSearchText = ''; 
+let mainDeckList = [];     // メインデッキ（50枚）
+let cheerDeckList = [];    // エールデッキ（20枚）
+let selectedOshi = null;   // 推しホロメン
 
 /**
  * 構築画面のフィルタ切り替え
@@ -29,30 +29,27 @@ function handleBuilderSearch() {
 }
 
 /**
- * 構築画面ライブラリ描画 (エール以外をグリッド表示)
+ * 構築画面ライブラリ描画
  */
 function updateLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
     list.innerHTML = '';
     
-    // エールカード以外のプールを作成 (MASTER_CARDSが未ロードの場合は空配列)
+    // エールカード以外のプールを作成
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     let pool = baseCards.filter(c => c.type !== 'ayle');
 
-    // タブによるフィルタリング
     if (currentLibraryFilter !== 'all') {
         pool = pool.filter(c => c.type === currentLibraryFilter);
     }
 
-    // 検索ワードで絞り込み
     const filtered = pool.filter(c => c.name.toLowerCase().includes(builderSearchText));
 
     filtered.forEach(data => {
         const wrapper = document.createElement('div');
         wrapper.className = 'library-item-v2';
         
-        // カード画像生成 (game-logic.js の安定版ロジックを使用)
         if (typeof createCardElement === 'function') {
             const cardEl = createCardElement(data, true);
             wrapper.appendChild(cardEl);
@@ -79,7 +76,6 @@ function updateLibrary() {
 function addToDeck(data) {
     if (mainDeckList.length >= 50) return alert("メインデッキは50枚上限です");
     const sameNameCount = mainDeckList.filter(c => c.name === data.name).length;
-    // ときのそらDebut(sora-00)以外は4枚制限
     if (data.id !== "sora-00" && sameNameCount >= 4) return alert("同名カードは4枚までです");
 
     mainDeckList.push({...data});
@@ -87,7 +83,7 @@ function addToDeck(data) {
 }
 
 /**
- * エールデッキの増減処理 (AYLE_MASTERを参照)
+ * エールデッキの増減処理
  */
 function changeCheerQuantity(colorName, delta) {
     const colorLabel = colorName + "エール";
