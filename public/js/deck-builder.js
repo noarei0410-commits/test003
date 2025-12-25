@@ -37,9 +37,12 @@ function updateLibrary() {
     if (!list) return;
     list.innerHTML = '';
     
+    // データがロードされていない場合は中止
+    if (!MASTER_CARDS || MASTER_CARDS.length === 0) return;
+
     // 全データから構築画面用のカードプールを作成 (エール以外)
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
-    let pool = baseCards.filter(c => c.type !== 'ayle');
+    let pool = baseCards.filter(c => c && c.type !== 'ayle');
 
     if (currentLibraryFilter !== 'all') {
         pool = pool.filter(c => c.type === currentLibraryFilter);
@@ -52,9 +55,13 @@ function updateLibrary() {
         wrapper.className = 'library-item-v2';
         
         // game-logic.js の関数を使用してカードDOMを生成
-        if (typeof createCardElement === 'function') {
-            const cardEl = createCardElement(data, true);
-            wrapper.appendChild(cardEl);
+        try {
+            if (typeof createCardElement === 'function') {
+                const cardEl = createCardElement(data, true);
+                wrapper.appendChild(cardEl);
+            }
+        } catch (err) {
+            console.error("Card Render Error:", data.name, err);
         }
 
         const btn = document.createElement('button');
@@ -91,7 +98,7 @@ function addToDeck(data) {
 }
 
 /**
- * エールデッキの増減処理 (右側のリスト専用)
+ * エールデッキの増減処理
  */
 function changeCheerQuantity(colorName, delta) {
     const colorLabel = colorName + "エール";
@@ -110,8 +117,10 @@ function changeCheerQuantity(colorName, delta) {
  * デッキサマリー表示の更新
  */
 function updateDeckSummary() {
-    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
-    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
+    const mainCountEl = document.getElementById('mainBuildCount');
+    const cheerCountEl = document.getElementById('cheerBuildCount');
+    if (mainCountEl) mainCountEl.innerText = mainDeckList.length;
+    if (cheerCountEl) cheerCountEl.innerText = cheerDeckList.length;
     
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) {
@@ -121,7 +130,9 @@ function updateDeckSummary() {
 
     const oshiSummary = document.getElementById('oshiSummary');
     if (oshiSummary) {
-        oshiSummary.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span> <button class="btn-remove-oshi" onclick="removeOshi()">×</button></div>` : "未設定";
+        oshiSummary.innerHTML = selectedOshi ? 
+            `<div class="deck-item"><span>${selectedOshi.name}</span> <button class="btn-remove-oshi" onclick="removeOshi()">×</button></div>` : 
+            "未設定";
     }
 
     renderMainDeckSection();
@@ -157,10 +168,7 @@ function renderMainDeckSection() {
         div.className = 'deck-item';
         
         // ホロメンならBloomランクを表示に含めて区別しやすくする
-        let displayName = item.name;
-        if (item.type === 'holomen' && item.bloom) {
-            displayName += ` [${item.bloom}]`;
-        }
+        let displayName = item.name + (item.bloom ? ` [${item.bloom}]` : "");
         
         div.innerHTML = `
             <span>${displayName} x${item.count}</span>
@@ -215,19 +223,19 @@ function renderCheerDeckSection() {
  */
 function submitDeck() {
     if (mainDeckList.length !== 50 || cheerDeckList.length !== 20 || !selectedOshi) {
-        return alert("デッキ枚数が正しくありません (メイン50枚、エール20枚、推し1枚が必要です)");
+        return alert("デッキ構成が不完全です (メイン50枚、エール20枚、推し1枚が必要です)");
     }
 
-    // サーバーへデッキ情報を送信
+    // サーバーへデッキ情報を送信 [cite: 2025-11-29]
     socket.emit('setupDeck', {
         oshi: selectedOshi,
         mainDeck: mainDeckList,
         cheerDeck: cheerDeckList
     });
 
-    // 対戦フィールドへ遷移
+    // 対戦フィールドへ遷移 (nullを指定)
     showPage(null);
-    console.log("Deck submitted. Battle start.");
+    console.log("Deck submitted and transitioning to field.");
 }
 
 /**
