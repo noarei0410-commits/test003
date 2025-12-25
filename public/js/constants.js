@@ -9,7 +9,7 @@ const COLORS = {
     '白': 'white', 
     '緑': 'green', 
     '赤': 'red', 
-    '青': 'rgba(137, 195, 235, 1)', 
+    '青': 'blue', 
     '黄': 'yellow', 
     '紫': 'purple' 
 };
