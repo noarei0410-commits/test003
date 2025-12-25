@@ -1,39 +1,23 @@
 /**
- * 起動時の初期化処理
+ * アプリケーション共通の初期化
  */
-window.onload = async () => {
-    // マスターデータのロード
+window.addEventListener('load', async () => {
+    // 全カードデータのロード
     await loadCardData();
 
-    // ハブ画面のボタンイベント登録
-    const joinPlayerBtn = document.getElementById('joinPlayerBtn');
-    if (joinPlayerBtn) joinPlayerBtn.onclick = () => joinRoom('player');
-
-    const joinSpectatorBtn = document.getElementById('joinSpectatorBtn');
-    if (joinSpectatorBtn) joinSpectatorBtn.onclick = () => joinRoom('spectator');
-
-    // デッキ構築画面のイベント登録
-    const startGameBtn = document.getElementById('startGameBtn');
-    if (startGameBtn) {
-        startGameBtn.onclick = () => {
-            socket.emit('setGame', { main: mainDeckList, cheer: cheerDeckList, oshi: selectedOshi });
-            showPage(''); // フィールド表示
-        };
-    }
-
-    // デッキクリック（ドロー）の設定
+    // デッキクリック（ドロー）の共通設定
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
 
-    // 画面リサイズ時の位置補正
-    window.onresize = repositionCards;
+    // リサイズ時の再配置設定
+    window.addEventListener('resize', repositionCards);
 
-    // ハブ画面を表示して開始
+    // 最初の画面を表示
     showPage('hub-page');
-};
+});
 
 /**
- * カードデータのロード
+ * カードデータの一括ロード
  */
 async function loadCardData() {
     try {
@@ -46,49 +30,29 @@ async function loadCardData() {
         MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
         AYLE_MASTER = res[2];
         OSHI_LIST = res[3];
-        console.log("Card Data Loaded Successfully");
+        console.log("Card Database Synchronized.");
     } catch (e) {
-        console.error("Data Load Error", e);
+        console.error("Critical: Data Load Failed", e);
     }
 }
 
 /**
- * ルーム参加処理
- */
-async function joinRoom(role) {
-    const ridInput = document.getElementById('roomIdInput');
-    const rid = ridInput ? ridInput.value.trim() : "";
-    if (!rid) return alert("ルームIDを入力してください");
-
-    socket.roomId = rid;
-    myRole = role; 
-    socket.emit('joinRoom', { roomId: rid, role });
-
-    if (role === 'player') {
-        showPage('setup-modal'); // 構築画面へ
-    } else {
-        showPage(''); // フィールド（観戦）へ
-        document.body.classList.add('spectator-mode');
-    }
-}
-
-/**
- * デッキのクリック/長押しイベント設定
+ * デッキ長押し/クリック設定
  */
 function setupDeckClick(id, type) {
     const el = document.getElementById(id);
     if (!el) return;
     let timer = null;
-    el.onpointerdown = (e) => {
+    el.addEventListener('pointerdown', (e) => {
         timer = setTimeout(() => {
             if (myRole === 'player') socket.emit('inspectDeck', type);
             timer = null;
         }, 500);
-    };
-    el.onpointerup = () => {
+    });
+    el.addEventListener('pointerup', () => {
         if (timer) {
             clearTimeout(timer);
             if(myRole === 'player') socket.emit(type === 'main' ? 'drawMainCard' : 'drawCheerCard');
         }
-    };
+    });
 }
