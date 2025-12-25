@@ -13,7 +13,8 @@ function setLibraryFilter(type) {
     currentLibraryFilter = type;
     document.querySelectorAll('.filter-tab').forEach(tab => {
         const clickAttr = tab.getAttribute('onclick') || "";
-        tab.classList.toggle('active', clickAttr.includes(`'${type}'`));
+        // アクティブクラスの切り替えを確実に行う
+        tab.classList.toggle('active', clickAttr.includes(`'${type}'`) || clickAttr.includes(`"${type}"`));
     });
     updateLibrary();
 }
@@ -24,26 +25,36 @@ function setLibraryFilter(type) {
 function updateLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
-    list.innerHTML = '';
+    list.innerHTML = ''; // リストをクリア
     
     const searchInput = document.getElementById('searchInput');
     const search = searchInput ? searchInput.value.toLowerCase() : "";
     
+    // 表示対象のカードプールを決定
     let pool = [];
     if (currentLibraryFilter === 'oshi') pool = OSHI_LIST || [];
     else if (currentLibraryFilter === 'all') pool = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     else pool = (MASTER_CARDS || []).filter(c => c.type === currentLibraryFilter);
 
+    // 検索ワードで絞り込み
     const filtered = pool.filter(c => c.name.toLowerCase().includes(search));
 
+    // カードを描画
     filtered.forEach(data => {
+        // 構築画面専用のコンテナを作成
         const wrapper = document.createElement('div');
         wrapper.className = 'library-item-v2';
         
-        // カード画像とステータスを生成
-        const cardEl = createCardElement(data, true);
-        wrapper.appendChild(cardEl);
+        // game-logic.js から createCardElement を呼び出し、カードDOMを生成
+        if (typeof createCardElement === 'function') {
+            const cardEl = createCardElement(data, true);
+            wrapper.appendChild(cardEl);
+        } else {
+            // 万が一関数がない場合のフォールバック（デバッグ用）
+            wrapper.innerText = data.name;
+        }
 
+        // デッキ追加ボタンの作成
         const btn = document.createElement('button');
         btn.className = 'btn-add-deck';
         if (data.type === 'oshi') {
@@ -53,14 +64,14 @@ function updateLibrary() {
             btn.innerText = '追加';
             btn.onclick = () => addToDeck(data);
         }
+        
         wrapper.appendChild(btn);
         list.appendChild(wrapper);
     });
 }
 
-/**
- * デッキ操作ロジック
- */
+// --- 以下、デッキ操作ロジック（既存のまま） ---
+
 function setOshi(data) {
     selectedOshi = data;
     updateDeckSummary();
