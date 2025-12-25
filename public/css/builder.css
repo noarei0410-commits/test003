@@ -15,34 +15,35 @@
 }
 .filter-tab.active { background: rgba(193, 228, 233, 1); color: #04172b; }
 
+/* --- カードライブラリ（Global）専用スタイル --- */
+.filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+.filter-btn {
+    flex: 1; min-width: 100px; padding: 10px; border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* 指定のカラーを適用 */
+    background: rgba(137, 195, 235, 0.8);
+    color: #04172b; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+.filter-btn.active { background: #00d2ff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+.search-bar-container { margin-bottom: 20px; }
+#globalSearchInput {
+    width: 100%; padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(0, 210, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05); color: white; font-size: 16px;
+}
+
 /* --- リストアイテム --- */
 .library-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; }
 .deck-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
 
 /* --- 各種ボタンカラー設定 --- */
-
-/* ライブラリ：追加/設定ボタン (rgba(137,195,235,1)) */
-.btn-add-main { 
-    padding: 6px 14px; border-radius: 6px; background: rgba(137, 195, 235, 1); 
-    border: none; cursor: pointer; font-weight: bold; color: #04172b; 
-}
-
-/* デッキ：増減コントロール */
+.btn-add-main { padding: 6px 14px; border-radius: 6px; background: rgba(137, 195, 235, 1); border: none; cursor: pointer; font-weight: bold; color: #04172b; }
 .deck-item-controls { display: flex; gap: 6px; }
-.deck-item-controls button { 
-    width: 32px; height: 32px; border-radius: 6px; border: none; 
-    color: white; cursor: pointer; font-weight: bold; font-size: 16px; 
-}
-
-/* 減少ボタン (-) : rgba(25,68,142,1) */
+.deck-item-controls button { width: 32px; height: 32px; border-radius: 6px; border: none; color: white; cursor: pointer; font-weight: bold; font-size: 16px; }
 .btn-minus { background: rgba(25, 68, 142, 1); }
-/* 増加ボタン (+) : rgba(162,32,65,1) */
 .btn-plus { background: rgba(162, 32, 65, 1); }
-
-/* 推し解除ボタン */
 .btn-remove-oshi { background: none; border: none; color: #ff5e5e; font-weight: bold; cursor: pointer; font-size: 16px; }
 
-/* フッターボタン */
+/* フッターボタン --- */
 .builder-footer { display: flex; gap: 10px; margin-top: 15px; }
 #startGameBtn { flex: 2; padding: 15px; border-radius: 10px; background: #00d2ff; color: #04172b; font-weight: bold; border: none; cursor: pointer; }
 #startGameBtn:disabled { background: #333; color: #666; cursor: not-allowed; }
