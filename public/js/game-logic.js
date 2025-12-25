@@ -1,27 +1,27 @@
 /**
  * ゲーム共通ロジック
- * カードの生成、手札への追加、ドラッグ＆ドロップの基本動作を管理します。
+ * カードの生成、手札への追加、ドラッグ＆ドロップの基本動作を管理します [cite: 2025-12-25]。
  */
 
 /**
- * 手札にカードを追加する [cite: 2025-12-25]
- * サーバーから受け取ったカードデータを元にDOMを生成し、手札エリアへ配置します。
+ * 手札にカードを追加する
+ * サーバーから受け取ったカードデータを元にDOMを生成し、手札エリアへ配置します [cite: 2025-12-25]。
  */
 function addCardToHand(cardData) {
     if (!handDiv) return; // constants.js で取得済みの手札コンテナ
 
     // カード要素を生成
-    const cardEl = createCardElement(cardData, false); [cite: 2025-12-25]
-    cardEl.classList.add('hand-card'); [cite: 2025-12-25]
+    const cardEl = createCardElement(cardData, false); // [cite: 2025-12-25]
+    cardEl.classList.add('hand-card'); // [cite: 2025-12-25]
 
     // 手札のカードにドラッグイベントを設定
-    setupDraggable(cardEl); [cite: 2025-12-25]
+    setupDraggable(cardEl); // [cite: 2025-12-25]
 
     // 手札エリアに追加
     handDiv.appendChild(cardEl);
     
-    // 配置の調整 (重なりや並びを整理) [cite: 2025-12-25]
-    repositionCards();
+    // 配置の調整 (重なりや並びを整理)
+    repositionCards(); // [cite: 2025-12-25]
 }
 
 /**
@@ -31,7 +31,7 @@ function addCardToHand(cardData) {
 function createCardElement(data, isLibrary = false) {
     const card = document.createElement('div');
     card.className = `card ${data.type}`;
-    card.dataset.id = data.id; [cite: 2025-12-25]
+    card.dataset.id = data.id; // [cite: 2025-12-25]
     card.dataset.type = data.type;
     
     // 属性色の取得と適用
@@ -67,63 +67,44 @@ function setupDraggable(el) {
 function onPointerDown(e) {
     if (myRole !== 'player') return; // 観戦者は操作不可
     
-    isDragging = true;
+    isDragging = true; //
     dragStarted = false;
-    currentDragEl = e.currentTarget;
+    currentDragEl = e.currentTarget; //
     
     const rect = currentDragEl.getBoundingClientRect();
-    startX = e.clientX;
-    startY = e.clientY;
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
+    startX = e.clientX; //
+    startY = e.clientY; //
+    offsetX = e.clientX - rect.left; //
+    offsetY = e.clientY - rect.top; //
 
-    currentDragEl.style.zIndex = ++maxZIndex;
+    currentDragEl.style.zIndex = ++maxZIndex; //
     currentDragEl.setPointerCapture(e.pointerId);
 
-    // 移動と終了のリスナーを一時的に追加
     currentDragEl.addEventListener('pointermove', onPointerMove);
     currentDragEl.addEventListener('pointerup', onPointerUp);
 }
 
-/**
- * ドラッグ中の位置更新処理 [cite: 2025-12-24]
- */
 function onPointerMove(e) {
     if (!isDragging || !currentDragEl) return;
-
     const x = e.clientX - offsetX;
     const y = e.clientY - offsetY;
-
     currentDragEl.style.position = 'fixed';
     currentDragEl.style.left = `${x}px`;
     currentDragEl.style.top = `${y}px`;
-    
     dragStarted = true;
 }
 
-/**
- * ドロップ処理 [cite: 2025-12-24]
- */
 function onPointerUp(e) {
     if (!isDragging || !currentDragEl) return;
-
     isDragging = false;
     currentDragEl.releasePointerCapture(e.pointerId);
     currentDragEl.removeEventListener('pointermove', onPointerMove);
     currentDragEl.removeEventListener('pointerup', onPointerUp);
-
-    // フィールド上のどのゾーンにドロップされたかの判定ロジックをここに記述可能
-    
-    repositionCards(); [cite: 2025-12-25]
+    repositionCards(); // [cite: 2025-12-25]
 }
 
-/**
- * 画面上のカードレイアウト再計算 [cite: 2025-12-25]
- * 手札エリア等でカードが適切に並ぶように調整します。
- */
 function repositionCards() {
     if (!handDiv) return;
-    
     const cards = handDiv.querySelectorAll('.hand-card');
     cards.forEach(card => {
         if (isDragging && card === currentDragEl) return;
