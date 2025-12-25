@@ -37,10 +37,8 @@ function updateLibrary() {
     if (!list) return;
     list.innerHTML = '';
     
-    // データがロードされていない場合は中止
     if (!MASTER_CARDS || MASTER_CARDS.length === 0) return;
 
-    // 全データから構築画面用のカードプールを作成 (エール以外)
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     let pool = baseCards.filter(c => c && c.type !== 'ayle');
 
@@ -54,7 +52,6 @@ function updateLibrary() {
         const wrapper = document.createElement('div');
         wrapper.className = 'library-item-v2';
         
-        // game-logic.js の関数を使用してカードDOMを生成
         try {
             if (typeof createCardElement === 'function') {
                 const cardEl = createCardElement(data, true);
@@ -80,19 +77,13 @@ function updateLibrary() {
 
 /**
  * メインデッキへのカード追加
- * 判定ルール: 「同一IDのカードは4枚まで」
  */
 function addToDeck(data) {
     if (mainDeckList.length >= 50) return alert("メインデッキは50枚上限です");
-    
-    // カード名ではなく、一意のIDで重複枚数をチェック
     const sameCardCount = mainDeckList.filter(c => c.id === data.id).length;
-    
-    // ときのそらDebut(sora-00)等の例外を除き、完全に同じカードは4枚まで
     if (data.id !== "sora-00" && sameCardCount >= 4) {
         return alert("同じカード(ID)は4枚までです");
     }
-
     mainDeckList.push({...data});
     updateDeckSummary();
 }
@@ -124,7 +115,6 @@ function updateDeckSummary() {
     
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) {
-        // 条件を満たしたときのみ対戦開始可能 [cite: 2025-12-25]
         startBtn.disabled = !(mainDeckList.length === 50 && cheerDeckList.length === 20 && selectedOshi);
     }
 
@@ -137,26 +127,55 @@ function updateDeckSummary() {
 
     renderMainDeckSection();
     renderCheerDeckSection();
+
+    // デッキの状態が変わるたびにローカルストレージへ保存
+    saveDeckToLocal();
 }
 
 /**
- * メインデッキセクションの描画
- * IDごとに集計し、Bloomランク等の情報で個体識別できるように表示
+ * ローカルストレージへの保存処理
+ */
+function saveDeckToLocal() {
+    const deckData = {
+        main: mainDeckList,
+        cheer: cheerDeckList,
+        oshi: selectedOshi
+    };
+    localStorage.setItem('hOCG_saved_deck', JSON.stringify(deckData));
+    console.log("Deck saved to localStorage.");
+}
+
+/**
+ * ローカルストレージからの読み込み処理
+ */
+function loadDeckFromLocal() {
+    const saved = localStorage.getItem('hOCG_saved_deck');
+    if (!saved) return;
+
+    try {
+        const deckData = JSON.parse(saved);
+        mainDeckList = deckData.main || [];
+        cheerDeckList = deckData.cheer || [];
+        selectedOshi = deckData.oshi || null;
+        
+        console.log("Deck loaded from localStorage.");
+        updateDeckSummary();
+    } catch (e) {
+        console.error("Failed to load deck from localStorage", e);
+    }
+}
+
+/**
+ * メインデッキセクションの描画 (ID集計・Bloomランク表示)
  */
 function renderMainDeckSection() {
     const container = document.getElementById('mainDeckSummary');
     if (!container) return;
     container.innerHTML = '';
     
-    // IDごとに集計 (同名でもIDが違えば別枠で表示)
     const summary = mainDeckList.reduce((acc, curr) => {
         if (!acc[curr.id]) {
-            acc[curr.id] = { 
-                name: curr.name, 
-                count: 0, 
-                bloom: curr.bloom,
-                type: curr.type
-            };
+            acc[curr.id] = { name: curr.name, count: 0, bloom: curr.bloom, type: curr.type };
         }
         acc[curr.id].count++;
         return acc;
@@ -166,10 +185,7 @@ function renderMainDeckSection() {
         const item = summary[id];
         const div = document.createElement('div');
         div.className = 'deck-item';
-        
-        // ホロメンならBloomランクを表示に含めて区別しやすくする
         let displayName = item.name + (item.bloom ? ` [${item.bloom}]` : "");
-        
         div.innerHTML = `
             <span>${displayName} x${item.count}</span>
             <div class="deck-item-controls">
@@ -191,7 +207,7 @@ function changeMainQuantityById(id, delta) {
 }
 
 /**
- * エールデッキセクションの描画 (全6色を表示)
+ * エールデッキセクションの描画
  */
 function renderCheerDeckSection() {
     const container = document.getElementById('cheerDeckSummary');
@@ -203,11 +219,8 @@ function renderCheerDeckSection() {
         const count = cheerDeckList.filter(c => c.name === fullName).length;
         const div = document.createElement('div');
         div.className = 'deck-item cheer-item';
-        
-        // constants.js で定義された最新の色(青: rgba等)を適用 [cite: 2025-12-25]
         const colorValue = COLORS[color];
         div.style.borderLeftColor = colorValue;
-        
         div.innerHTML = `
             <span style="color: ${colorValue}">${color}エール x${count}</span>
             <div class="deck-item-controls">
@@ -219,27 +232,15 @@ function renderCheerDeckSection() {
 }
 
 /**
- * デッキを確定して対戦画面へ進む
+ * 対戦画面へ進む
  */
 function submitDeck() {
     if (mainDeckList.length !== 50 || cheerDeckList.length !== 20 || !selectedOshi) {
-        return alert("デッキ構成が不完全です (メイン50枚、エール20枚、推し1枚が必要です)");
+        return alert("デッキ構成が不完全です");
     }
-
-    // サーバーへデッキ情報を送信 [cite: 2025-11-29]
-    socket.emit('setupDeck', {
-        oshi: selectedOshi,
-        mainDeck: mainDeckList,
-        cheerDeck: cheerDeckList
-    });
-
-    // 対戦フィールドへ遷移 (nullを指定)
+    socket.emit('setupDeck', { oshi: selectedOshi, mainDeck: mainDeckList, cheerDeck: cheerDeckList });
     showPage(null);
-    console.log("Deck submitted and transitioning to field.");
 }
 
-/**
- * 推し・枚数操作の補助関数
- */
 function setOshi(data) { selectedOshi = data; updateDeckSummary(); }
 function removeOshi() { selectedOshi = null; updateDeckSummary(); }
