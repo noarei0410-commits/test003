@@ -30,6 +30,8 @@
     padding: 10px;
     background: rgba(255, 255, 255, 0.02);
     border-radius: 8px;
+    /* 【修正】アイテムをコンテンツの高さに合わせ、縦に伸びないように設定 */
+    align-items: start; 
 }
 
 /* --- カード表示・操作ボタン --- */
@@ -43,9 +45,11 @@
     border-radius: 8px;
     transition: 0.2s;
     position: relative;
+    /* アイテムの高さを中身に合わせる */
+    height: fit-content;
 }
 
-/* 【重要】カード本体をフローに戻し、ボタンと重ならないように調整 */
+/* カード本体をフローに戻し、ボタンと重ならないように調整 */
 .library-item-v2 > *:not(button) {
     position: relative !important; 
     top: auto !important;
@@ -102,7 +106,6 @@
     padding-bottom: 4px; 
 }
 
-/* デッキ内アイテムの操作ボタン */
 .deck-item {
     display: flex;
     justify-content: space-between;
@@ -128,12 +131,10 @@
 .btn-minus { background: #e74c3c; }
 .btn-plus { background: #2ecc71; }
 
-/* --- カードライブラリ（Global）専用：画像に基づくスタイル修正 --- */
-
-/* 「トップへ戻る」ボタンのスタイル */
+/* --- カードライブラリ（Global）専用 --- */
 .top-back-btn {
-    background: #ffffff !important; /* 白背景 */
-    color: #333333 !important; /* 暗い文字色 */
+    background: #ffffff !important; 
+    color: #333333 !important; 
     border: 1px solid #ced4da !important;
     padding: 8px 16px !important;
     font-size: 14px !important;
@@ -142,7 +143,6 @@
     margin-bottom: 15px;
 }
 
-/* フィルタータブのデザイン */
 .filter-bar, .filter-tabs { 
     display: flex; 
     gap: 8px; 
@@ -154,9 +154,8 @@
     flex: 1; 
     min-width: 90px; 
     padding: 10px 15px; 
-    border-radius: 20px; /* 画像のような丸みのあるデザイン */
+    border-radius: 20px; 
     border: none;
-    /* 指定の淡い青色をデフォルトに適用 */
     background: rgba(137, 195, 235, 0.8) !important;
     color: #04172b !important; 
     font-weight: bold; 
@@ -164,16 +163,14 @@
     transition: 0.2s;
 }
 
-/* アクティブなタブの状態 */
 .filter-btn.active, .filter-tab.active { 
-    background: #00d2ff !important; /* 鮮やかな水色 */
+    background: #00d2ff !important; 
     color: #ffffff !important;
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); 
 }
 
-/* 検索バーのスタイル */
 #globalSearchInput, #searchInput {
-    width: 300px; /* 画像のような幅に固定 */
+    width: 300px; 
     max-width: 100%;
     padding: 10px; 
     border-radius: 4px; 
