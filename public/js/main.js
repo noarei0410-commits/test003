@@ -1,23 +1,26 @@
 /**
- * アプリケーション共通の初期化
+ * メイン初期化処理
  */
 window.addEventListener('load', async () => {
-    // 全カードデータのロード
+    // 1. 全カードデータのロードを待つ
     await loadCardData();
 
-    // デッキクリック（ドロー）の共通設定
+    // 2. 構築画面の初期状態をセット (データロード後に行う)
+    if (typeof updateLibrary === 'function') updateLibrary();
+
+    // 3. デッキクリック等のイベント設定
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
 
-    // リサイズ時の再配置設定
+    // 4. 画面リサイズ対応
     window.addEventListener('resize', repositionCards);
 
-    // 最初の画面を表示
+    // 5. ハブ画面を表示
     showPage('hub-page');
 });
 
 /**
- * カードデータの一括ロード
+ * マスターデータのロード
  */
 async function loadCardData() {
     try {
@@ -30,15 +33,12 @@ async function loadCardData() {
         MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
         AYLE_MASTER = res[2];
         OSHI_LIST = res[3];
-        console.log("Card Database Synchronized.");
+        console.log("Master Data Synced.");
     } catch (e) {
-        console.error("Critical: Data Load Failed", e);
+        console.error("Data Sync Failed", e);
     }
 }
 
-/**
- * デッキ長押し/クリック設定
- */
 function setupDeckClick(id, type) {
     const el = document.getElementById(id);
     if (!el) return;
