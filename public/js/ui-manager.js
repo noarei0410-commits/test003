@@ -1,23 +1,24 @@
 /**
  * UI管理・画面遷移マネージャー
  */
-let globalSearchText = ''; // 変数名の重複を避けるために変更
+let globalSearchText = ''; 
 let currentGlobalTab = 'all';
 
 /**
  * ページの表示切り替え
+ * IDに基づいてページを表示・非表示にし、必要に応じて描画を更新します。
  */
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     
-    if (!pageId) return; // IDがない場合は対戦フィールド表示
+    if (!pageId) return; // フィールド表示
 
     const target = document.getElementById(pageId);
     if (target) {
-        // ハブ画面は中央揃えのため flex を適用
         target.style.display = (pageId === 'hub-page') ? 'flex' : 'block';
         
         if (pageId === 'card-list-page') updateGlobalLibraryDisplay();
+        // deck-builder.js の関数を呼び出し
         if (pageId === 'setup-modal' && typeof updateLibrary === 'function') updateLibrary();
     }
 }
