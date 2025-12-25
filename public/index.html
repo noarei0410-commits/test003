@@ -121,6 +121,10 @@
 
     <div id="card-list-page" class="full-page">
         <div class="modal-content">
+            <div class="library-header">
+                <button onclick="showPage('hub-page')" class="btn-modal-close top-back-btn">← トップへ戻る</button>
+            </div>
+            
             <div class="filter-bar">
                 <button class="filter-btn active" onclick="filterGlobalLibrary('all')">すべて</button>
                 <button class="filter-btn" onclick="filterGlobalLibrary('oshi')">推しホロメン</button>
@@ -132,7 +136,6 @@
                 <input type="text" id="globalSearchInput" placeholder="カード名で検索..." oninput="handleGlobalSearch(this.value)">
             </div>
             <div id="global-card-grid" class="card-grid"></div>
-            <button onclick="showPage('hub-page')" class="btn-modal-close">トップへ戻る</button>
         </div>
     </div>
 
