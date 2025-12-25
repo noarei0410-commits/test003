@@ -1,7 +1,8 @@
 /**
- * デッキ構築マネージャー
+ * デッキ構築マネージャー (構築画面専用)
  */
 let currentLibraryFilter = 'all';
+let builderSearchText = ''; // 変数名の重複を避けるために変更
 let mainDeckList = [];
 let cheerDeckList = [];
 let selectedOshi = null;
@@ -19,6 +20,15 @@ function setLibraryFilter(type) {
 }
 
 /**
+ * 構築画面専用の検索ハンドリング
+ */
+function handleBuilderSearch() {
+    const input = document.getElementById('searchInput');
+    builderSearchText = input ? input.value.toLowerCase() : '';
+    updateLibrary();
+}
+
+/**
  * 構築画面ライブラリ描画 (エール以外をグリッド表示)
  */
 function updateLibrary() {
@@ -26,26 +36,23 @@ function updateLibrary() {
     if (!list) return;
     list.innerHTML = '';
     
-    const searchInput = document.getElementById('searchInput');
-    const search = searchInput ? searchInput.value.toLowerCase() : "";
-    
-    // エールカード以外のプールを作成
-    let pool = [];
+    // エールカード以外のプールを作成 (MASTER_CARDSが未ロードの場合は空配列)
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
-    // エールカードを除外
-    pool = baseCards.filter(c => c.type !== 'ayle');
+    let pool = baseCards.filter(c => c.type !== 'ayle');
 
+    // タブによるフィルタリング
     if (currentLibraryFilter !== 'all') {
         pool = pool.filter(c => c.type === currentLibraryFilter);
     }
 
-    const filtered = pool.filter(c => c.name.toLowerCase().includes(search));
+    // 検索ワードで絞り込み
+    const filtered = pool.filter(c => c.name.toLowerCase().includes(builderSearchText));
 
     filtered.forEach(data => {
         const wrapper = document.createElement('div');
         wrapper.className = 'library-item-v2';
         
-        // カード画像生成 (デザイン維持)
+        // カード画像生成 (game-logic.js の安定版ロジックを使用)
         if (typeof createCardElement === 'function') {
             const cardEl = createCardElement(data, true);
             wrapper.appendChild(cardEl);
@@ -67,16 +74,12 @@ function updateLibrary() {
 }
 
 /**
- * デッキ操作ロジック
+ * メインデッキへのカード追加
  */
-function setOshi(data) {
-    selectedOshi = data;
-    updateDeckSummary();
-}
-
 function addToDeck(data) {
     if (mainDeckList.length >= 50) return alert("メインデッキは50枚上限です");
     const sameNameCount = mainDeckList.filter(c => c.name === data.name).length;
+    // ときのそらDebut(sora-00)以外は4枚制限
     if (data.id !== "sora-00" && sameNameCount >= 4) return alert("同名カードは4枚までです");
 
     mainDeckList.push({...data});
@@ -84,13 +87,13 @@ function addToDeck(data) {
 }
 
 /**
- * エールカードの増減処理
+ * エールデッキの増減処理 (AYLE_MASTERを参照)
  */
 function changeCheerQuantity(colorName, delta) {
     const colorLabel = colorName + "エール";
     if (delta > 0) {
         if (cheerDeckList.length >= 20) return alert("エールデッキは20枚上限です");
-        const ayleData = AYLE_MASTER.find(a => a.name === colorLabel);
+        const ayleData = (AYLE_MASTER || []).find(a => a.name === colorLabel);
         if (ayleData) cheerDeckList.push({...ayleData});
     } else {
         const idx = cheerDeckList.findLastIndex(c => c.name === colorLabel);
@@ -103,23 +106,22 @@ function changeCheerQuantity(colorName, delta) {
  * デッキサマリーの更新
  */
 function updateDeckSummary() {
-    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
-    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
+    const mainCount = document.getElementById('mainBuildCount');
+    const cheerCount = document.getElementById('cheerBuildCount');
+    if (mainCount) mainCount.innerText = mainDeckList.length;
+    if (cheerCount) cheerCount.innerText = cheerDeckList.length;
     
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) {
         startBtn.disabled = !(mainDeckList.length === 50 && cheerDeckList.length === 20 && selectedOshi);
     }
 
-    // 推し表示
     const oshiSummary = document.getElementById('oshiSummary');
     if (oshiSummary) {
         oshiSummary.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span> <button class="btn-remove-oshi" onclick="removeOshi()">×</button></div>` : "未設定";
     }
 
-    // メインデッキ集計
     renderMainDeckSection();
-    // エールデッキ集計 (ボタン操作形式)
     renderCheerDeckSection();
 }
 
@@ -140,14 +142,13 @@ function renderCheerDeckSection() {
     const container = document.getElementById('cheerDeckSummary');
     if (!container) return;
     container.innerHTML = '';
-    
-    // 全色を表示
     const colors = ["赤", "青", "緑", "黄", "紫", "白"];
     colors.forEach(color => {
         const fullName = color + "エール";
         const count = cheerDeckList.filter(c => c.name === fullName).length;
         const div = document.createElement('div');
         div.className = 'deck-item cheer-item';
+        div.style.borderLeftColor = COLORS[color];
         div.innerHTML = `
             <span style="color: ${COLORS[color]}">${color}エール x${count}</span>
             <div class="deck-item-controls">
@@ -166,4 +167,5 @@ function changeMainQuantity(name, delta) {
     updateDeckSummary();
 }
 
+function setOshi(data) { selectedOshi = data; updateDeckSummary(); }
 function removeOshi() { selectedOshi = null; updateDeckSummary(); }
