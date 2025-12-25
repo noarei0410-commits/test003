@@ -6,6 +6,7 @@ let currentGlobalTab = 'all';
 
 /**
  * ページの表示切り替え
+ * IDに基づいてページを表示・非表示にし、必要に応じて描画を更新します。
  */
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
@@ -14,6 +15,7 @@ function showPage(pageId) {
 
     const target = document.getElementById(pageId);
     if (target) {
+        // ハブ画面は中央揃えのため flex を適用
         target.style.display = (pageId === 'hub-page') ? 'flex' : 'block';
         
         if (pageId === 'card-list-page') updateGlobalLibraryDisplay();
@@ -25,7 +27,7 @@ function showPage(pageId) {
 }
 
 /**
- * グローバルライブラリ（確認画面）の検索・フィルタ
+ * グローバルライブラリの検索・フィルタリング
  */
 function handleGlobalSearch(val) {
     globalSearchText = val.toLowerCase();
