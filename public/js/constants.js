@@ -1,6 +1,18 @@
+/**
+ * 共通定数・グローバル変数定義
+ */
 const socket = io();
 const STAGE_ZONES = ['collab', 'center', 'oshi', 'back1', 'back2', 'back3', 'back4', 'back5'];
-const COLORS = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
+
+// 青色の文字色を見やすい rgba(137, 195, 235, 1) に変更
+const COLORS = { 
+    '白': 'white', 
+    '緑': 'green', 
+    '赤': 'red', 
+    '青': 'rgba(137, 195, 235, 1)', 
+    '黄': 'yellow', 
+    '紫': 'purple' 
+};
 
 let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
 let myRole = 'spectator';
