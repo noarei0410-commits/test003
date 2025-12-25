@@ -1,22 +1,30 @@
-let currentTab = 'all'; // グローバルライブラリ用
-let searchText = '';     // グローバルライブラリ用
-let currentLibraryFilter = 'all'; // 構築画面用
+let currentTab = 'all';
+let searchText = '';
+let currentLibraryFilter = 'all';
 
 /**
  * ページの表示切り替え
+ * IDに基づいてページを非表示・表示し、必要な描画を更新します。
  */
 function showPage(pageId) {
+    // すべてのページを隠す
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
+    
+    if (!pageId) return; // IDがない場合はフィールド（メイン画面）を表示
+
     const target = document.getElementById(pageId);
     if (target) {
+        // ハブ画面のみ中央揃えのために flex を使用
         target.style.display = (pageId === 'hub-page') ? 'flex' : 'block';
+        
+        // 遷移先のページに応じた描画更新処理
         if (pageId === 'card-list-page') updateGlobalLibraryDisplay();
-        if (pageId === 'setup-modal') updateLibrary(); // 構築画面表示時に描画更新
+        if (pageId === 'setup-modal') updateLibrary();
     }
 }
 
 /**
- * --- グローバルライブラリ (確認用画面) 制御 ---
+ * --- カードライブラリ（確認用） ---
  */
 function filterGlobalLibrary(type) {
     currentTab = type;
@@ -40,7 +48,7 @@ function updateGlobalLibraryDisplay() {
     const grid = document.getElementById('global-card-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    const allCards = [...OSHI_LIST, ...MASTER_CARDS];
+    const allCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     const filtered = allCards.filter(c => {
         const matchesType = (currentTab === 'all' || c.type === currentTab);
         const matchesSearch = c.name.toLowerCase().includes(searchText);
@@ -53,43 +61,37 @@ function updateGlobalLibraryDisplay() {
 }
 
 /**
- * --- デッキ構築画面 (セットアップ画面) 制御 ---
+ * --- デッキ構築（セットアップ） ---
  */
 function setLibraryFilter(type) {
     currentLibraryFilter = type;
     document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.onclick.toString().includes(`'${type}'`));
+        const clickAttr = tab.getAttribute('onclick') || "";
+        tab.classList.toggle('active', clickAttr.includes(`'${type}'` || `"${type}"`));
     });
     updateLibrary();
 }
 
-/**
- * 構築画面のライブラリ描画：カードの全情報を表示するように修正
- */
 function updateLibrary() {
     const list = document.getElementById('libraryList');
+    const searchInput = document.getElementById('searchInput');
     if (!list) return;
     list.innerHTML = '';
-    const search = document.getElementById('searchInput').value.toLowerCase();
+    const search = searchInput ? searchInput.value.toLowerCase() : "";
     
-    // 表示対象のプールを選択
     let pool = [];
-    if (currentLibraryFilter === 'oshi') pool = OSHI_LIST;
-    else if (currentLibraryFilter === 'all') pool = [...OSHI_LIST, ...MASTER_CARDS];
-    else pool = MASTER_CARDS.filter(c => c.type === currentLibraryFilter);
+    if (currentLibraryFilter === 'oshi') pool = OSHI_LIST || [];
+    else if (currentLibraryFilter === 'all') pool = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
+    else pool = (MASTER_CARDS || []).filter(c => c.type === currentLibraryFilter);
 
     const filtered = pool.filter(c => c.name.toLowerCase().includes(search));
 
     filtered.forEach(data => {
-        // カードを包むコンテナを作成
         const wrapper = document.createElement('div');
         wrapper.className = 'library-item-v2';
-        
-        // カードDOMを生成（全情報を表示）
         const cardEl = createCardElement(data, true);
         wrapper.appendChild(cardEl);
 
-        // 追加ボタンの作成
         const btn = document.createElement('button');
         btn.className = 'btn-add-deck';
         if (data.type === 'oshi') {
@@ -99,43 +101,12 @@ function updateLibrary() {
             btn.innerText = '追加';
             btn.onclick = () => addToDeck(data);
         }
-        
         wrapper.appendChild(btn);
         list.appendChild(wrapper);
     });
 }
 
-// デッキ追加/削除等の既存ロジック (現状に合わせて適宜維持)
-let mainDeckList = [];
-let cheerDeckList = [];
-let selectedOshi = null;
-
-function setOshi(data) {
-    selectedOshi = data;
-    updateDeckSummary();
-}
-
-function addToDeck(data) {
-    const target = (data.type === 'ayle') ? cheerDeckList : mainDeckList;
-    const limit = (data.type === 'ayle') ? 20 : 50;
-    if (target.length >= limit) return alert("枚数上限です");
-    
-    // ときのそらDebut以外の同名カード制限チェック
-    const sameNameCount = target.filter(c => c.name === data.name).length;
-    if (data.id !== "sora-00" && sameNameCount >= 4) return alert("同名カードは4枚までです");
-
-    target.push({...data});
-    updateDeckSummary();
-}
-
-function updateDeckSummary() {
-    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
-    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
-    document.getElementById('startGameBtn').disabled = !(mainDeckList.length === 50 && cheerDeckList.length === 20 && selectedOshi);
-    
-    // 簡易リスト表示の更新ロジック (省略)
-}
-
 function closeDeckInspection() {
-    document.getElementById('deck-inspection-modal').style.display = 'none';
+    const modal = document.getElementById('deck-inspection-modal');
+    if (modal) modal.style.display = 'none';
 }
