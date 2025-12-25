@@ -1,21 +1,20 @@
 /**
- * UI管理・画面遷移
+ * UI管理・画面遷移マネージャー
  */
-let currentTab = 'all';
-let searchText = '';
+let globalSearchText = ''; // 変数名の重複を避けるために変更
+let currentGlobalTab = 'all';
 
 /**
  * ページの表示切り替え
- * IDに基づいてページを非表示・表示し、必要な描画を更新します。
  */
 function showPage(pageId) {
     document.querySelectorAll('.full-page').forEach(p => p.style.display = 'none');
     
-    if (!pageId) return; // フィールド表示
+    if (!pageId) return; // IDがない場合は対戦フィールド表示
 
     const target = document.getElementById(pageId);
     if (target) {
-        // ハブ画面は中央揃えのため flex を維持
+        // ハブ画面は中央揃えのため flex を適用
         target.style.display = (pageId === 'hub-page') ? 'flex' : 'block';
         
         if (pageId === 'card-list-page') updateGlobalLibraryDisplay();
@@ -24,10 +23,18 @@ function showPage(pageId) {
 }
 
 /**
+ * グローバルライブラリの検索
+ */
+function handleGlobalSearch(val) {
+    globalSearchText = val.toLowerCase();
+    updateGlobalLibraryDisplay();
+}
+
+/**
  * グローバルライブラリのフィルタリング
  */
 function filterGlobalLibrary(type) {
-    currentTab = type;
+    currentGlobalTab = type;
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.innerText.includes(getTabText(type)));
     });
@@ -39,11 +46,6 @@ function getTabText(type) {
     return map[type];
 }
 
-function handleGlobalSearch(val) {
-    searchText = val.toLowerCase();
-    updateGlobalLibraryDisplay();
-}
-
 /**
  * カード確認画面の描画
  */
@@ -53,8 +55,8 @@ function updateGlobalLibraryDisplay() {
     grid.innerHTML = '';
     const allCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     const filtered = allCards.filter(c => {
-        const matchesType = (currentTab === 'all' || c.type === currentTab);
-        const matchesSearch = c.name.toLowerCase().includes(searchText);
+        const matchesType = (currentGlobalTab === 'all' || c.type === currentGlobalTab);
+        const matchesSearch = c.name.toLowerCase().includes(globalSearchText);
         return matchesType && matchesSearch;
     });
     filtered.forEach(data => {
