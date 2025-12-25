@@ -1,10 +1,10 @@
-/* --- デッキ構築画面（セットアップ）全体構造 --- */
+/* --- レイアウト構造 --- */
 .builder-layout { 
     display: flex !important; 
     flex-direction: row !important; 
     flex: 1; 
     gap: 20px; 
-    height: 75vh; /* 高さを固定してスクロール可能に */
+    height: 75vh; 
     overflow: hidden; 
 }
 
@@ -19,7 +19,6 @@
     overflow: hidden; 
 }
 
-/* カードが並ぶグリッドエリア */
 #libraryList { 
     flex: 1; 
     overflow-y: auto; 
@@ -32,7 +31,75 @@
     border-radius: 8px;
 }
 
-/* ライブラリ内の各カードコンテナ */
+/* --- カードライブラリ（確認画面）専用スタイル --- */
+.library-header {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+    padding-bottom: 10px;
+}
+
+.top-back-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+    color: #00d2ff !important;
+    padding: 8px 20px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+    width: auto !important;
+    cursor: pointer;
+}
+
+.filter-bar { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 15px; 
+    flex-wrap: wrap; 
+}
+
+.filter-btn {
+    flex: 1; 
+    min-width: 100px; 
+    padding: 10px; 
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* 指定のカラーを復元 */
+    background: rgba(137, 195, 235, 0.8) !important;
+    color: #04172b !important; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: 0.2s;
+}
+
+.filter-btn.active { 
+    background: #00d2ff !important; 
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); 
+}
+
+.search-bar-container { 
+    margin-bottom: 20px; 
+}
+
+#globalSearchInput {
+    width: 100%; 
+    padding: 12px 20px; 
+    border-radius: 10px; 
+    border: 1px solid rgba(0, 210, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05); 
+    color: white; 
+    font-size: 16px;
+}
+
+/* カードグリッド表示 */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 20px;
+    padding: 10px;
+}
+
+/* 構築画面用アイテム */
 .library-item-v2 {
     display: flex;
     flex-direction: column;
@@ -41,14 +108,8 @@
     background: rgba(255, 255, 255, 0.05);
     padding: 10px;
     border-radius: 8px;
-    transition: transform 0.2s;
-}
-.library-item-v2:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
 }
 
-/* デッキ追加ボタン */
 .btn-add-deck {
     width: 100%;
     padding: 6px;
@@ -61,40 +122,8 @@
     cursor: pointer;
 }
 
-/* 右側の集計エリア */
-.deck-lists-container { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 15px; 
-    overflow-y: auto; 
-    background: rgba(0,0,0,0.2);
-    padding: 10px;
-    border-radius: 12px;
-}
-.deck-section { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
-.section-header { font-weight: bold; color: #00d2ff; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-
-/* フィルタータブ */
-.filter-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
-.filter-tab { 
-    flex: 1; padding: 8px 5px; border-radius: 6px; border: 1px solid rgba(193, 228, 233, 0.4);
-    background: rgba(255, 255, 255, 0.05); color: rgba(193, 228, 233, 1);
-    font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;
-}
-.filter-tab.active { background: rgba(193, 228, 233, 1); color: #04172b; }
-
-#searchInput {
-    width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333;
-    background: rgba(255,255,255,0.1); color: white;
-}
-
 /* フッターボタン */
 .builder-footer { display: flex; gap: 10px; margin-top: 15px; }
 #startGameBtn { flex: 2; padding: 15px; border-radius: 10px; background: #00d2ff; color: #04172b; font-weight: bold; border: none; cursor: pointer; }
 #startGameBtn:disabled { background: #333; color: #666; cursor: not-allowed; }
 .btn-cancel { flex: 1; padding: 15px; border-radius: 10px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #444; cursor: pointer; }
-
-/* 各種カウント管理のボタン */
-.btn-minus { background: rgba(25, 68, 142, 1); width: 25px; border-radius: 4px; color: white; border: none; cursor: pointer; }
-.btn-plus { background: rgba(162, 32, 65, 1); width: 25px; border-radius: 4px; color: white; border: none; cursor: pointer; }
