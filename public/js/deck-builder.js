@@ -1,15 +1,15 @@
 /**
  * デッキ構築マネージャー (構築画面専用)
- * デッキに関連する変数はここで一元管理し、他ファイルでの宣言を禁止します [cite: 2025-12-24]。
+ * 変数はここで一元管理し、他ファイルでの重複宣言を避けます [cite: 2025-12-24]。
  */
 let currentLibraryFilter = 'all';
 let builderSearchText = ''; 
-let mainDeckList = [];     
-let cheerDeckList = [];    
-let selectedOshi = null;   
+let mainDeckList = [];     // メインデッキ（50枚）
+let cheerDeckList = [];    // エールデッキ（20枚）
+let selectedOshi = null;   // 推しホロメン
 
 /**
- * 構築画面のライブラリフィルタ・検索
+ * 構築画面のフィルタ切り替え
  */
 function setLibraryFilter(type) {
     currentLibraryFilter = type;
@@ -27,14 +27,14 @@ function handleBuilderSearch() {
 }
 
 /**
- * 構築画面ライブラリの描画（グリッド形式）
+ * 構築画面ライブラリのタイル描画 (エール以外)
  */
 function updateLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
     list.innerHTML = '';
     
-    // エールを除外したカードプール（データロード完了を確認）
+    // 全カードデータを取得
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     let pool = baseCards.filter(c => c.type !== 'ayle');
 
@@ -68,7 +68,7 @@ function updateLibrary() {
 }
 
 /**
- * デッキ操作・サマリー更新ロジック
+ * デッキ操作・制限チェック
  */
 function addToDeck(data) {
     if (mainDeckList.length >= 50) return alert("メインデッキは50枚上限です");
@@ -92,17 +92,25 @@ function changeCheerQuantity(colorName, delta) {
     updateDeckSummary();
 }
 
+/**
+ * デッキサマリー表示の更新
+ */
 function updateDeckSummary() {
-    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
-    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
+    const mainCount = document.getElementById('mainBuildCount');
+    const cheerCount = document.getElementById('cheerBuildCount');
+    if (mainCount) mainCount.innerText = mainDeckList.length;
+    if (cheerCount) cheerCount.innerText = cheerDeckList.length;
+    
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) {
         startBtn.disabled = !(mainDeckList.length === 50 && cheerDeckList.length === 20 && selectedOshi);
     }
+
     const oshiSummary = document.getElementById('oshiSummary');
     if (oshiSummary) {
         oshiSummary.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span> <button class="btn-remove-oshi" onclick="removeOshi()">×</button></div>` : "未設定";
     }
+
     renderMainDeckSection();
     renderCheerDeckSection();
 }
