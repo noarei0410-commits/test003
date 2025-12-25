@@ -1,16 +1,16 @@
-/* --- レイアウト構造 --- */
+/* --- セットアップ・構築画面の全体レイアウト --- */
 .builder-layout { 
     display: flex !important; 
     flex-direction: row !important; 
     flex: 1; 
     gap: 20px; 
-    height: 75vh; 
+    height: 78vh; /* 画面の大部分を占有 */
     overflow: hidden; 
 }
 
-/* カードライブラリエリア */
+/* 左側：カードライブラリエリア */
 .card-library { 
-    flex: 1.5; 
+    flex: 1.6; 
     display: flex; 
     flex-direction: column; 
     background: rgba(0,0,0,0.4); 
@@ -19,19 +19,133 @@
     overflow: hidden; 
 }
 
+/* カードグリッド表示エリア */
 #libraryList { 
     flex: 1; 
     overflow-y: auto; 
     margin-top: 10px; 
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
     gap: 15px;
     padding: 10px;
     background: rgba(255, 255, 255, 0.02);
     border-radius: 8px;
 }
 
-/* --- カードライブラリ（確認画面）専用スタイル --- */
+/* 右側：デッキ集計・詳細エリア */
+.deck-lists-container { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    overflow-y: auto; 
+    background: rgba(0, 0, 0, 0.25);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 210, 255, 0.1);
+}
+
+/* --- カード表示・操作ボタン --- */
+.library-item-v2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+.library-item-v2:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-add-deck {
+    width: 100%;
+    padding: 7px;
+    border-radius: 5px;
+    background: #00d2ff;
+    color: #04172b;
+    border: none;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* --- デッキセクション内のアイテム表示 --- */
+.deck-section { 
+    background: rgba(255, 255, 255, 0.05); 
+    padding: 12px; 
+    border-radius: 8px; 
+}
+
+.section-header { 
+    font-weight: bold; 
+    color: #00d2ff; 
+    margin-bottom: 8px; 
+    font-size: 14px;
+    border-bottom: 1px solid rgba(0, 210, 255, 0.3); 
+    padding-bottom: 4px; 
+}
+
+.deck-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 4px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #eee;
+}
+
+/* エールデッキ専用（色の識別用） */
+.cheer-item {
+    border-left: 5px solid currentColor;
+}
+
+.deck-item-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.deck-item-controls button {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-minus { background: #e74c3c; }
+.btn-plus { background: #2ecc71; }
+.btn-remove-oshi { background: transparent; color: #ff5e5e; border: none; cursor: pointer; font-size: 18px; }
+
+/* --- フィルター・検索バーのスタイル --- */
+.filter-tabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+
+.filter-tab { 
+    flex: 1; padding: 8px 5px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05); color: #ccc;
+    font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+
+/* 構築画面のアクティブ色 */
+.filter-tab.active { background: #00d2ff; color: #04172b; }
+
+#searchInput {
+    width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 210, 255, 0.3);
+    background: rgba(255,255,255,0.05); color: white; margin-bottom: 10px;
+}
+
+/* --- カードライブラリ（Global）専用：指定色適用版 --- */
 .library-header {
     display: flex;
     justify-content: flex-start;
@@ -44,32 +158,20 @@
     background: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid rgba(0, 210, 255, 0.3) !important;
     color: #00d2ff !important;
-    padding: 8px 20px !important;
+    padding: 8px 18px !important;
     font-size: 14px !important;
     border-radius: 6px !important;
-    width: auto !important;
     cursor: pointer;
 }
 
-.filter-bar { 
-    display: flex; 
-    gap: 10px; 
-    margin-bottom: 15px; 
-    flex-wrap: wrap; 
-}
+.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
 
 .filter-btn {
-    flex: 1; 
-    min-width: 100px; 
-    padding: 10px; 
-    border-radius: 8px;
+    flex: 1; min-width: 90px; padding: 10px; border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    /* 指定のカラーを復元 */
+    /* 指定の淡い青色を適用 */
     background: rgba(137, 195, 235, 0.8) !important;
-    color: #04172b !important; 
-    font-weight: bold; 
-    cursor: pointer; 
-    transition: 0.2s;
+    color: #04172b !important; font-weight: bold; cursor: pointer; transition: 0.2s;
 }
 
 .filter-btn.active { 
@@ -77,21 +179,11 @@
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); 
 }
 
-.search-bar-container { 
-    margin-bottom: 20px; 
-}
-
 #globalSearchInput {
-    width: 100%; 
-    padding: 12px 20px; 
-    border-radius: 10px; 
-    border: 1px solid rgba(0, 210, 255, 0.4);
-    background: rgba(255, 255, 255, 0.05); 
-    color: white; 
-    font-size: 16px;
+    width: 100%; padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(0, 210, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05); color: white; font-size: 16px; margin-bottom: 20px;
 }
 
-/* カードグリッド表示 */
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -99,31 +191,19 @@
     padding: 10px;
 }
 
-/* 構築画面用アイテム */
-.library-item-v2 {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 10px;
-    border-radius: 8px;
-}
-
-.btn-add-deck {
-    width: 100%;
-    padding: 6px;
-    border-radius: 5px;
-    background: #00d2ff;
-    color: #04172b;
-    border: none;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* フッターボタン */
+/* --- フッターボタン（対戦開始・戻る） --- */
 .builder-footer { display: flex; gap: 10px; margin-top: 15px; }
-#startGameBtn { flex: 2; padding: 15px; border-radius: 10px; background: #00d2ff; color: #04172b; font-weight: bold; border: none; cursor: pointer; }
-#startGameBtn:disabled { background: #333; color: #666; cursor: not-allowed; }
-.btn-cancel { flex: 1; padding: 15px; border-radius: 10px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #444; cursor: pointer; }
+
+#startGameBtn { 
+    flex: 2; padding: 16px; border-radius: 10px; 
+    background: #00d2ff; color: #04172b; font-weight: bold; 
+    border: none; cursor: pointer; font-size: 16px;
+}
+
+#startGameBtn:disabled { background: #34495e; color: #7f8c8d; cursor: not-allowed; }
+
+.btn-cancel { 
+    flex: 1; padding: 16px; border-radius: 10px; 
+    background: rgba(255, 255, 255, 0.1); color: white; 
+    border: 1px solid #444; cursor: pointer; font-size: 16px;
+}
