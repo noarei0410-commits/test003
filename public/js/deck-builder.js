@@ -1,14 +1,15 @@
 /**
  * デッキ構築マネージャー (構築画面専用)
+ * デッキに関連する変数はここで一元管理し、他ファイルでの宣言を禁止します [cite: 2025-12-24]。
  */
 let currentLibraryFilter = 'all';
 let builderSearchText = ''; 
-let mainDeckList = [];     // メインデッキ（50枚）
-let cheerDeckList = [];    // エールデッキ（20枚）
-let selectedOshi = null;   // 推しホロメン
+let mainDeckList = [];     
+let cheerDeckList = [];    
+let selectedOshi = null;   
 
 /**
- * 構築画面のフィルタ切り替え
+ * 構築画面のライブラリフィルタ・検索
  */
 function setLibraryFilter(type) {
     currentLibraryFilter = type;
@@ -19,9 +20,6 @@ function setLibraryFilter(type) {
     updateLibrary();
 }
 
-/**
- * 構築画面専用の検索ハンドリング
- */
 function handleBuilderSearch() {
     const input = document.getElementById('searchInput');
     builderSearchText = input ? input.value.toLowerCase() : '';
@@ -29,14 +27,14 @@ function handleBuilderSearch() {
 }
 
 /**
- * 構築画面ライブラリのタイル描画（エール以外）
+ * 構築画面ライブラリの描画（グリッド形式）
  */
 function updateLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
     list.innerHTML = '';
     
-    // 表示対象のカードプールを構築（エール以外）
+    // エールを除外したカードプール（データロード完了を確認）
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     let pool = baseCards.filter(c => c.type !== 'ayle');
 
@@ -50,7 +48,6 @@ function updateLibrary() {
         const wrapper = document.createElement('div');
         wrapper.className = 'library-item-v2';
         
-        // game-logic.js の関数を使用してカードDOMを生成
         if (typeof createCardElement === 'function') {
             const cardEl = createCardElement(data, true);
             wrapper.appendChild(cardEl);
@@ -65,28 +62,23 @@ function updateLibrary() {
             btn.innerText = 'メインに追加';
             btn.onclick = () => addToDeck(data);
         }
-        
         wrapper.appendChild(btn);
         list.appendChild(wrapper);
     });
 }
 
 /**
- * メインデッキへのカード追加
+ * デッキ操作・サマリー更新ロジック
  */
 function addToDeck(data) {
     if (mainDeckList.length >= 50) return alert("メインデッキは50枚上限です");
     const sameNameCount = mainDeckList.filter(c => c.name === data.name).length;
-    // ときのそらDebut(sora-00)以外は4枚制限
     if (data.id !== "sora-00" && sameNameCount >= 4) return alert("同名カードは4枚までです");
 
     mainDeckList.push({...data});
     updateDeckSummary();
 }
 
-/**
- * エールデッキの増減処理
- */
 function changeCheerQuantity(colorName, delta) {
     const colorLabel = colorName + "エール";
     if (delta > 0) {
@@ -100,25 +92,17 @@ function changeCheerQuantity(colorName, delta) {
     updateDeckSummary();
 }
 
-/**
- * デッキサマリーの表示更新
- */
 function updateDeckSummary() {
-    const mainCount = document.getElementById('mainBuildCount');
-    const cheerCount = document.getElementById('cheerBuildCount');
-    if (mainCount) mainCount.innerText = mainDeckList.length;
-    if (cheerCount) cheerCount.innerText = cheerDeckList.length;
-    
+    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
+    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) {
         startBtn.disabled = !(mainDeckList.length === 50 && cheerDeckList.length === 20 && selectedOshi);
     }
-
     const oshiSummary = document.getElementById('oshiSummary');
     if (oshiSummary) {
         oshiSummary.innerHTML = selectedOshi ? `<div class="deck-item"><span>${selectedOshi.name}</span> <button class="btn-remove-oshi" onclick="removeOshi()">×</button></div>` : "未設定";
     }
-
     renderMainDeckSection();
     renderCheerDeckSection();
 }
