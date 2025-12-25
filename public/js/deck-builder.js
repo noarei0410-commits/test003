@@ -7,7 +7,6 @@ let mainDeckList = [];
 let cheerDeckList = [];    
 let selectedOshi = null;   
 
-// 保存済みデッキのリストを保持
 let savedDecks = {}; 
 
 function setLibraryFilter(type) {
@@ -85,18 +84,23 @@ function changeCheerQuantity(colorName, delta) {
 }
 
 /**
- * 複数保存・読込機能の実装
+ * 複数保存・上書き・読込機能
  */
-
 function saveCurrentDeckWithTitle() {
     const titleInput = document.getElementById('deckTitleInput');
     const title = titleInput.value.trim();
     if (!title) return alert("デッキ名を入力してください");
 
+    // 上書き確認ロジック
+    if (savedDecks[title]) {
+        if (!confirm(`デッキ「${title}」は既に存在します。上書きしますか？`)) return;
+    }
+
+    // メイン、エール、推しのすべてを保存
     savedDecks[title] = {
-        main: mainDeckList,
-        cheer: cheerDeckList,
-        oshi: selectedOshi
+        main: [...mainDeckList],
+        cheer: [...cheerDeckList],
+        oshi: selectedOshi ? {...selectedOshi} : null
     };
     
     localStorage.setItem('hOCG_saved_decks_v2', JSON.stringify(savedDecks));
@@ -105,13 +109,24 @@ function saveCurrentDeckWithTitle() {
     alert(`デッキ「${title}」を保存しました`);
 }
 
+/**
+ * 現在の構築のリセット機能
+ */
+function resetDeck() {
+    if (!confirm("現在の構築内容（メイン・エール・推し）をすべてリセットしますか？")) return;
+    mainDeckList = [];
+    cheerDeckList = [];
+    selectedOshi = null;
+    updateDeckSummary();
+}
+
 function loadDeckByTitle(title) {
     const data = savedDecks[title];
     if (!data) return;
     
-    mainDeckList = data.main || [];
-    cheerDeckList = data.cheer || [];
-    selectedOshi = data.oshi || null;
+    mainDeckList = [...(data.main || [])];
+    cheerDeckList = [...(data.cheer || [])];
+    selectedOshi = data.oshi ? {...data.oshi} : null;
     
     updateDeckSummary();
     alert(`デッキ「${title}」を読み込みました`);
@@ -128,13 +143,11 @@ function renderSavedDecksList() {
     const container = document.getElementById('savedDecksList');
     if (!container) return;
     container.innerHTML = '';
-
     const titles = Object.keys(savedDecks);
     if (titles.length === 0) {
         container.innerHTML = '<div style="font-size: 11px; color: #888;">保存されたデッキはありません</div>';
         return;
     }
-
     titles.forEach(title => {
         const div = document.createElement('div');
         div.className = 'deck-item';
@@ -142,13 +155,11 @@ function renderSavedDecksList() {
             <span style="cursor: pointer; flex: 1;" onclick="loadDeckByTitle('${title}')">📁 ${title}</span>
             <div class="deck-item-controls">
                 <button class="btn-minus" onclick="deleteDeckByTitle('${title}')" title="削除">×</button>
-            </div>
-        `;
+            </div>`;
         container.appendChild(div);
     });
 }
 
-// 初期化時に読み込み
 function loadDeckFromLocal() {
     const saved = localStorage.getItem('hOCG_saved_decks_v2');
     if (!saved) return;
@@ -159,8 +170,10 @@ function loadDeckFromLocal() {
 }
 
 function updateDeckSummary() {
-    document.getElementById('mainBuildCount').innerText = mainDeckList.length;
-    document.getElementById('cheerBuildCount').innerText = cheerDeckList.length;
+    const mainCountEl = document.getElementById('mainBuildCount');
+    const cheerCountEl = document.getElementById('cheerBuildCount');
+    if (mainCountEl) mainCountEl.innerText = mainDeckList.length;
+    if (cheerCountEl) cheerCountEl.innerText = cheerDeckList.length;
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) startBtn.disabled = !(mainDeckList.length === 50 && cheerDeckList.length === 20 && selectedOshi);
     const oshiSummary = document.getElementById('oshiSummary');
