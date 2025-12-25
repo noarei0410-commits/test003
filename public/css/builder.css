@@ -30,8 +30,9 @@
     padding: 10px;
     background: rgba(255, 255, 255, 0.02);
     border-radius: 8px;
-    /* 【修正】アイテムをコンテンツの高さに合わせ、縦に伸びないように設定 */
+    /* 【修正】アイテム自体を上に詰め、かつ「行そのもの」を上部に詰め直す */
     align-items: start; 
+    align-content: start; /* これにより行間の不要な余白が消えます */
 }
 
 /* --- カード表示・操作ボタン --- */
@@ -45,7 +46,6 @@
     border-radius: 8px;
     transition: 0.2s;
     position: relative;
-    /* アイテムの高さを中身に合わせる */
     height: fit-content;
 }
 
@@ -130,6 +130,24 @@
 
 .btn-minus { background: #e74c3c; }
 .btn-plus { background: #2ecc71; }
+.btn-remove-oshi { background: transparent; color: #ff5e5e; border: none; cursor: pointer; font-size: 18px; }
+
+/* --- フィルター・検索バー --- */
+.filter-tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+
+.filter-tab { 
+    flex: 1; padding: 10px 15px; border-radius: 20px; border: none;
+    background: rgba(137, 195, 235, 0.8) !important; color: #04172b !important;
+    font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+
+.filter-tab.active { background: #00d2ff !important; color: #ffffff !important; }
+
+#searchInput {
+    width: 300px; max-width: 100%; padding: 10px; border-radius: 4px; 
+    border: 1px solid #ced4da; background: #ffffff; color: #333; 
+    font-size: 14px; margin-bottom: 20px;
+}
 
 /* --- カードライブラリ（Global）専用 --- */
 .top-back-btn {
@@ -143,42 +161,23 @@
     margin-bottom: 15px;
 }
 
-.filter-bar, .filter-tabs { 
-    display: flex; 
-    gap: 8px; 
-    margin-bottom: 15px; 
-    flex-wrap: wrap; 
+.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+
+.filter-btn {
+    flex: 1; min-width: 90px; padding: 10px 15px; border-radius: 20px; 
+    border: none; background: rgba(137, 195, 235, 0.8) !important;
+    color: #04172b !important; font-weight: bold; cursor: pointer; transition: 0.2s;
 }
 
-.filter-btn, .filter-tab {
-    flex: 1; 
-    min-width: 90px; 
-    padding: 10px 15px; 
-    border-radius: 20px; 
-    border: none;
-    background: rgba(137, 195, 235, 0.8) !important;
-    color: #04172b !important; 
-    font-weight: bold; 
-    cursor: pointer; 
-    transition: 0.2s;
-}
-
-.filter-btn.active, .filter-tab.active { 
-    background: #00d2ff !important; 
-    color: #ffffff !important;
+.filter-btn.active { 
+    background: #00d2ff !important; color: #ffffff !important;
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); 
 }
 
-#globalSearchInput, #searchInput {
-    width: 300px; 
-    max-width: 100%;
-    padding: 10px; 
-    border-radius: 4px; 
-    border: 1px solid #ced4da;
-    background: #ffffff; 
-    color: #333; 
-    font-size: 14px;
-    margin-bottom: 20px;
+#globalSearchInput {
+    width: 300px; max-width: 100%; padding: 10px; border-radius: 4px; 
+    border: 1px solid #ced4da; background: #ffffff; color: #333; 
+    font-size: 14px; margin-bottom: 20px;
 }
 
 /* --- フッターボタン --- */
