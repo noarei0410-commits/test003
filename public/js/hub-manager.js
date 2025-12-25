@@ -1,29 +1,34 @@
 /**
  * ハブ画面専用マネージャー
- * ルーム参加およびライブラリ遷移を確実に制御します。
+ * HTMLの読み込み完了（DOMContentLoaded）を待ってから確実にイベントを登録します。
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // 対戦するボタン
+    // 1. 対戦するボタンのイベント登録
     const joinPlayerBtn = document.getElementById('joinPlayerBtn');
     if (joinPlayerBtn) {
         joinPlayerBtn.addEventListener('click', () => hubJoinRoom('player'));
     }
 
-    // 観戦するボタン
+    // 2. 観戦するボタンのイベント登録
     const joinSpectatorBtn = document.getElementById('joinSpectatorBtn');
     if (joinSpectatorBtn) {
         joinSpectatorBtn.addEventListener('click', () => hubJoinRoom('spectator'));
     }
 
-    // ライブラリ確認ボタン
+    // 3. カードライブラリ確認ボタンのイベント登録
     const btnLibrary = document.querySelector('.btn-library-item');
     if (btnLibrary) {
-        btnLibrary.addEventListener('click', () => showPage('card-list-page'));
+        btnLibrary.addEventListener('click', () => {
+            if (typeof showPage === 'function') {
+                showPage('card-list-page');
+            }
+        });
     }
 });
 
 /**
  * ルーム参加ロジック
+ * ID入力の取得とサーバーへの送信、画面遷移を管理します。
  */
 function hubJoinRoom(role) {
     const ridInput = document.getElementById('roomIdInput');
@@ -34,14 +39,22 @@ function hubJoinRoom(role) {
         return;
     }
 
-    socket.roomId = rid;
+    // グローバル変数/ソケットへの割り当て
+    if (typeof socket !== 'undefined') {
+        socket.roomId = rid;
+        socket.emit('joinRoom', { roomId: rid, role });
+    }
+    
+    // ロール（役割）の保存
     myRole = role; 
-    socket.emit('joinRoom', { roomId: rid, role });
 
+    // 遷移先の決定
     if (role === 'player') {
+        // プレイヤーなら構築（セットアップ）画面へ
         showPage('setup-modal');
     } else {
-        showPage(''); // フィールドへ
+        // 観戦者なら直接フィールド画面へ
+        showPage(''); // フィールドを表示
         document.body.classList.add('spectator-mode');
     }
 }
