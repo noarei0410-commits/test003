@@ -2,26 +2,22 @@
  * メイン初期化処理
  */
 window.addEventListener('load', async () => {
-    // 1. 全カードデータのロードを待つ
+    // データのロード完了を待つ
     await loadCardData();
 
-    // 2. 構築画面の初期状態をセット (データロード後に行う)
+    // 構築画面の初期描画
     if (typeof updateLibrary === 'function') updateLibrary();
 
-    // 3. デッキクリック等のイベント設定
+    // イベント設定
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
 
-    // 4. 画面リサイズ対応
     window.addEventListener('resize', repositionCards);
 
-    // 5. ハブ画面を表示
+    // ハブ画面を表示
     showPage('hub-page');
 });
 
-/**
- * マスターデータのロード
- */
 async function loadCardData() {
     try {
         const res = await Promise.all([
@@ -30,6 +26,7 @@ async function loadCardData() {
             fetch('/data/ayle.json').then(r => r.json()),
             fetch('/data/oshi.json').then(r => r.json())
         ]);
+        // グローバル変数への割り当て
         MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
         AYLE_MASTER = res[2];
         OSHI_LIST = res[3];
