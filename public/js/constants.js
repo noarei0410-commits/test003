@@ -3,7 +3,6 @@ const STAGE_ZONES = ['collab', 'center', 'oshi', 'back1', 'back2', 'back3', 'bac
 const COLORS = { '白': 'white', '緑': 'green', '赤': 'red', '青': 'blue', '黄': 'yellow', '紫': 'purple' };
 
 let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
-let mainDeckList = [], cheerDeckList = [], selectedOshi = null;
 let myRole = 'spectator';
 let currentDragEl = null, isDragging = false, dragStarted = false;
 let currentStack = []; 
