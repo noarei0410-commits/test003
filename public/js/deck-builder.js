@@ -29,14 +29,14 @@ function handleBuilderSearch() {
 }
 
 /**
- * 構築画面ライブラリ描画
+ * 構築画面ライブラリのタイル描画（エール以外）
  */
 function updateLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
     list.innerHTML = '';
     
-    // エールカード以外のプールを作成
+    // 表示対象のカードプールを構築（エール以外）
     const baseCards = [...(OSHI_LIST || []), ...(MASTER_CARDS || [])];
     let pool = baseCards.filter(c => c.type !== 'ayle');
 
@@ -50,6 +50,7 @@ function updateLibrary() {
         const wrapper = document.createElement('div');
         wrapper.className = 'library-item-v2';
         
+        // game-logic.js の関数を使用してカードDOMを生成
         if (typeof createCardElement === 'function') {
             const cardEl = createCardElement(data, true);
             wrapper.appendChild(cardEl);
@@ -76,6 +77,7 @@ function updateLibrary() {
 function addToDeck(data) {
     if (mainDeckList.length >= 50) return alert("メインデッキは50枚上限です");
     const sameNameCount = mainDeckList.filter(c => c.name === data.name).length;
+    // ときのそらDebut(sora-00)以外は4枚制限
     if (data.id !== "sora-00" && sameNameCount >= 4) return alert("同名カードは4枚までです");
 
     mainDeckList.push({...data});
@@ -99,7 +101,7 @@ function changeCheerQuantity(colorName, delta) {
 }
 
 /**
- * デッキサマリーの更新
+ * デッキサマリーの表示更新
  */
 function updateDeckSummary() {
     const mainCount = document.getElementById('mainBuildCount');
