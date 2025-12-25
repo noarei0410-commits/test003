@@ -8,7 +8,13 @@ window.addEventListener('load', async () => {
     // 構築画面の初期描画
     if (typeof updateLibrary === 'function') updateLibrary();
 
-    // イベント設定
+    // 対戦開始ボタンに処理を紐付け
+    const startBtn = document.getElementById('startGameBtn');
+    if (startBtn) {
+        startBtn.addEventListener('click', submitDeck);
+    }
+
+    // デッキクリック（ドロー）等のイベント設定
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
 
@@ -18,6 +24,9 @@ window.addEventListener('load', async () => {
     showPage('hub-page');
 });
 
+/**
+ * データロード
+ */
 async function loadCardData() {
     try {
         const res = await Promise.all([
@@ -26,7 +35,6 @@ async function loadCardData() {
             fetch('/data/ayle.json').then(r => r.json()),
             fetch('/data/oshi.json').then(r => r.json())
         ]);
-        // グローバル変数への割り当て
         MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
         AYLE_MASTER = res[2];
         OSHI_LIST = res[3];
