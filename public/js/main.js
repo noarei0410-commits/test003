@@ -2,30 +2,31 @@
  * メイン初期化処理
  */
 window.addEventListener('load', async () => {
-    // データのロード完了を待つ
+    // 1. 全カードデータのロードを待つ
     await loadCardData();
 
-    // 構築画面の初期描画
-    if (typeof updateLibrary === 'function') updateLibrary();
-
-    // 対戦開始ボタンに処理を紐付け
+    // 2. 対戦開始ボタンに処理を紐付け
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) {
         startBtn.addEventListener('click', submitDeck);
     }
 
-    // デッキクリック（ドロー）等のイベント設定
+    // 3. 各画面の初期描画を強制実行 (データロード後) [cite: 2025-12-24]
+    if (typeof updateLibrary === 'function') updateLibrary();
+    if (typeof updateGlobalLibraryDisplay === 'function') updateGlobalLibraryDisplay();
+
+    // 4. デッキクリック等のイベント設定
     setupDeckClick('main-deck-zone', 'main');
     setupDeckClick('cheer-deck-zone', 'cheer');
 
     window.addEventListener('resize', repositionCards);
 
-    // ハブ画面を表示
+    // 5. ハブ画面を表示
     showPage('hub-page');
 });
 
 /**
- * データロード
+ * マスターデータのロード
  */
 async function loadCardData() {
     try {
@@ -35,12 +36,18 @@ async function loadCardData() {
             fetch('/data/ayle.json').then(r => r.json()),
             fetch('/data/oshi.json').then(r => r.json())
         ]);
+        
+        // グローバル変数（constants.jsで宣言済み）へ格納
         MASTER_CARDS = [...res[0], ...res[1], ...res[2]];
         AYLE_MASTER = res[2];
         OSHI_LIST = res[3];
-        console.log("Master Data Synced.");
+        
+        console.log("Master Data Synced:", {
+            master: MASTER_CARDS.length,
+            oshi: OSHI_LIST.length
+        });
     } catch (e) {
-        console.error("Data Sync Failed", e);
+        console.error("Data Sync Failed - JSONファイルが存在するか確認してください", e);
     }
 }
 
