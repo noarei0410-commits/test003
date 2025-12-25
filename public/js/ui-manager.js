@@ -15,10 +15,12 @@ function showPage(pageId) {
 
     const target = document.getElementById(pageId);
     if (target) {
+        // ハブ画面は中央揃えのため flex を適用
         target.style.display = (pageId === 'hub-page') ? 'flex' : 'block';
         
+        // カード確認ページ遷移時
         if (pageId === 'card-list-page') updateGlobalLibraryDisplay();
-        // deck-builder.js の関数を呼び出し
+        // 構築ページ遷移時：deck-builder.js の関数を呼び出し
         if (pageId === 'setup-modal' && typeof updateLibrary === 'function') updateLibrary();
     }
 }
@@ -48,7 +50,7 @@ function getTabText(type) {
 }
 
 /**
- * カード確認画面の描画
+ * カード確認画面（ライブラリ）の描画
  */
 function updateGlobalLibraryDisplay() {
     const grid = document.getElementById('global-card-grid');
