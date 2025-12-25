@@ -4,7 +4,7 @@
     flex-direction: row !important; 
     flex: 1; 
     gap: 20px; 
-    height: 78vh; /* 画面の大部分を占有 */
+    height: 78vh; 
     overflow: hidden; 
 }
 
@@ -32,42 +32,28 @@
     border-radius: 8px;
 }
 
-/* 右側：デッキ集計・詳細エリア */
-.deck-lists-container { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-    overflow-y: auto; 
-    background: rgba(0, 0, 0, 0.25);
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid rgba(0, 210, 255, 0.1);
-}
-
 /* --- カード表示・操作ボタン --- */
 .library-item-v2 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* gap は flexアイテム間の隙間ですが、念のため個別にマージンも設定します */
     gap: 5px;
     background: rgba(255, 255, 255, 0.05);
     padding: 10px;
     border-radius: 8px;
     transition: 0.2s;
-    position: relative; /* 子要素の基準とするために相対配置を設定 */
+    position: relative;
 }
 
-/* 【追記部分】ライブラリリスト内のカード要素を強制的に通常のフローに戻す */
+/* カード本体をフローに戻し、ボタンと重ならないように調整 */
 .library-item-v2 > *:not(button) {
     position: relative !important; /* 絶対配置を解除してフローに戻す */
     top: auto !important;
     left: auto !important;
-    transform: none !important; /* 必要に応じて位置調整の変形を解除 */
-    margin: 0 auto 10px auto !important; /* 上下左右のマージンを設定し、下に隙間を空ける */
-    flex-shrink: 0; /* Flexボックス内で勝手に縮小しないようにする */
-    z-index: 1; /* 重なり順を指定 */
+    transform: none !important;
+    margin: 0 auto 10px auto !important; /* カードの下に隙間を空ける */
+    flex-shrink: 0;
+    z-index: 1;
 }
 
 .library-item-v2:hover {
@@ -84,10 +70,23 @@
     font-size: 11px;
     font-weight: bold;
     cursor: pointer;
-    z-index: 2; /* ボタンをカードより前面に表示 */
-    position: relative; /* ボタン自体もしっかりと配置 */
+    z-index: 2; /* ボタンをカードより前面に */
+    position: relative;
 }
-/* --- デッキセクション内のアイテム表示 --- */
+
+/* --- 右側：デッキ集計・詳細エリア --- */
+.deck-lists-container { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    overflow-y: auto; 
+    background: rgba(0, 0, 0, 0.25);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 210, 255, 0.1);
+}
+
 .deck-section { 
     background: rgba(255, 255, 255, 0.05); 
     padding: 12px; 
@@ -115,7 +114,6 @@
     color: #eee;
 }
 
-/* エールデッキ専用（色の識別用） */
 .cheer-item {
     border-left: 5px solid currentColor;
 }
@@ -142,7 +140,7 @@
 .btn-plus { background: #2ecc71; }
 .btn-remove-oshi { background: transparent; color: #ff5e5e; border: none; cursor: pointer; font-size: 18px; }
 
-/* --- フィルター・検索バーのスタイル --- */
+/* --- フィルター・検索バー --- */
 .filter-tabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
 
 .filter-tab { 
@@ -151,7 +149,6 @@
     font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;
 }
 
-/* 構築画面のアクティブ色 */
 .filter-tab.active { background: #00d2ff; color: #04172b; }
 
 #searchInput {
@@ -160,30 +157,10 @@
 }
 
 /* --- カードライブラリ（Global）専用：指定色適用版 --- */
-.library-header {
-    display: flex;
-    justify-content: flex-start;
-    margin-bottom: 15px;
-    border-bottom: 1px solid rgba(0, 210, 255, 0.2);
-    padding-bottom: 10px;
-}
-
-.top-back-btn {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(0, 210, 255, 0.3) !important;
-    color: #00d2ff !important;
-    padding: 8px 18px !important;
-    font-size: 14px !important;
-    border-radius: 6px !important;
-    cursor: pointer;
-}
-
-.filter-bar { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-
 .filter-btn {
     flex: 1; min-width: 90px; padding: 10px; border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    /* 指定の淡い青色を適用 */
+    /* 指定の淡い青色を適用 [cite: 2025-12-24] */
     background: rgba(137, 195, 235, 0.8) !important;
     color: #04172b !important; font-weight: bold; cursor: pointer; transition: 0.2s;
 }
@@ -193,19 +170,7 @@
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); 
 }
 
-#globalSearchInput {
-    width: 100%; padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(0, 210, 255, 0.4);
-    background: rgba(255, 255, 255, 0.05); color: white; font-size: 16px; margin-bottom: 20px;
-}
-
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 20px;
-    padding: 10px;
-}
-
-/* --- フッターボタン（対戦開始・戻る） --- */
+/* --- フッターボタン --- */
 .builder-footer { display: flex; gap: 10px; margin-top: 15px; }
 
 #startGameBtn { 
