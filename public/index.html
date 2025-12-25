@@ -31,7 +31,7 @@
                 </div>
             </div>
             <div class="hub-extra-container">
-                <button class="btn-library-item" onclick="showPage('card-list-page')">📚 カードライブラリを確認する</button>
+                <button class="btn-library-item">📚 カードライブラリを確認する</button>
             </div>
         </div>
     </div>
@@ -45,6 +45,7 @@
                         <button class="filter-tab" onclick="setLibraryFilter('holomen')">ホロメン</button>
                         <button class="filter-tab" onclick="setLibraryFilter('support')">サポート</button>
                         <button class="filter-tab" onclick="setLibraryFilter('oshi')">推し</button>
+                        <button class="filter-tab" onclick="setLibraryFilter('ayle')">エール</button>
                     </div>
                     <input type="text" id="searchInput" placeholder="カード名で検索..." oninput="updateLibrary()">
                     <div id="libraryList"></div>
@@ -71,12 +72,30 @@
         </div>
     </div>
 
+    <div id="card-list-page" class="full-page">
+        <div class="modal-content">
+            <div class="library-header">
+                <button onclick="showPage('hub-page')" class="top-back-btn">← トップへ戻る</button>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterGlobalLibrary('all')">すべて</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('oshi')">推しホロメン</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('holomen')">ホロメン</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('support')">サポート</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('ayle')">エール</button>
+            </div>
+            <div class="search-bar-container">
+                <input type="text" id="globalSearchInput" placeholder="カード名で検索..." oninput="handleGlobalSearch(this.value)">
+            </div>
+            <div id="global-card-grid" class="card-grid"></div>
+        </div>
+    </div>
+
     <div id="ui-layer">
         <div id="room-info">Room: -</div>
         <div class="deck-counts">Main: <span id="mainCount">0</span> | Cheer: <span id="cheerCount">0</span></div>
         <button onclick="openArchive()" class="btn-archive">Archive</button>
     </div>
-
     <div id="field-container">
         <div id="field">
             <div class="field-left-area">
@@ -91,11 +110,7 @@
             <div class="field-right-top"><div id="holopower" class="zone">ホロパワー</div></div>
             <div class="field-back-stage">
                 <div class="back-slots-container">
-                    <div id="back1" class="zone"></div>
-                    <div id="back2" class="zone"></div>
-                    <div id="back3" class="zone"></div>
-                    <div id="back4" class="zone"></div>
-                    <div id="back5" class="zone"></div>
+                    <div id="back1" class="zone"></div><div id="back2" class="zone"></div><div id="back3" class="zone"></div><div id="back4" class="zone"></div><div id="back5" class="zone"></div>
                 </div>
             </div>
             <div class="field-right-bottom">
@@ -104,13 +119,8 @@
             </div>
         </div>
     </div>
-
     <div id="hand-container"><div id="hand"></div></div>
-
-    <div id="zoom-modal">
-        <div id="zoom-outer" class="zoom-outer-container"><div class="zoom-content-inner"></div></div>
-    </div>
-
+    <div id="zoom-modal"><div id="zoom-outer" class="zoom-outer-container"><div class="zoom-content-inner"></div></div></div>
     <div id="deck-inspection-modal" class="full-page">
         <div class="modal-content room-content" style="width: 80vw; max-width: 900px;">
             <h2 id="inspection-title" style="color: #00d2ff; margin-bottom: 15px;"></h2>
@@ -119,34 +129,13 @@
         </div>
     </div>
 
-    <div id="card-list-page" class="full-page">
-        <div class="modal-content">
-            <div class="library-header">
-                <button onclick="showPage('hub-page')" class="top-back-btn">← トップへ戻る</button>
-            </div>
-        
-            <div class="filter-bar">
-                <button class="filter-btn active" onclick="filterGlobalLibrary('all')">すべて</button>
-                <button class="filter-btn" onclick="filterGlobalLibrary('oshi')">推しホロメン</button>
-                <button class="filter-btn" onclick="filterGlobalLibrary('holomen')">ホロメン</button>
-                <button class="filter-btn" onclick="filterGlobalLibrary('support')">サポート</button>
-                <button class="filter-btn" onclick="filterGlobalLibrary('ayle')">エール</button>
-            </div>
-
-            <div class="search-bar-container">
-                <input type="text" id="globalSearchInput" placeholder="カード名で検索..." oninput="handleGlobalSearch(this.value)">
-            </div>
-
-            <div id="global-card-grid" class="card-grid"></div>
-        </div>
-    </div>
-
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/constants.js"></script>
     <script src="js/game-logic.js"></script>
     <script src="js/ui-manager.js"></script>
+    <script src="js/hub-manager.js"></script>
+    <script src="js/deck-builder.js"></script>
     <script src="js/socket-handler.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
-
