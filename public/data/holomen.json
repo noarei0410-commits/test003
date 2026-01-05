@@ -1,0 +1,313 @@
+[
+  {
+    "id": "sora-00",
+    "name": "ときのそら",
+    "type": "holomen",
+    "color": "青",
+    "bloom": "Debut",
+    "hp": 70,
+    "baton": 1,
+    "tags": [
+      "ホロライブ0期生",
+      "アイドル"
+    ],
+    "skills": [
+      {
+        "type": "gift",
+        "name": "そらともへの挨拶",
+        "text": "このホロメンがセンターにいるなら、自分のメインフェイズに1回、山札を1枚引いてよい。"
+      },
+      {
+        "type": "arts",
+        "name": "青空のメロディ",
+        "cost": [
+          "any"
+        ],
+        "damage": 20,
+        "text": "なし"
+      }
+    ],
+    "extra": "このホロメンはデッキに何枚でも入れられる"
+  },
+  {
+    "id": "sora-01",
+    "name": "ときのそら",
+    "type": "holomen",
+    "color": "青",
+    "bloom": "1st",
+    "hp": 140,
+    "baton": 1,
+    "tags": [
+      "ホロライブ0期生",
+      "アイドル"
+    ],
+    "skills": [
+      {
+        "type": "bloom",
+        "name": "アイドルへの道",
+        "text": "このホロメンにブルームした時、自分の山札から「アイドル」タグを持つホロメンを1枚探し、手札に加えてよい。"
+      },
+      {
+        "type": "arts",
+        "name": "コトバカゼ",
+        "cost": [
+          "青",
+          "any"
+        ],
+        "damage": 50,
+        "text": "なし"
+      }
+    ]
+  },
+  {
+    "id": "sora-02",
+    "name": "ときのそら",
+    "type": "holomen",
+    "color": "青",
+    "bloom": "2nd",
+    "hp": 210,
+    "baton": 2,
+    "tags": [
+      "ホロライブ0期生",
+      "アイドル"
+    ],
+    "skills": [
+      {
+        "type": "arts",
+        "name": "Dreaming!",
+        "cost": [
+          "青",
+          "青",
+          "any"
+        ],
+        "damage": 100,
+        "text": "相手のセンターホロメンを「まひ」にする。"
+      }
+    ]
+  },
+  {
+    "id": "miko-00",
+    "name": "さくらみこ",
+    "type": "holomen",
+    "color": "赤",
+    "bloom": "Debut",
+    "hp": 80,
+    "baton": 1,
+    "tags": [
+      "ホロライブ0期生",
+      "エリート"
+    ],
+    "skills": [
+      {
+        "type": "arts",
+        "name": "みこぴぇぇ",
+        "cost": [
+          "赤"
+        ],
+        "damage": 20,
+        "text": "なし"
+      }
+    ]
+  },
+  {
+    "id": "miko-01",
+    "name": "さくらみこ",
+    "type": "holomen",
+    "color": "赤",
+    "bloom": "1st",
+    "hp": 130,
+    "baton": 2,
+    "tags": [
+      "ホロライブ0期生",
+      "エリート"
+    ],
+    "skills": [
+      {
+        "type": "bloom",
+        "name": "エリートな登場",
+        "text": "このホロメンにブルームした時、相手のバックポジションのホロメン全員に10ダメージ。"
+      },
+      {
+        "type": "arts",
+        "name": "たいやきアタック",
+        "cost": [
+          "赤",
+          "any"
+        ],
+        "damage": 50,
+        "text": "なし"
+      }
+    ]
+  },
+  {
+    "id": "miko-02",
+    "name": "さくらみこ",
+    "type": "holomen",
+    "color": "赤",
+    "bloom": "2nd",
+    "hp": 220,
+    "baton": 2,
+    "tags": [
+      "ホロライブ0期生",
+      "エリート"
+    ],
+    "skills": [
+      {
+        "type": "arts",
+        "name": "エリート・バーニング",
+        "cost": [
+          "赤",
+          "赤",
+          "any"
+        ],
+        "damage": 120,
+        "text": "このアーツのダメージにより相手をリタイアさせたなら、自分はホロパワーを1つ得てもよい。"
+      }
+    ]
+  },
+  {
+    "id": "fubuki-00",
+    "name": "白上フブキ",
+    "type": "holomen",
+    "color": "白",
+    "bloom": "Debut",
+    "hp": 70,
+    "baton": 1,
+    "tags": [
+      "ホロライブ1期生",
+      "キツネ"
+    ],
+    "skills": [
+      {
+        "type": "gift",
+        "name": "おるやんけ！",
+        "text": "自分のメインフェイズに1回、自分の山札の上から3枚を見てよい。"
+      },
+      {
+        "type": "arts",
+        "name": "こんこんアタック",
+        "cost": [
+          "any"
+        ],
+        "damage": 10,
+        "text": "なし"
+      }
+    ]
+  },
+  {
+    "id": "fubuki-01",
+    "name": "白上フブキ",
+    "type": "holomen",
+    "color": "白",
+    "bloom": "1st",
+    "hp": 120,
+    "baton": 1,
+    "tags": [
+      "ホロライブ1期生",
+      "キツネ"
+    ],
+    "skills": [
+      {
+        "type": "bloom",
+        "name": "ベンチへの加速",
+        "text": "このホロメンにブルームした時、自分のエールデッキを1枚、自分のバックポジションのホロメンに付けてよい。"
+      },
+      {
+        "type": "arts",
+        "name": "白銀の剣",
+        "cost": [
+          "白",
+          "any"
+        ],
+        "damage": 40,
+        "text": "なし"
+      }
+    ]
+  },
+  {
+    "id": "fubuki-02",
+    "name": "白上フブキ",
+    "type": "holomen",
+    "color": "白",
+    "bloom": "2nd",
+    "hp": 190,
+    "baton": 1,
+    "tags": [
+      "ホロライブ1期生",
+      "キツネ"
+    ],
+    "skills": [
+      {
+        "type": "arts",
+        "name": "Say!ファンファーレ!",
+        "cost": [
+          "白",
+          "白",
+          "any"
+        ],
+        "damage": 80,
+        "text": "自分のバックポジションのホロメン1人につき、このアーツのダメージを+10する。"
+      }
+    ]
+  },
+  {
+    "id": "suisei-00",
+    "name": "星街すいせい",
+    "type": "holomen",
+    "color": "青",
+    "bloom": "Debut",
+    "hp": 70,
+    "baton": 1,
+    "tags": [
+      "ホロライブ0期生",
+      "歌手"
+    ],
+    "skills": [
+      {
+        "type": "collab",
+        "name": "コメット",
+        "text": "このターン、自分のアーツのダメージを+20する。"
+      },
+      {
+        "type": "arts",
+        "name": "駆けろ",
+        "cost": [
+          "青",
+          "any"
+        ],
+        "damage": 30,
+        "text": "なし"
+      }
+    ]
+  },
+  {
+    "id": "azki-01",
+    "name": "AZKi",
+    "type": "holomen",
+    "color": "緑",
+    "bloom": "1st",
+    "hp": 100,
+    "baton": 1,
+    "tags": [
+      "ホロライブ0期生",
+      "歌手"
+    ],
+    "skills": [
+      {
+        "type": "bloom",
+        "name": "オーバーライト",
+        "text": "このホロメンにブルームした時、相手のセンターホロメンに20ダメージ。"
+      },
+      {
+        "type": "arts",
+        "name": "いのち",
+        "cost": [
+          "緑",
+          "any"
+        ],
+        "damage": 60,
+        "text": "なし"
+      }
+    ]
+  }
+]
