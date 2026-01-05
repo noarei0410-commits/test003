@@ -1,0 +1,29 @@
+#hub-page { display: flex; background: radial-gradient(circle, #0a2d4d, #04172b); }
+.hub-container { width: 90%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; text-align: center; margin: auto; }
+.hub-title { color: #00d2ff; font-size: 32px; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,210,255,0.6); }
+
+.room-list-container, .hub-form-container, .hub-extra-container { 
+    background: rgba(0,0,0,0.4); border: 1px solid #00d2ff; border-radius: 15px; 
+    padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.section-label { color: #00d2ff; font-size: 13px; font-weight: bold; text-align: left; margin-bottom: 10px; display: block; }
+.room-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; height: 150px; }
+.room-item { 
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(0, 210, 255, 0.3); 
+    padding: 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; 
+}
+#roomIdInput { 
+    width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(0, 210, 255, 0.5); 
+    background: rgba(4, 23, 43, 0.8); color: white; text-align: center; font-size: 16px; margin-bottom: 15px;
+}
+.hub-join-btns { display: flex; gap: 10px; }
+.hub-btn { 
+    flex: 1; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; 
+    transition: 0.2s; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; 
+}
+.player-btn { border-color: #ff5e5e; }
+.spectator-btn { border-color: #2ecc71; }
+.btn-library-item {
+    width: 100%; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(0, 210, 255, 0.4); color: #00d2ff;
+}
