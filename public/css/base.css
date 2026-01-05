@@ -1,0 +1,310 @@
+/* --- 全体・基本設定 --- */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #04172b;
+    font-family: 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    color: white;
+    user-select: none;
+    touch-action: none;
+}
+
+.full-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    background: #04172b;
+}
+
+.modal-content {
+    background: #04172b;
+    border: 2px solid #00d2ff;
+    border-radius: 20px;
+    padding: 20px;
+    width: 98vw;
+    height: 96vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- カードデザイン（拡大前） --- */
+.card {
+    width: 58px;
+    height: 82px;
+    background: white;
+    color: black;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1000;
+    font-size: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 1px solid #999;
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* リスト内・手札内でのスタイルリセット */
+#hand .card,
+.card-grid .card,
+#deck-card-grid .card {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    flex-shrink: 0;
+    transform: none !important;
+}
+
+/* --- カード内パーツ配置 --- */
+
+/* 左上: Bloomランク */
+.card-bloom {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    color: #3498db;
+    font-weight: bold;
+    font-size: 9px;
+}
+
+/* 右上: エール色アイコン */
+.card-color-icon {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+/* 右側: HP表示 (アイコンの左側に移動) */
+.card-hp {
+    position: absolute;
+    top: 4px;
+    /* アイコンと高さを合わせる */
+    right: 18px;
+    /* アイコン(12px) + マージン(3px) + 隙間(3px) */
+    color: #e74c3c;
+    font-weight: bold;
+    font-size: 10px;
+    text-align: right;
+    line-height: 1;
+    /* 高さ合わせのため */
+}
+
+/* 左下: バトンタッチコスト */
+.card-baton {
+    position: absolute;
+    bottom: 3px;
+    left: 3px;
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+}
+
+.baton-dot {
+    width: 4px;
+    height: 4px;
+    background: #95a5a6;
+    border-radius: 50%;
+}
+
+
+/* 裏面・回転・コンテンツコンテナ */
+.card-face-content {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.face-down {
+    background: #16213e !important;
+    border: 1.5px solid white !important;
+    box-shadow: none !important;
+    /* フチの色バレを防ぐ */
+}
+
+/* スリーブデザイン 0 (Standard) */
+.card.back-design-0.face-down {
+    background: #16213e !important;
+}
+
+.card.back-design-0.face-down::after {
+    content: "HO-LIV";
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: bold;
+    font-size: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* スリーブデザイン 1 (Pop: Pink/White) */
+.card.back-design-1.face-down {
+    background: repeating-linear-gradient(45deg,
+            #f8a5c2,
+            #f8a5c2 5px,
+            #f7d794 5px,
+            #f7d794 10px) !important;
+    border: 1.5px solid #fff !important;
+}
+
+.card.back-design-1.face-down::after {
+    content: "★";
+    color: white;
+    font-size: 20px;
+    text-shadow: 1px 1px 0 #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* スリーブデザイン 2 (Cool: Black/Gold) */
+.card.back-design-2.face-down {
+    background: #2d3436 !important;
+    border: 1.5px solid #ffeaa7 !important;
+}
+
+.card.back-design-2.face-down::after {
+    content: "♛";
+    color: #ffeaa7;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.face-down .card-face-content {
+    display: none;
+}
+
+/* --- スリーブ選択UI --- */
+.sleeve-selector {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.sleeve-option {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.sleeve-preview {
+    width: 40px;
+    height: 56px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.sleeve-preview.design-0 {
+    background: #16213e;
+}
+
+.sleeve-preview.design-1 {
+    background: repeating-linear-gradient(45deg, #f8a5c2, #f8a5c2 5px, #f7d794 5px, #f7d794 10px);
+    color: black;
+}
+
+.sleeve-preview.design-2 {
+    background: #2d3436;
+    border-color: #ffeaa7;
+    color: #ffeaa7;
+}
+
+input[type="radio"]:checked+.sleeve-preview {
+    border: 2px solid #00d2ff;
+    box-shadow: 0 0 5px #00d2ff;
+}
+
+.card.rotated {
+    transform: rotate(90deg);
+}
+
+/* --- 名前の中央表示 (共通) --- */
+/* ホロメン、推し、サポートカードの名称を中央揃え・太文字に */
+.card .card-face-content>span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    font-weight: bold;
+    font-size: 10px;
+    text-align: center;
+    line-height: 1.2;
+    z-index: 10;
+    pointer-events: none;
+    /* クリックやドラッグの邪魔にならないように */
+}
+
+/* --- ズームモーダル --- */
+#zoom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 50000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.zoom-container {
+    background: white;
+    color: black;
+    width: 350px;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 92vh;
+    overflow-y: auto;
+}
+
+/* --- カードグリッド --- */
+.card-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 15px;
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    align-content: flex-start;
+    justify-content: flex-start;
+}
