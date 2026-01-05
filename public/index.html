@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>hololive OCG Simulator</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/hub.css">
+    <link rel="stylesheet" href="css/builder.css">
+    <link rel="stylesheet" href="css/field.css">
+    <link rel="stylesheet" href="css/holomen.css">
+    <link rel="stylesheet" href="css/oshi.css">
+    <link rel="stylesheet" href="css/ayle.css">
+    <link rel="stylesheet" href="css/support.css">
+    <link rel="stylesheet" href="css/phase.css">
+</head>
+
+<body>
+
+    <div id="hub-page" class="full-page" style="display: flex;">
+        <div class="hub-container">
+            <h1 class="hub-title">hOCG Simulator</h1>
+            <div class="room-list-container">
+                <span class="section-label">稼働中のルーム</span>
+                <div id="roomList" class="room-list"></div>
+            </div>
+            <div class="hub-form-container">
+                <span class="section-label">ルームへ入る</span>
+                <input type="text" id="roomIdInput" placeholder="ルームIDを入力 または リストを選択">
+                <div class="hub-join-btns">
+                    <button id="joinPlayerBtn" class="hub-btn player-btn">⚔️ 対戦する</button>
+                    <button id="joinSpectatorBtn" class="hub-btn spectator-btn">👁️ 観戦する</button>
+                </div>
+            </div>
+            <div class="hub-extra-container">
+                <button class="btn-library-item" onclick="showPage('card-list-page')">📚 カードライブラリを確認する</button>
+            </div>
+        </div>
+    </div>
+    <!-- 対戦フィールド -->
+    <div id="field-screen" class="screen">
+        <div id="field-ui">
+            <!-- ターン・フェイズ表示 -->
+            <div id="phase-bar">
+                <div class="phase-step" id="ph-reset">R</div>
+                <div class="phase-step" id="ph-draw">D</div>
+                <div class="phase-step" id="ph-cheer">C</div>
+                <div class="phase-step" id="ph-main">M</div>
+                <div class="phase-step" id="ph-arts">A</div>
+                <div class="phase-step" id="ph-end">E</div>
+                <button id="btn-next-phase" onclick="socket.emit('nextPhase')">Next</button>
+            </div>
+
+            <div id="opponent-info" class="player-info">
+                <span>Opponent</span>
+                <div class="deck-counts">
+                    <span>Main: <span id="op-mainCount">-</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="setup-modal" class="full-page">
+        <div class="modal-content">
+            <div class="builder-layout">
+                <div class="card-library">
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" onclick="setLibraryFilter('all')">すべて</button>
+                        <button class="filter-tab" onclick="setLibraryFilter('holomen')">ホロメン</button>
+                        <button class="filter-tab" onclick="setLibraryFilter('support')">サポート</button>
+                        <button class="filter-tab" onclick="setLibraryFilter('oshi')">推し</button>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="カード名で検索..." oninput="handleBuilderSearch()">
+                    <div id="libraryList"></div>
+                </div>
+
+                <div class="deck-lists-container">
+                    <div class="deck-section">
+                        <div class="section-header">デッキ管理 (保存/読込)</div>
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                            <input type="text" id="deckTitleInput" placeholder="デッキ名を入力..."
+                                style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #444; background: rgba(0,0,0,0.3); color: #fff;">
+                            <button onclick="saveCurrentDeckWithTitle()"
+                                style="padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">保存</button>
+                        </div>
+                        <button onclick="resetDeck()"
+                            style="width: 100%; padding: 8px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 10px;">
+                            現在の構築をリセット
+                        </button>
+                        <div id="savedDecksList"
+                            style="max-height: 150px; overflow-y: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                        </div>
+                    </div>
+
+                    <div class="deck-section">
+                        <div class="section-header">推しホロメン</div>
+                        <div id="oshiSummary">未設定</div>
+                    </div>
+                    <div class="deck-section">
+                        <div class="section-header">メインデッキ (<span id="mainBuildCount">0</span>/50)</div>
+                        <div id="mainDeckSummary"></div>
+                    </div>
+                    <div class="deck-section">
+                        <div class="section-header">エールデッキ (<span id="cheerBuildCount">0</span>/20)</div>
+                        <div id="cheerDeckSummary"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="builder-footer">
+                <button id="startGameBtn" disabled>対戦開始</button>
+                <button onclick="location.reload()" class="btn-cancel">戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="card-list-page" class="full-page">
+        <div class="modal-content">
+            <div class="library-header">
+                <button onclick="showPage('hub-page')" class="top-back-btn">← トップへ戻る</button>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterGlobalLibrary('all')">すべて</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('oshi')">推しホロメン</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('holomen')">ホロメン</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('support')">サポート</button>
+                <button class="filter-btn" onclick="filterGlobalLibrary('ayle')">エール</button>
+            </div>
+            <div class="search-bar-container">
+                <input type="text" id="globalSearchInput" placeholder="カード名で検索..."
+                    oninput="handleGlobalSearch(this.value)">
+            </div>
+            <div id="global-card-grid" class="card-grid"></div>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="room-info">Room: -</div>
+        <div class="deck-counts">Main: <span id="mainCount">0</span> | Cheer: <span id="cheerCount">0</span></div>
+        <button onclick="openArchive()" class="btn-archive">Archive</button>
+    </div>
+
+    <div id="field-container">
+        <div id="field">
+            <div class="field-left-area">
+                <div id="life-zone" class="zone life-zone-vertical">ライフ</div>
+                <div id="cheer-deck-zone" class="zone deck-zone">エール</div>
+            </div>
+            <div class="field-center-top">
+                <div id="collab" class="zone">コラボ</div>
+                <div id="center" class="zone">センター</div>
+                <div id="oshi" class="zone">推し</div>
+            </div>
+            <div class="field-right-top">
+                <div id="holopower" class="zone">ホロパワー</div>
+            </div>
+            <div class="field-back-stage">
+                <div class="back-slots-container">
+                    <div id="back1" class="zone"></div>
+                    <div id="back2" class="zone"></div>
+                    <div id="back3" class="zone"></div>
+                    <div id="back4" class="zone"></div>
+                    <div id="back5" class="zone"></div>
+                </div>
+            </div>
+            <div class="field-right-bottom">
+                <div id="main-deck-zone" class="zone deck-zone">デッキ</div>
+                <div id="archive" class="zone">アーカイブ</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="hand-container">
+        <div id="hand"></div>
+    </div>
+
+    <div id="zoom-modal">
+        <div id="zoom-outer" class="zoom-outer-container">
+            <div class="zoom-content-inner"></div>
+        </div>
+    </div>
+    <div id="deck-inspection-modal" class="full-page">
+        <div class="modal-content room-content" style="width: 80vw; max-width: 900px;">
+            <h2 id="inspection-title" style="color: #00d2ff; margin-bottom: 15px;"></h2>
+            <div id="deck-card-grid" class="card-grid"></div>
+            <button onclick="closeDeckInspection()" class="btn-modal-close">閉じる</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/constants.js"></script>
+    <script src="js/game-logic.js"></script>
+    <script src="js/ui-manager.js"></script>
+    <script src="js/hub-manager.js"></script>
+    <script src="js/deck-builder.js"></script>
+    <script src="js/socket-handler.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
