@@ -1,0 +1,14 @@
+/* --- 名前の中央表示 (共通) --- */
+/* ホロメン、推し、サポートカードの名称を中央揃え・太文字に */
+.card .card-face-content>span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    font-weight: bold;
+    font-size: 10px;
+    text-align: center;
+    line-height: 1.2;
+    z-index: 10;
+}
