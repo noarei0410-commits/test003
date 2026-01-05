@@ -1,0 +1,72 @@
+/* --- エールカード枠線カラー (拡大前) --- */
+.card.ayle-card.border-white {
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 5px #fff;
+}
+
+.card.ayle-card.border-green {
+    border: 2px solid #00d25b;
+    box-shadow: 0 0 5px #00d25b;
+}
+
+.card.ayle-card.border-red {
+    border: 2px solid #ff3333;
+    box-shadow: 0 0 5px #ff3333;
+}
+
+.card.ayle-card.border-blue {
+    border: 2px solid #3399ff;
+    box-shadow: 0 0 5px #3399ff;
+}
+
+.card.ayle-card.border-yellow {
+    border: 2px solid #ffcc00;
+    box-shadow: 0 0 5px #ffcc00;
+}
+
+.card.ayle-card.border-purple {
+    border: 2px solid #aa66cc;
+    box-shadow: 0 0 5px #aa66cc;
+}
+
+/* --- 拡大前レイアウト：中央にアイコンのみ --- */
+.card.ayle-card .ayle-center-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* --- 拡大後レイアウト：ayle-zoom-layout --- */
+.ayle-zoom-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+}
+
+.zoom-ayle-icon-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.zoom-ayle-name-label {
+    display: none;
+    /* 名前は表示しない */
+}
+
+/* 拡大枠線の強化 (エール専用) */
+.zoom-outer-container.ayle-zoom {
+    border-width: 8px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
