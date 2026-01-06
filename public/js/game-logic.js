@@ -149,7 +149,7 @@ function openZoom(cardData, cardElement = null) {
         `;
 
         const mainPanel = document.getElementById('zoom-main-panel');
-        mainPanel.innerHTML = generateCardDetailHtml(currentDisplayCard);
+        mainPanel.innerHTML = generateCardDetailHtml(currentDisplayCard, stackCards);
 
         if (hasStack) {
             const listPanel = document.getElementById('zoom-stack-list');
