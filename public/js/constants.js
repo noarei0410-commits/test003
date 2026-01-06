@@ -12,7 +12,7 @@ const COLORS = {
     '青': 'blue',
     '黄': 'yellow',
     '紫': 'purple',
-    'any': 'white' // 無色コスト用
+    'any': '#808000' // 無色コスト用
 };
 
 let MASTER_CARDS = [], OSHI_LIST = [], AYLE_MASTER = [];
