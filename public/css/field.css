@@ -1,0 +1,168 @@
+/* --- 対戦フィールド：全体レイアウト・UIレイヤー --- */
+
+/* 上部情報バー */
+#ui-layer { 
+    width: 100%; 
+    padding: 5px 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    height: 35px; 
+    align-items: center; 
+    background: rgba(0,0,0,0.4); 
+    z-index: 1000;
+}
+
+/* フィールド外枠：スクロールと背景演出 */
+#field-container { 
+    width: 98vw; 
+    flex: 1; 
+    margin-top: 5px; 
+    position: relative; 
+    background: radial-gradient(ellipse at center, rgba(40, 80, 120, 0.3) 0%, rgba(4, 23, 43, 0.8) 100%); 
+    border-radius: 15px; 
+    border: 2px solid rgba(0, 210, 255, 0.3); 
+    overflow: auto; 
+    -webkit-overflow-scrolling: touch; /* モバイルスクロールの滑らかさ向上 */
+}
+
+/* フィールド本体：3カラム・グリッドシステム */
+#field { 
+    display: grid; 
+    /* 3カラム設計: [左:130px] [中央:3分割フレキシブル] [右:130px] */
+    grid-template-columns: 130px 1fr 1fr 1fr 130px; 
+    grid-template-rows: 150px 220px 150px; 
+    gap: 15px; 
+    padding: 20px; 
+    height: 100%; 
+    min-width: 1100px; /* レイアウト崩れ防止の最小幅 */
+}
+
+/* --- 共通ゾーン設定 --- */
+.zone { 
+    border: 2px solid rgba(255, 255, 255, 0.3); 
+    background: rgba(255,255,255,0.05); 
+    border-radius: 12px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    color: rgba(255,255,255,0.4); 
+    font-size: 11px; 
+    font-weight: bold; 
+    text-align: center; 
+    width: 100%; 
+    height: 100%; 
+    position: relative; 
+    transition: background 0.2s, border-color 0.2s;
+}
+
+/* --- カラム別詳細設定 --- */
+
+/* 【左カラム】ライフとエールデッキ */
+.field-left-area { 
+    grid-column: 1; 
+    grid-row: 1 / span 3; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
+.life-zone-vertical { 
+    flex: 4; 
+    writing-mode: vertical-rl; 
+    text-orientation: upright; 
+    letter-spacing: 5px; 
+}
+#cheer-deck-zone { 
+    flex: none; 
+    height: 110px; 
+    border-color: rgba(193, 228, 233, 1); 
+    color: rgba(193, 228, 233, 1); 
+}
+
+/* 【中央カラム：上段】メインステージ（コラボ・センター・推し） */
+.field-center-top { 
+    grid-column: 2 / span 3; 
+    grid-row: 1; 
+    display: flex; 
+    gap: 15px; 
+}
+
+/* 【中央カラム：中・下段】バックステージ */
+.field-back-stage { 
+    grid-column: 2 / span 3; 
+    grid-row: 2 / span 2; 
+    border: 2px dashed rgba(255,255,255,0.2); 
+    border-radius: 15px; 
+    display: flex; 
+    flex-direction: column; 
+    padding: 15px; 
+    position: relative; 
+}
+.back-slots-container { 
+    flex: 1; 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    gap: 10px; 
+}
+.back-slots-container .zone { 
+    height: 150px; 
+    max-width: 105px; 
+    border-style: dashed; 
+}
+
+/* 【右カラム】ホロパワー・山札・アーカイブ */
+.field-right-top { 
+    grid-column: 5; 
+    grid-row: 1; 
+}
+.field-right-bottom { 
+    grid-column: 5; 
+    grid-row: 2 / span 2; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
+#main-deck-zone { 
+    height: 110px; 
+    flex: none; 
+    border-color: rgba(187, 200, 230, 1); 
+    color: rgba(187, 200, 230, 1); 
+}
+#archive { 
+    flex: 1; 
+}
+
+/* --- ドロー機能用：山札ゾーンのインタラクション --- */
+.deck-zone {
+    cursor: pointer;
+    white-space: pre-line; /* 改行文字を有効化 */
+    line-height: 1.4;
+    font-size: 13px !important;
+}
+.deck-zone:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #00d2ff;
+    color: #00d2ff;
+}
+.deck-zone:active {
+    transform: scale(0.96);
+}
+
+/* --- 手札エリア --- */
+#hand-container { 
+    width: 100vw; 
+    height: 130px; 
+    background: rgba(0,0,0,0.6); 
+    padding: 12px 20px; 
+    z-index: 5000; 
+}
+#hand { 
+    display: flex; 
+    gap: 10px; 
+    overflow-x: auto; 
+    height: 100%; 
+    align-items: center; 
+    border: 2px dashed rgba(255, 255, 255, 0.2); 
+    border-radius: 12px; 
+    background: rgba(255, 255, 255, 0.03); 
+}
